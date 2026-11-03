@@ -10,7 +10,9 @@ const WEB = 'https://estebancalvobayarri.github.io/repostaje/';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const q = id => document.getElementById(id);
 const escH = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-let perfil = null, camiones = [], rutaArrancada = false;
+let perfil = null, camiones = [], rutaArrancada = false, esAdmin = false;
+// Si se llega desde un enlace de invitación o de recuperar contraseña, primero se elige contraseña
+const modoNueva = /type=(invite|recovery)/.test(location.hash);
 
 function mensaje(id, texto, tipo = 'error') {
   const el = q(id); el.hidden = !texto; el.className = 'msg ' + tipo; el.textContent = texto || '';
@@ -23,7 +25,23 @@ function verEntrada(modo = 'entrar') {
 }
 
 async function verApp(session) {
-  const { data, error } = await sb.from('perfiles').select('empresa_id, rol, nombre, empresas(nombre)').eq('id', session.user.id).maybeSingle();
+  const [{ data, error }, { data: adm }] = await Promise.all([
+    sb.from('perfiles').select('empresa_id, rol, nombre, empresas(nombre)').eq('id', session.user.id).maybeSingle(),
+    sb.from('administradores').select('user_id').eq('user_id', session.user.id).maybeSingle(),
+  ]);
+  esAdmin = !!adm;
+  q('t-admin').hidden = !esAdmin;
+  q('t-flota').hidden = !data;
+  if (esAdmin && !data) {
+    perfil = null;
+    q('empresa').textContent = 'Administración';
+    q('usuario').textContent = session.user.email;
+    q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
+    camiones = [];
+    if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar([]); }
+    pestaña('admin');
+    return;
+  }
   if (error || !data) {
     verEntrada();
     mensaje('msg-entrar', 'Tu usuario no está asociado a ninguna empresa todavía. Pide que te den de alta y vuelve a entrar.');
@@ -37,6 +55,7 @@ async function verApp(session) {
   q('b-nuevo').hidden = data.rol !== 'gestor';
   q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
   await cargarCamiones();
+  if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
 }
@@ -63,6 +82,7 @@ q('f-nueva').addEventListener('submit', async (e) => {
   const { error } = await sb.auth.updateUser({ password: q('pass-nueva').value });
   if (error) return mensaje('msg-nueva', 'No se ha podido guardar: ' + error.message);
   const { data } = await sb.auth.getSession();
+  history.replaceState(null, '', location.pathname);
   if (data.session) verApp(data.session);
 });
 
@@ -71,25 +91,27 @@ q('b-salir').addEventListener('click', async () => { await sb.auth.signOut(); })
 sb.auth.onAuthStateChange((evento, session) => {
   if (evento === 'PASSWORD_RECOVERY') return verEntrada('nueva');
   if (evento === 'SIGNED_OUT') { perfil = null; q('pass').value = ''; return verEntrada(); }
-  if (evento === 'SIGNED_IN' && session && q('f-nueva').hidden) verApp(session);
+  if (evento === 'SIGNED_IN' && session && !modoNueva && q('f-nueva').hidden) verApp(session);
 });
 
 (async () => {
+  if (modoNueva) return verEntrada('nueva');
   const { data } = await sb.auth.getSession();
-  if (data.session && !location.hash.includes('type=recovery')) verApp(data.session);
-  else if (!location.hash.includes('type=recovery')) verEntrada();
+  if (data.session) verApp(data.session); else verEntrada();
 })();
 
 // ---------- pestañas ----------
 function pestaña(cual) {
-  q('t-ruta').setAttribute('aria-selected', cual === 'ruta');
-  q('t-flota').setAttribute('aria-selected', cual === 'flota');
-  q('vista-ruta').hidden = cual !== 'ruta';
-  q('vista-flota').hidden = cual !== 'flota';
+  for (const t of ['ruta', 'flota', 'admin']) {
+    q('t-' + t).setAttribute('aria-selected', cual === t);
+    q('vista-' + t).hidden = cual !== t;
+  }
+  if (cual === 'admin') cargarAdmin();
   window.Ruta.refrescarMapa();
 }
 q('t-ruta').onclick = () => pestaña('ruta');
 q('t-flota').onclick = () => pestaña('flota');
+q('t-admin').onclick = () => pestaña('admin');
 
 // ---------- flota ----------
 async function cargarCamiones() {
@@ -167,3 +189,84 @@ function confirmarBorrado(fila, cam) {
     window.Ruta.ponerCamiones(camiones);
   };
 }
+
+// ---------- administración (solo administradores) ----------
+async function llamarAdmin(cuerpo) {
+  const { data, error } = await sb.functions.invoke('admin', { body: cuerpo });
+  if (error) {
+    let msg = error.message;
+    try { const j = await error.context.json(); if (j.error) msg = j.error; } catch (e) {}
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function cargarAdmin() {
+  if (!esAdmin) return;
+  try {
+    const { empresas } = await llamarAdmin({ accion: 'listar' });
+    pintarAdmin(empresas);
+  } catch (e) { q('admin-lista').innerHTML = `<p class="empty">No se han podido cargar las empresas: ${escH(e.message)}</p>`; }
+}
+
+function pintarAdmin(empresas) {
+  q('admin-n').textContent = `${empresas.length} empresa${empresas.length === 1 ? '' : 's'}`;
+  if (!empresas.length) { q('admin-lista').innerHTML = '<p class="empty">Todavía no hay empresas. Crea la primera arriba.</p>'; return; }
+  q('admin-lista').innerHTML = empresas.map(e => `
+    <section class="emp" data-emp="${e.id}">
+      <div class="emp-h"><b>${escH(e.nombre)}</b><span class="small">${e.cif ? escH(e.cif) + ' · ' : ''}${e.camiones} camión${e.camiones === 1 ? '' : 'es'}</span></div>
+      ${e.usuarios.length ? e.usuarios.map(u => `
+        <div class="usr" data-user="${u.id}" data-email="${escH(u.email)}">
+          <div style="min-width:0"><div class="em">${escH(u.email || '(sin email)')}</div>
+            <div class="small">${u.nombre ? escH(u.nombre) + ' · ' : ''}<span class="pill">${u.rol}</span>${u.ha_entrado ? '' : '<span class="pill pend">Invitación pendiente</span>'}</div></div>
+          <div class="acc"><button class="mini" type="button" data-acc="reenviar">${u.ha_entrado ? 'Restablecer contraseña' : 'Reenviar invitación'}</button><button class="mini peligro" type="button" data-acc="quitar">Quitar</button></div>
+        </div>`).join('') : '<p class="small">Sin usuarios todavía.</p>'}
+      <form class="inv" data-inv="${e.id}">
+        <input class="full" type="email" required placeholder="email@empresa.es" aria-label="Email del usuario">
+        <input type="text" placeholder="Nombre (opcional)" aria-label="Nombre del usuario" maxlength="80">
+        <select aria-label="Rol"><option value="gestor">Gestor</option><option value="conductor">Conductor</option></select>
+        <button class="btn full" type="submit">Invitar usuario</button>
+        <div class="msg full" hidden></div>
+      </form>
+    </section>`).join('');
+
+  q('admin-lista').querySelectorAll('form[data-inv]').forEach(f => f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const [email, nombre] = f.querySelectorAll('input'), rol = f.querySelector('select'), msg = f.querySelector('.msg'), b = f.querySelector('button');
+    b.disabled = true; b.textContent = 'Enviando…';
+    try {
+      const r = await llamarAdmin({ accion: 'invitar', empresa_id: f.dataset.inv, email: email.value, nombre: nombre.value, rol: rol.value });
+      await cargarAdmin();
+      const m = q('admin-lista').querySelector(`form[data-inv="${f.dataset.inv}"] .msg`);
+      if (m) { m.hidden = false; m.className = 'msg full ok'; m.textContent = r.invitado ? `Invitación enviada a ${email.value}. Recibirá un email para elegir su contraseña.` : `${email.value} ya tenía cuenta: ahora pertenece a esta empresa.`; }
+    } catch (e) { msg.hidden = false; msg.className = 'msg full error'; msg.textContent = e.message; b.disabled = false; b.textContent = 'Invitar usuario'; }
+  });
+
+  q('admin-lista').querySelectorAll('.usr button[data-acc]').forEach(b => b.onclick = async () => {
+    const fila = b.closest('.usr'), acc = fila.querySelector('.acc'), email = fila.dataset.email;
+    if (b.dataset.acc === 'reenviar') {
+      b.disabled = true;
+      try { await llamarAdmin({ accion: 'reenviar', email }); acc.innerHTML = `<span class="small">Email enviado a ${escH(email)}</span>`; }
+      catch (e) { acc.innerHTML = `<span class="small">${escH(e.message)}</span>`; }
+      return;
+    }
+    acc.innerHTML = `<span class="small">¿Quitar a ${escH(email)}? Perderá el acceso.</span><button class="mini peligro" type="button" data-si>Sí, quitar</button><button class="mini" type="button" data-no>No</button>`;
+    acc.querySelector('[data-no]').onclick = cargarAdmin;
+    acc.querySelector('[data-si]').onclick = async () => {
+      try { await llamarAdmin({ accion: 'quitar_usuario', user_id: fila.dataset.user }); cargarAdmin(); }
+      catch (e) { acc.innerHTML = `<span class="small">${escH(e.message)}</span>`; }
+    };
+  });
+}
+
+q('f-empresa').addEventListener('submit', async (e) => {
+  e.preventDefault(); mensaje('msg-empresa', '');
+  q('b-empresa').disabled = true;
+  try {
+    const { empresa } = await llamarAdmin({ accion: 'crear_empresa', nombre: q('emp-nombre').value, cif: q('emp-cif').value });
+    q('emp-nombre').value = ''; q('emp-cif').value = '';
+    mensaje('msg-empresa', `Empresa "${empresa.nombre}" creada. Ahora invita a su gestor más abajo.`, 'ok');
+    await cargarAdmin();
+  } catch (err) { mensaje('msg-empresa', err.message); }
+  q('b-empresa').disabled = false;
+});

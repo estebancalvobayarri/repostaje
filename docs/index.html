@@ -137,6 +137,16 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .form-cam { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-cam .full { grid-column: 1 / -1; }
 .form-cam input[type=number] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.emp { border-top: 1px solid var(--line); padding: 14px 18px; padding-left: max(18px, env(safe-area-inset-left)); display: grid; gap: 10px; }
+.emp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.emp-h b { font: 700 1.1rem var(--f-display); }
+.usr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: .9rem; }
+.usr .em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.usr .acc { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.pill { display: inline-block; font: 600 .7rem var(--f-body); letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; }
+.pill.pend { color: var(--mid); border-color: var(--mid); }
+.inv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.inv .full { grid-column: 1 / -1; }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 @media (max-width: 820px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto 70vh; height: auto; }
@@ -176,6 +186,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     <nav class="tabs" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" id="t-ruta" aria-selected="true" aria-controls="vista-ruta">Ruta</button>
       <button class="tab" role="tab" id="t-flota" aria-selected="false" aria-controls="vista-flota">Flota</button>
+      <button class="tab" role="tab" id="t-admin" aria-selected="false" aria-controls="vista-admin" hidden>Administración</button>
     </nav>
 
     <div id="vista-ruta" role="tabpanel" aria-labelledby="t-ruta">
@@ -237,6 +248,18 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
       <div class="flota-list" id="flota"></div>
     </div>
 
+    <div id="vista-admin" role="tabpanel" aria-labelledby="t-admin" hidden>
+      <form class="block" id="f-empresa">
+        <div class="stops-h" style="padding:0"><h2>Nueva empresa</h2></div>
+        <div><label class="lbl" for="emp-nombre">Nombre</label><input type="text" id="emp-nombre" required maxlength="120" placeholder="Transportes García SL"></div>
+        <div><label class="lbl" for="emp-cif">CIF (opcional)</label><input type="text" id="emp-cif" maxlength="12" placeholder="B12345678"></div>
+        <div class="msg" id="msg-empresa" hidden></div>
+        <button class="btn" type="submit" id="b-empresa">Crear empresa</button>
+      </form>
+      <div class="stops-h"><h2>Empresas</h2><small class="small" id="admin-n"></small></div>
+      <div id="admin-lista"><p class="empty">Cargando…</p></div>
+    </div>
+
     <footer class="foot">
       Precios sin IVA de las tarjetas de la empresa. Rutas calculadas para turismo con OSRM; para camión pueden variar. Mapa © OpenStreetMap.
     </footer>
@@ -247,6 +270,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app.js?v=6"></script>
-<script src="auth.js?v=2"></script>
+<script src="auth.js?v=3"></script>
 </body>
 </html>
