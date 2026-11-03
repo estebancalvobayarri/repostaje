@@ -38,6 +38,8 @@ select, input[type=text] { width: 100%; font: 500 .95rem var(--f-body); padding:
 input[type=text]:focus, select:focus { outline: 2px solid var(--sel); outline-offset: 0; border-color: transparent; }
 .lvl { display: flex; align-items: center; gap: 10px; }
 .lvl input { flex: 1; min-width: 0; accent-color: var(--sel); }
+.num { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.num input { width: 4.2em; font: 600 1rem var(--f-body); padding: 6px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
 .lvl output { font: 700 1.15rem var(--f-display); width: 3.4em; text-align: right; font-variant-numeric: tabular-nums; }
 .gauge { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
 .gauge i { display: block; height: 100%; background: var(--sel); }
@@ -134,8 +136,10 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <input type="text" id="origen" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-origen" role="listbox" hidden></ul></div>
       <div class="place dest"><label class="lbl" for="destino">Destino</label><span class="dot"></span>
         <input type="text" id="destino" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-destino" role="listbox" hidden></ul></div>
-      <div><label class="lbl" for="radio">Estaciones a menos de</label>
-        <div class="lvl"><input type="range" id="radio" min="1" max="20" step="1" value="8"><output id="radio-o" for="radio">8 km</output></div></div>
+      <div><label class="lbl" for="radio-n">Mostrar estaciones a menos de</label>
+        <div class="lvl"><input type="range" id="radio" min="1" max="30" step="1" value="8" aria-label="Distancia máxima a la ruta">
+          <span class="num"><input type="number" id="radio-n" min="1" max="30" step="1" value="8" inputmode="numeric"> km</span></div>
+        <p class="small">de la ruta, en línea recta</p></div>
       <div class="row2">
         <button class="btn" id="calc" type="submit">Calcular ruta</button>
         <button class="btn ghost" id="swap" type="button" title="Intercambiar origen y destino" aria-label="Intercambiar origen y destino">⇅</button>
@@ -164,6 +168,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

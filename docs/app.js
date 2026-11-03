@@ -64,14 +64,15 @@ function buscador(campo) {
   const input = $(campo), lista = $('sugg-' + campo);
   let t, items = [], act = -1;
   const cerrar = () => { lista.hidden = true; act = -1; };
-  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); guardar('lugares', lugares); };
+  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); guardar('lugares', lugares); if (lugares.origen && lugares.destino) calcular(); };
   input.addEventListener('input', () => {
     lugares[campo] = null; clearTimeout(t);
     const q = input.value.trim(); if (q.length < 3) return cerrar();
     t = setTimeout(async () => {
       try {
-        const r = await fetch(`${PHOTON}?q=${encodeURIComponent(q)}&lang=es&limit=6&bbox=-10,35.5,4.6,44`);
+        const r = await fetch(`${PHOTON}?q=${encodeURIComponent(q)}&lang=default&limit=6&bbox=-10,35.5,4.6,44`);
         const j = await r.json();
+        if (!j.features) throw new Error('buscador');
         items = j.features.map(f => {
           const p = f.properties, sub = [p.city || p.county, p.state].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
           return { label: [p.name, p.city && p.city !== p.name ? p.city : ''].filter(Boolean).join(', '), sub, lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
@@ -257,7 +258,19 @@ async function iniciar() {
   $('camion').innerHTML = D.camiones.map((c, i) => `<option value="${i}">${esc(c.m)} · ${ent(c.cap)} l</option>`).join('');
   const g = leer('camion'); if (g && D.camiones[g.i]) { $('camion').value = g.i; $('nivel').value = g.n; }
   $('camion').onchange = pintarCamion; $('nivel').oninput = pintarCamion;
-  $('radio').oninput = () => { $('radio-o').textContent = $('radio').value + ' km'; if (ruta) { evaluar(); desviosReales(); } };
+  // Distancia a la ruta: barra y casilla sincronizadas
+  let tRadio;
+  const ponerRadio = (v, desde) => {
+    v = Math.max(1, Math.min(30, Math.round(+v || 8)));
+    if (desde !== 'barra') $('radio').value = v;
+    if (desde !== 'casilla') $('radio-n').value = v;
+    guardar('radio', v);
+    if (ruta) { evaluar(); clearTimeout(tRadio); tRadio = setTimeout(desviosReales, 600); }
+  };
+  $('radio').oninput = () => ponerRadio($('radio').value, 'barra');
+  $('radio-n').oninput = () => { if ($('radio-n').value !== '') ponerRadio($('radio-n').value, 'casilla'); };
+  $('radio-n').onchange = () => ponerRadio($('radio-n').value);
+  const r0 = leer('radio'); if (r0) ponerRadio(r0);
   buscador('origen'); buscador('destino');
   $('ruta').onsubmit = calcular;
   $('swap').onclick = () => { [lugares.origen, lugares.destino] = [lugares.destino, lugares.origen];
