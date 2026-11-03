@@ -1,7 +1,5 @@
-# Datos reales de la empresa: precios pactados, emails, camiones.
-# El repositorio es público, así que nunca se suben.
-datos/
-web/mapa.html
+# El repositorio es privado: los datos de la empresa (datos/) sí se guardan.
+# Si algún día se hace público, volver a excluir datos/ y web/mapa.html.
 
 __pycache__/
 *.pyc

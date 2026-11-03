@@ -18,8 +18,11 @@ según la ruta y el combustible que le queda a cada camión.
 
 ## Datos privados
 
-El repositorio es público. Los datos reales van en la carpeta `datos/`, que
-está excluida y nunca se sube:
+El repositorio es privado y guarda también los datos reales de la empresa en
+`datos/`: precios pactados, emails recibidos y la flota. **No lo hagas público
+ni actives GitHub Pages** (las páginas de Pages son públicas aunque el
+repositorio sea privado). Si algún día se abre, antes hay que sacar `datos/`
+y `web/mapa.html` del repositorio y de su historial.
 
 ```
 datos/

@@ -1,0 +1,6 @@
+ruta,proveedor,nombre,direccion,confianza,lat,lon,precio,pk,desvio_km,coste_desvio,coste_total
+Puerto de Valencia → El Prat de Llobregat (AP-7),Valcarce,AS ENI HOSPITALET NORTE,AUTOPISTA AP-7 (MRG.IZDO.) KM. 283,alta,40.985,0.897,1.419,202.505,3.017,1.498,852.898
+Riba-roja de Túria → Cartagena (A-7 / A-35 / A-33 / A-30),Valcarce,VALCARCE - CARLET VALENCIA,"CALLE TRAMUNTANA, 11",alta,39.233,-0.489,1.403,36.032,3.173,1.558,843.358
+Riba-roja de Túria → Cartagena (A-7 / A-35 / A-33 / A-30),Valcarce,STAROIL RIBARROJA VALENCIA,"POLIGONO CALLE POLIGONO OLIVERAL, 50",alta,39.476,-0.552,1.407,7.532,4.072,2.005,846.205
+Riba-roja de Túria → Cartagena (A-7 / A-35 / A-33 / A-30),DST,E.S. ALZ EL OLIVERAL - VALENCIA A-3_A-7,"POLIGONO SUBPOLIGONO 2 (CTRA. N3 KM 341)., 341",alta,39.473,-0.536,1.411,8.44,1.138,0.562,847.162
+Riba-roja de Túria → Cartagena (A-7 / A-35 / A-33 / A-30),DST,E.S. MOIXENT -VALENCIA A-35,"Autovía A-35 km 28, salida 28, Moixent (MLC Moixent)",media,38.895,-0.725,1.412,83.149,0.128,0.063,847.263
