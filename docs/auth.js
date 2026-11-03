@@ -213,6 +213,13 @@ async function cargarAdmin() {
 let listaAbierta = false, empAbierta = null, ultimasEmpresas = [];
 const camionesTxt = n => `${n} ${n === 1 ? 'camión' : 'camiones'}`;
 
+q('nueva-toggle').onclick = () => {
+  const abrir = q('f-empresa').hidden;
+  q('f-empresa').hidden = !abrir;
+  q('nueva-toggle').setAttribute('aria-expanded', abrir);
+  if (abrir) q('emp-nombre').focus();
+};
+
 q('admin-toggle').onclick = () => {
   listaAbierta = !listaAbierta;
   q('admin-toggle').setAttribute('aria-expanded', listaAbierta);

@@ -142,6 +142,12 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .sec-t h2 { font: 700 1.05rem var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0; flex: 1; }
 .chev { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; flex: none; margin-right: 2px; }
 [aria-expanded=true] > .chev { transform: rotate(45deg); }
+.sec-mas { border-top: 0; }
+.mas { position: relative; width: 16px; height: 16px; flex: none; color: var(--muted); transition: transform .15s; }
+.mas::before, .mas::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 2px; background: currentColor; border-radius: 1px; transform: translate(-50%, -50%); }
+.mas::after { transform: translate(-50%, -50%) rotate(90deg); }
+.sec-t:hover .mas { color: var(--ink); }
+[aria-expanded=true] > .mas { transform: rotate(45deg); }
 .emp { border-top: 1px solid var(--line); }
 .emp-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 18px; padding-left: max(30px, env(safe-area-inset-left)); background: none; border: 0; color: var(--ink); cursor: pointer; text-align: left; }
 .emp-row:hover { background: var(--soft); }
@@ -272,8 +278,9 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     </div>
 
     <div id="vista-admin" role="tabpanel" aria-labelledby="t-admin" hidden>
-      <form class="block" id="f-empresa">
-        <div class="stops-h" style="padding:0"><h2>Nueva empresa</h2></div>
+      <button class="sec-t sec-mas" type="button" id="nueva-toggle" aria-expanded="false" aria-controls="f-empresa">
+        <h2>Nueva empresa</h2><span class="mas" aria-hidden="true"></span></button>
+      <form class="block" id="f-empresa" hidden>
         <div><label class="lbl" for="emp-nombre">Nombre</label><input type="text" id="emp-nombre" required maxlength="120" placeholder="Transportes García SL"></div>
         <div><label class="lbl" for="emp-cif">CIF (opcional)</label><input type="text" id="emp-cif" maxlength="12" placeholder="B12345678"></div>
         <div class="msg" id="msg-empresa" hidden></div>
