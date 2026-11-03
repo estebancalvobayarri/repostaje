@@ -52,8 +52,8 @@
         tooltip: { backgroundColor: css('--panel'), titleColor: css('--ink'), bodyColor: css('--ink'), borderColor: rejilla, borderWidth: 1, padding: 10, displayColors: false },
       },
       scales: {
-        x: { grid: { display: false }, border: { color: rejilla }, ticks: { color: texto, font: { family: 'Barlow' } } },
-        y: { beginAtZero: true, grid: { color: rejilla }, border: { display: false }, ticks: { color: texto, font: { family: 'Barlow' }, maxTicksLimit: 5 } },
+        x: { grid: { display: false }, border: { color: rejilla }, ticks: { color: texto, font: { family: 'Manrope' } } },
+        y: { beginAtZero: true, grid: { color: rejilla }, border: { display: false }, ticks: { color: texto, font: { family: 'Manrope' }, maxTicksLimit: 5 } },
       },
       ...extra,
     };
@@ -82,15 +82,15 @@
     $('k-medio').textContent = eur(tot.ahorro / tot.rutas, 2);
     $('k-cts').textContent = (tot.litros ? tot.ahorro / tot.litros * 100 : 0).toFixed(1).replace('.', ',');
 
-    const ms = meses(env, desde), azul = css('--series-1');
-    dibujar('g-ahorro-mes', { type: 'bar', data: { labels: ms.map(m => m.et), datasets: [{ label: 'Ahorro', data: ms.map(m => Math.round(m.ahorro * 100) / 100), ...barra(azul) }] },
+    const ms = meses(env, desde), ambar = css('--accent'), azulClaro = css('--bar-2');
+    dibujar('g-ahorro-mes', { type: 'bar', data: { labels: ms.map(m => m.et), datasets: [{ label: 'Ahorro', data: ms.map(m => Math.round(m.ahorro * 100) / 100), ...barra(ambar) }] },
       options: base({ plugins: { ...base().plugins, tooltip: { ...base().plugins.tooltip, callbacks: { label: c => 'Ahorro: ' + eur(c.raw, 2) } } } }) });
-    dibujar('g-rutas-mes', { type: 'bar', data: { labels: ms.map(m => m.et), datasets: [{ label: 'Rutas', data: ms.map(m => m.rutas), ...barra(azul) }] },
+    dibujar('g-rutas-mes', { type: 'bar', data: { labels: ms.map(m => m.et), datasets: [{ label: 'Rutas', data: ms.map(m => m.rutas), ...barra(azulClaro) }] },
       options: base({ plugins: { ...base().plugins, tooltip: { ...base().plugins.tooltip, callbacks: { label: c => `${c.raw} ruta${c.raw === 1 ? '' : 's'}` } } } }) });
 
     const cam = agrupar(env, e => e.matricula).sort((a, b) => b.ahorro - a.ahorro);
     $('g-camion-caja').style.height = Math.max(140, cam.length * 34 + 40) + 'px';
-    dibujar('g-camion', { type: 'bar', data: { labels: cam.map(c => c.k), datasets: [{ label: 'Ahorro', data: cam.map(c => Math.round(c.ahorro * 100) / 100), ...barra(azul) }] },
+    dibujar('g-camion', { type: 'bar', data: { labels: cam.map(c => c.k), datasets: [{ label: 'Ahorro', data: cam.map(c => Math.round(c.ahorro * 100) / 100), ...barra(ambar) }] },
       options: base({ indexAxis: 'y', interaction: { mode: 'nearest', axis: 'y', intersect: false },
         plugins: { ...base().plugins, tooltip: { ...base().plugins.tooltip, callbacks: { label: c => { const x = cam[c.dataIndex]; return [`Ahorro: ${eur(x.ahorro, 2)}`, `${x.rutas} rutas · ${ent(x.km)} km`]; } } } },
         scales: { x: { ...base().scales.y, grid: { color: css('--line') } }, y: { ...base().scales.x } } }) });

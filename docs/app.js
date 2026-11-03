@@ -309,13 +309,13 @@ function pintarEnvio(x, alcanzables = []) {
 function popup(e) {
   const c = camionActual(), litros = Math.round(c.cap - litrosQueLleva());
   const x = candidatas().find(y => y.e.id === e.id);
-  return `<div class="pop"><div style="font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:#5d6b78">Tarjeta ${e.t}</div>
+  return `<div class="pop"><div style="font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Tarjeta ${e.t}</div>
     <h3>${esc(e.n)}</h3>
-    <div class="big" style="color:${colorPrecio(e.p)}">${fmt(e.p)} <span style="font:400 .85rem var(--f-body);color:#5d6b78">€/l sin IVA · ${fmt(e.pi)} con IVA</span></div>
+    <div class="big" style="color:${colorPrecio(e.p)}">${fmt(e.p)} <span style="font:400 .85rem var(--f-body);color:var(--muted)">€/l sin IVA · ${fmt(e.pi)} con IVA</span></div>
     <dl>${x ? `<dt>Km de la ruta</dt><dd>${ent(x.k)}</dd><dt>Desvío${x.real ? '' : ' (estimado)'}</dt><dd>${ent(x.desvio)} km</dd><dt>Caben al llegar</dt><dd>${ent(x.litros)} l</dd><dt>Coste con desvío</dt><dd>${eur(x.coste)}</dd>`
       : `<dt>Llenar ${ent(litros)} l ahora</dt><dd>${eur(litros * e.p)}</dd>`}</dl>
-    <div style="color:#5d6b78;font-size:.85rem">${esc(e.dir)} · ${esc(e.mun)}</div>
-    ${e.c === 'media' ? '<div style="color:#a8790c;font-size:.85rem">Ubicación probable: confirmar antes de mandar un camión.</div>' : ''}
+    <div style="color:var(--muted);font-size:.85rem">${esc(e.dir)} · ${esc(e.mun)}</div>
+    ${e.c === 'media' ? '<div style="color:var(--mid);font-size:.85rem">Ubicación probable: confirmar antes de mandar un camión.</div>' : ''}
     <a href="https://www.google.com/maps/search/?api=1&query=${e.lat},${e.lon}" target="_blank" rel="noopener">Abrir en Google Maps ↗</a></div>`;
 }
 
@@ -327,11 +327,9 @@ async function iniciar(camiones) {
   const ps = D.est.map(e => e.p).sort((a, b) => a - b);
   pMin = ps[0]; pTop = ps[Math.floor(ps.length * .9)];
 
-  const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
-  map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
+    map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
-  if (oscuro) $('map').classList.add('oscuro');
   capaRuta = L.layerGroup().addTo(map);
   const zoomClase = () => $('map').classList.toggle('zoomed-out', map.getZoom() < 8);
   map.on('zoomend', zoomClase); zoomClase();
