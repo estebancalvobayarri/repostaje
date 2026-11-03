@@ -224,7 +224,7 @@ function evaluar() {
       el.onclick = abrir; el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } };
     });
   }
-  pintarEnvio(lista.find(x => x.e.id === elegida));
+  pintarEnvio(lista.find(x => x.e.id === elegida), ok);
   const ids = new Set(lista.map(x => x.e.id));
   for (const [id, m] of marcadores) {
     const el = m.getElement && m.getElement(); if (!el) continue;
@@ -253,13 +253,50 @@ function mensajeRuta(x) {
   ].filter(v => v !== null).join('\n');
 }
 
-function pintarEnvio(x) {
+// La parada más cara de la ruta sirve de referencia para el ahorro
+let envioActual = null;
+function pintarEnvio(x, alcanzables = []) {
   const box = $('envio');
-  if (!x) { box.hidden = true; return; }
+  if (!x) { box.hidden = true; envioActual = null; return; }
+  const cara = alcanzables.reduce((m, y) => (!m || y.e.p > m.e.p ? y : m), null);
+  const litros = Math.floor(x.litros / 10) * 10, c = camionActual();
+  envioActual = {
+    fecha_precios: D.fecha, camion_id: c.id, matricula: c.id ? c.m : null,
+    origen: lugares.origen.label, destino: lugares.destino.label, km_ruta: Math.round(ruta.km * 10) / 10,
+    estacion_id: x.e.id, estacion_nombre: x.e.n, tarjeta: x.e.t, precio_elegido: x.e.p, litros,
+    estacion_cara_nombre: cara ? cara.e.n : null, precio_cara: cara ? cara.e.p : x.e.p,
+  };
   box.hidden = false;
   $('envio-txt').innerHTML = `Parada elegida: <b>${esc(x.e.n)}</b> (${x.e.t}, km ${ent(x.k)}, ${fmt(x.e.p)} €/l). Pulsa otra parada de la lista para cambiarla.`;
   const texto = mensajeRuta(x);
   $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  const ahorro = Math.max(0, envioActual.precio_cara - envioActual.precio_elegido) * litros;
+  $('envio-ahorro').textContent = cara && cara !== x
+    ? `Ahorro estimado: ${eur(ahorro)} frente a la parada más cara de la ruta (${cara.e.n}, ${fmt(cara.e.p)} €/l).`
+    : 'Es la única parada de la ruta: no hay ahorro que comparar.';
+  $('b-wa').onclick = async () => {
+    // El enlace se abre igual; el registro se guarda a la vez
+    const datos = { ...envioActual };
+    const clave = [datos.camion_id, datos.origen, datos.destino, datos.estacion_id].join('|');
+    const previo = leer('ultimoEnvio');
+    if (previo && previo.clave === clave && Date.now() - previo.t < 10 * 60 * 1000) {
+      $('msg-envio').className = 'msg ok';
+      $('msg-envio').textContent = 'Esta ruta ya estaba guardada en el informe de ahorro: no se cuenta dos veces.';
+      $('msg-envio').hidden = false; setTimeout(() => { $('msg-envio').hidden = true; }, 6000);
+      return;
+    }
+    try {
+      await window.Registro.guardar(datos);
+      guardar('ultimoEnvio', { clave, t: Date.now() });
+      $('msg-envio').className = 'msg ok';
+      $('msg-envio').textContent = `Guardado en el informe de ahorro (${eur(ahorro)}).`;
+    } catch (e) {
+      $('msg-envio').className = 'msg error';
+      $('msg-envio').textContent = 'Se ha abierto WhatsApp, pero no se ha podido guardar en el informe: ' + e.message;
+    }
+    $('msg-envio').hidden = false;
+    setTimeout(() => { $('msg-envio').hidden = true; }, 6000);
+  };
   $('b-copiar').onclick = async () => {
     try { await navigator.clipboard.writeText(texto); $('msg-envio').className = 'msg ok'; $('msg-envio').textContent = 'Mensaje copiado. Pégalo en el chat del conductor.'; }
     catch (e) { $('msg-envio').className = 'msg error'; $('msg-envio').textContent = 'No se ha podido copiar automáticamente.'; }

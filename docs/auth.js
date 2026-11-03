@@ -32,6 +32,7 @@ async function verApp(session) {
   esAdmin = !!adm;
   q('t-admin').hidden = !esAdmin;
   q('t-flota').hidden = !data;
+  q('t-ahorro').hidden = !data;
   if (esAdmin && !data) {
     perfil = null;
     q('empresa').textContent = 'Administración';
@@ -102,16 +103,18 @@ sb.auth.onAuthStateChange((evento, session) => {
 
 // ---------- pestañas ----------
 function pestaña(cual) {
-  for (const t of ['ruta', 'flota', 'admin']) {
+  for (const t of ['ruta', 'flota', 'ahorro', 'admin']) {
     q('t-' + t).setAttribute('aria-selected', cual === t);
     q('vista-' + t).hidden = cual !== t;
   }
   if (cual === 'admin') cargarAdmin();
+  if (cual === 'ahorro') cargarAhorro();
   window.Ruta.refrescarMapa();
 }
 q('t-ruta').onclick = () => pestaña('ruta');
 q('t-flota').onclick = () => pestaña('flota');
 q('t-admin').onclick = () => pestaña('admin');
+q('t-ahorro').onclick = () => pestaña('ahorro');
 
 // ---------- flota ----------
 async function cargarCamiones() {
@@ -320,3 +323,82 @@ q('f-empresa').addEventListener('submit', async (e) => {
   } catch (err) { mensaje('msg-empresa', err.message); }
   q('b-empresa').disabled = false;
 });
+
+// ---------- registro de envíos e informe de ahorro ----------
+window.Registro = {
+  async guardar(datos) {
+    if (!perfil) throw new Error('tu usuario no pertenece a ninguna empresa');
+    const { error } = await sb.from('envios').insert({ ...datos, empresa_id: perfil.empresa_id });
+    if (error) throw new Error(error.message);
+  },
+};
+
+const eurA = n => (+n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+let enviosPeriodo = [];
+
+function rangoPeriodo(v) {
+  const h = new Date(), y = h.getFullYear(), m = h.getMonth();
+  if (v === 'mes') return [new Date(y, m, 1), null];
+  if (v === 'mes-ant') return [new Date(y, m - 1, 1), new Date(y, m, 1)];
+  if (v === '3m') return [new Date(y, m - 2, 1), null];
+  if (v === '6m') return [new Date(y, m - 5, 1), null];
+  if (v === 'anio') return [new Date(y, 0, 1), null];
+  return [null, null];
+}
+
+async function cargarAhorro() {
+  if (!perfil) return;
+  const [desde, hasta] = rangoPeriodo(q('periodo').value);
+  let consulta = sb.from('envios').select('*').order('creado', { ascending: false }).limit(5000);
+  if (desde) consulta = consulta.gte('creado', desde.toISOString());
+  if (hasta) consulta = consulta.lt('creado', hasta.toISOString());
+  const { data, error } = await consulta;
+  if (error) { q('a-lista').innerHTML = `<p class="empty">No se ha podido cargar el informe: ${escH(error.message)}</p>`; return; }
+  enviosPeriodo = data;
+  pintarAhorro(data);
+}
+q('periodo').onchange = cargarAhorro;
+
+function pintarAhorro(env) {
+  const total = env.reduce((s, e) => s + +e.ahorro_eur, 0), litros = env.reduce((s, e) => s + +e.litros, 0);
+  q('a-total').textContent = eurA(total);
+  q('a-n').textContent = env.length.toLocaleString('es-ES');
+  q('a-l').textContent = Math.round(litros).toLocaleString('es-ES');
+  q('a-medio').textContent = env.length
+    ? `${eurA(total / env.length)} de media por repostaje · ${litros ? ((total / litros) * 100).toFixed(1).replace('.', ',') : '0'} céntimos por litro.`
+    : '';
+
+  // ahorro por mes
+  const porMes = new Map();
+  for (const e of env) { const d = new Date(e.creado), k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; porMes.set(k, (porMes.get(k) || 0) + +e.ahorro_eur); }
+  const claves = [...porMes.keys()].sort(), max = Math.max(1, ...porMes.values());
+  q('a-meses-b').hidden = !claves.length;
+  q('a-meses').innerHTML = claves.map(k => {
+    const [yy, mm] = k.split('-'), v = porMes.get(k);
+    return `<div class="mes"><span>${MESES[+mm - 1]} ${yy}</span><span class="barra"><i style="width:${(v / max * 100).toFixed(1)}%"></i></span><b>${eurA(v)}</b></div>`;
+  }).join('');
+
+  q('a-lista').innerHTML = env.length ? env.map(e => {
+    const d = new Date(e.creado);
+    return `<div class="env">
+      <div class="nm">${escH(e.estacion_nombre)}</div><div class="ah">${eurA(e.ahorro_eur)}</div>
+      <div class="sub">${d.toLocaleDateString('es-ES')} · ${escH(e.matricula || 'sin camión')} · ${escH(e.origen)} → ${escH(e.destino)}</div>
+      <div class="sub" style="text-align:right">${(+e.precio_elegido).toFixed(3).replace('.', ',')} €/l · ${Math.round(e.litros)} l</div>
+    </div>`;
+  }).join('') : '<p class="empty">Todavía no hay repostajes en este periodo. Se guardan al pulsar "Enviar por WhatsApp" en la pestaña Ruta.</p>';
+}
+
+q('b-csv').onclick = () => {
+  const cab = ['fecha', 'matricula', 'origen', 'destino', 'km_ruta', 'estacion', 'tarjeta', 'precio_elegido', 'litros', 'estacion_mas_cara', 'precio_mas_cara', 'ahorro_eur'];
+  const celda = v => { const t = v == null ? '' : String(v); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  const num = v => v == null ? '' : String(v).replace('.', ',');
+  const filas = enviosPeriodo.map(e => [new Date(e.creado).toLocaleString('es-ES'), e.matricula, e.origen, e.destino, num(e.km_ruta), e.estacion_nombre, e.tarjeta,
+    num(e.precio_elegido), num(e.litros), e.estacion_cara_nombre, num(e.precio_cara), num(e.ahorro_eur)].map(celda).join(';'));
+  const blob = new Blob(['﻿' + [cab.join(';'), ...filas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `ahorro-${q('periodo').value}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
