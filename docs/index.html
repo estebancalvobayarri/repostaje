@@ -25,6 +25,7 @@
   --sel: #6fa6ff; --route: #6fa6ff; --cheap: #3fbf7f; --mid: #e3b23c; --dear: #ee6b52; --off: #55626d;
   --soft: #1d2830; color-scheme: dark } }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 15px/1.4 var(--f-body); }
 .app { height: 100%; display: grid; grid-template-columns: 400px minmax(0, 1fr); }
@@ -245,7 +246,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="app.js?v=5"></script>
-<script src="auth.js?v=1"></script>
+<script src="app.js?v=6"></script>
+<script src="auth.js?v=2"></script>
 </body>
 </html>
