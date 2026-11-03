@@ -48,7 +48,7 @@ def sin_acentos(s: str) -> str:
 
 
 def numero(texto: str) -> float:
-    """'1,413' -> 1.413"""
+    """'1,234' -> 1.234"""
     return float(texto.replace(".", "").replace(",", "."))
 
 
