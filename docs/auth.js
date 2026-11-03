@@ -108,8 +108,11 @@ function pestaña(cual) {
     q('vista-' + t).hidden = cual !== t;
   }
   if (cual === 'admin') cargarAdmin();
+  // En Ahorro, el cuadro de mando ocupa el sitio del mapa
+  q('map').hidden = cual === 'ahorro';
+  q('dash').hidden = cual !== 'ahorro';
   if (cual === 'ahorro') cargarAhorro();
-  window.Ruta.refrescarMapa();
+  else window.Ruta.refrescarMapa();
 }
 q('t-ruta').onclick = () => pestaña('ruta');
 q('t-flota').onclick = () => pestaña('flota');
@@ -361,24 +364,9 @@ async function cargarAhorro() {
 q('periodo').onchange = cargarAhorro;
 
 function pintarAhorro(env) {
-  const total = env.reduce((s, e) => s + +e.ahorro_eur, 0), litros = env.reduce((s, e) => s + +e.litros, 0);
-  q('a-total').textContent = eurA(total);
-  q('a-n').textContent = env.length.toLocaleString('es-ES');
-  q('a-l').textContent = Math.round(litros).toLocaleString('es-ES');
-  q('a-medio').textContent = env.length
-    ? `${eurA(total / env.length)} de media por repostaje · ${litros ? ((total / litros) * 100).toFixed(1).replace('.', ',') : '0'} céntimos por litro.`
-    : '';
-
-  // ahorro por mes
-  const porMes = new Map();
-  for (const e of env) { const d = new Date(e.creado), k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; porMes.set(k, (porMes.get(k) || 0) + +e.ahorro_eur); }
-  const claves = [...porMes.keys()].sort(), max = Math.max(1, ...porMes.values());
-  q('a-meses-b').hidden = !claves.length;
-  q('a-meses').innerHTML = claves.map(k => {
-    const [yy, mm] = k.split('-'), v = porMes.get(k);
-    return `<div class="mes"><span>${MESES[+mm - 1]} ${yy}</span><span class="barra"><i style="width:${(v / max * 100).toFixed(1)}%"></i></span><b>${eurA(v)}</b></div>`;
-  }).join('');
-
+  const [desde] = rangoPeriodo(q('periodo').value);
+  const etiqueta = q('periodo').selectedOptions[0].textContent + (desde ? ` · desde el ${desde.toLocaleDateString('es-ES')}` : '');
+  window.Dash.pintar(env, { desde, etiqueta, empresa: perfil?.empresas?.nombre });
   q('a-lista').innerHTML = env.length ? env.map(e => {
     const d = new Date(e.creado);
     return `<div class="env">
