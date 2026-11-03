@@ -7,13 +7,29 @@ Uso (desde la raíz del repositorio):
 Lee:  datos/precios.csv, datos/estaciones.csv, datos/estaciones_manual.csv,
       datos/camiones.csv (si no existe, usa config/camiones.ejemplo.csv),
       datos/muestras/geoportal.xls (fondo del mapa)
-Crea: web/mapa.html  (contiene precios privados: no se sube al repositorio)
+Crea: web/mapa.html  (página para publicar como Artifact)
+      docs/index.html (la misma página completa, para GitHub Pages)
 """
 import csv
 import json
 import os
 
 import pandas as pd
+
+
+PAGINA = """<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font:14px system-ui}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
+</head>
+<body>
+{html}
+</body>
+</html>
+"""
 
 
 def leer(ruta):
@@ -67,6 +83,8 @@ def main():
     html = open("web/plantilla.html", encoding="utf-8").read()
     html = html.replace("__DATA__", json.dumps(datos, ensure_ascii=False, separators=(",", ":")))
     open("web/mapa.html", "w", encoding="utf-8").write(html)
+    os.makedirs("docs", exist_ok=True)
+    open("docs/index.html", "w", encoding="utf-8").write(PAGINA.format(html=html))
     print(f"web/mapa.html: {len(est)} estaciones en el mapa, {len(sin)} sin ubicación, "
           f"{len(camiones)} camiones ({ruta_cam})")
 
