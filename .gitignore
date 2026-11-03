@@ -1,0 +1,8 @@
+# Datos reales de la empresa: precios pactados, emails, camiones.
+# El repositorio es público, así que nunca se suben.
+datos/
+web/mapa.html
+
+__pycache__/
+*.pyc
+.DS_Store

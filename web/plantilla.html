@@ -1,0 +1,388 @@
+<title>Mapa de repostaje</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: herramienta de una pantalla — mapa a la izquierda, panel de precios a la derecha; en móvil, mapa arriba y panel debajo.
+   El fondo del mapa son las gasolineras de España (Geoportal) en gris; encima, las de las tarjetas de la empresa coloreadas por precio. */
+:root {
+  --bg: #eef1f3;          /* asfalto claro */
+  --panel: #ffffff;
+  --ink: #18222b;
+  --muted: #5d6b78;
+  --line: #d6dde3;
+  --dot: #9aa7b3;         /* gasolineras públicas de fondo */
+  --map: #f7f9fa;
+  --sel: #1f5fbf;         /* selección */
+  --cheap: #1d8a52;       /* precio bajo */
+  --mid: #c99212;
+  --dear: #c4462f;        /* precio alto */
+  --label-bg: rgba(255,255,255,.88);
+  --f-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #11171c; --panel: #182129; --ink: #e8edf1; --muted: #9aa8b4; --line: #2a3640;
+  --dot: #3f4d59; --map: #141c22; --sel: #6fa6ff; --cheap: #3fbf7f; --mid: #e3b23c; --dear: #ee6b52;
+  --label-bg: rgba(20,28,34,.9); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #11171c; --panel: #182129; --ink: #e8edf1; --muted: #9aa8b4; --line: #2a3640;
+  --dot: #3f4d59; --map: #141c22; --sel: #6fa6ff; --cheap: #3fbf7f; --mid: #e3b23c; --dear: #ee6b52;
+  --label-bg: rgba(20,28,34,.9); color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; display: flex; flex-direction: column; }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--panel); }
+.top h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.5rem; letter-spacing: .01em; margin: 0; text-wrap: balance; }
+.top .date { color: var(--muted); font-size: .9rem; }
+.chips { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.chip { font: 500 .9rem var(--f-body); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px; padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--panel); }
+.chip:focus-visible, button:focus-visible, .row:focus-visible { outline: 2px solid var(--sel); outline-offset: 2px; }
+
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; }
+.mapwrap { position: relative; min-width: 0; background: var(--map); overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+canvas.drag { cursor: grabbing; }
+.zoom { position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.zoom button { width: 36px; height: 34px; border: 0; background: var(--panel); color: var(--ink); font: 600 1.1rem var(--f-body); cursor: pointer; }
+.zoom button + button { border-top: 1px solid var(--line); }
+.legend { position: absolute; left: 12px; bottom: 12px; background: var(--label-bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: .8rem; color: var(--muted); display: grid; gap: 6px; max-width: calc(100% - 24px); }
+.ramp { height: 8px; width: 160px; max-width: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--cheap), var(--mid), var(--dear)); }
+.ramp-l { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+.shapes { display: flex; gap: 12px; flex-wrap: wrap; }
+.sh { display: inline-flex; align-items: center; gap: 5px; }
+.ic { width: 11px; height: 11px; display: inline-block; border: 1.5px solid var(--ink); background: transparent; }
+.ic.v { border-radius: 50%; }
+.ic.d { transform: rotate(45deg) scale(.85); }
+
+aside { background: var(--panel); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.detail { padding: 16px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
+.detail .hint { color: var(--muted); margin: 0; }
+.detail .card-l { font: 600 .75rem var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.detail h2 { font: 600 1.25rem/1.15 var(--f-display); margin: 0; text-wrap: balance; }
+.price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.price b { font: 700 2rem var(--f-display); }
+.price span { color: var(--muted); }
+.delta { font-weight: 600; font-variant-numeric: tabular-nums; }
+.addr { color: var(--muted); font-size: .9rem; margin: 0; }
+.detail a { color: var(--sel); font-weight: 600; text-decoration: none; }
+.detail a:hover { text-decoration: underline; }
+.warn { font-size: .85rem; color: var(--mid); }
+
+.truck { padding: 14px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; background: var(--bg); }
+.truck label { font: 600 .75rem var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px; }
+.truck select { width: 100%; font: 500 .95rem var(--f-body); padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.lvl { display: flex; align-items: center; gap: 10px; }
+.lvl input { flex: 1; min-width: 0; accent-color: var(--sel); }
+.lvl output { font: 700 1.1rem var(--f-display); font-variant-numeric: tabular-nums; width: 3.2em; text-align: right; }
+.gauge { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.gauge i { display: block; height: 100%; background: var(--sel); }
+.fill { font-size: .95rem; }
+.fill b { font-variant-numeric: tabular-nums; }
+.cost { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 2px 14px; font-variant-numeric: tabular-nums; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.cost dt { color: var(--muted); }
+.cost dd { margin: 0; font-weight: 600; text-align: right; }
+.listhead { padding: 12px 16px 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.listhead h3 { font: 600 1rem var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+.listhead small { color: var(--muted); }
+.list { overflow-y: auto; flex: 1; min-height: 0; padding-bottom: 8px; }
+.row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 16px; cursor: pointer; border-left: 3px solid transparent; }
+.row:hover { background: var(--bg); }
+.row[aria-selected="true"] { border-left-color: var(--sel); background: var(--bg); }
+.row .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .mu { color: var(--muted); font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .pr { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.row .pr small { display: block; font-weight: 400; color: var(--muted); font-size: .78rem; }
+details { border-top: 1px solid var(--line); padding: 10px 16px 14px; }
+summary { cursor: pointer; font-weight: 600; color: var(--muted); }
+details ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: .88rem; display: grid; gap: 3px; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  body { height: auto; }
+  main { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
+  aside { border-left: 0; border-top: 1px solid var(--line); }
+  .list { max-height: none; overflow: visible; }
+  .legend { font-size: .72rem; padding: 6px 8px; gap: 4px; left: 8px; bottom: 8px; }
+  .legend .ramp { width: 100px; }
+  .legend .shapes .sh:last-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <h1>Mapa de repostaje</h1>
+  <span class="date" id="fecha"></span>
+  <div class="chips" role="group" aria-label="Filtrar por tarjeta">
+    <button class="chip" id="f-todas" data-f="todas" aria-pressed="true">Todas</button>
+    <button class="chip" id="f-valcarce" data-f="Valcarce" aria-pressed="false"><i class="ic v"></i>Valcarce</button>
+    <button class="chip" id="f-dst" data-f="DST" aria-pressed="false"><i class="ic d"></i>DST</button>
+  </div>
+</header>
+
+<main>
+  <div class="mapwrap" id="mapwrap">
+    <canvas id="map" aria-label="Mapa de España con las gasolineras de las tarjetas de la empresa"></canvas>
+    <div class="zoom">
+      <button id="zin" aria-label="Acercar">+</button>
+      <button id="zout" aria-label="Alejar">−</button>
+      <button id="zreset" aria-label="Ver toda España" title="Ver toda España">⤢</button>
+    </div>
+    <div class="legend">
+      <div>Precio sin IVA, €/l</div>
+      <div class="ramp"></div>
+      <div class="ramp-l"><span id="lmin"></span><span id="lmax"></span></div>
+      <div class="shapes"><span class="sh"><i class="ic v"></i>Valcarce</span><span class="sh"><i class="ic d"></i>DST</span><span class="sh"><i class="ic" style="width:4px;height:4px;border:0;background:var(--dot);border-radius:50%"></i>Otras gasolineras</span></div>
+    </div>
+  </div>
+
+  <aside>
+    <section class="truck" aria-label="Camión">
+      <div><label for="camion">Camión</label><select id="camion"></select></div>
+      <div><label for="nivel">Combustible que le queda</label>
+        <div class="lvl"><input type="range" id="nivel" min="0" max="100" step="5" value="40"><output id="nivel-o" for="nivel">40 %</output></div></div>
+      <div class="gauge" aria-hidden="true"><i id="gauge"></i></div>
+      <div class="fill" id="fill"></div>
+    </section>
+    <section class="detail" id="detail" aria-live="polite"></section>
+    <div class="listhead"><h3>De más barata a más cara</h3><small id="count"></small></div>
+    <div class="list" id="list" role="listbox" aria-label="Estaciones ordenadas por precio"></div>
+    <details>
+      <summary id="sin-sum"></summary>
+      <ul id="sin"></ul>
+    </details>
+  </aside>
+</main>
+
+<script>
+const DATA = __DATA__;
+
+const fmt = n => n.toFixed(3).replace('.', ',');
+const cts = n => (n * 100).toFixed(1).replace('.', ',');
+const $ = id => document.getElementById(id);
+let filtro = 'todas';
+try { filtro = localStorage.getItem('filtro') || 'todas'; } catch (e) {}
+let sel = null;
+const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const camSel = $('camion'), nivel = $('nivel');
+camSel.innerHTML = DATA.camiones.map((c, i) => `<option value="${i}">${c.m} · ${c.cap.toLocaleString('es-ES')} l</option>`).join('');
+try { const g = JSON.parse(localStorage.getItem('camion') || 'null'); if (g) { camSel.value = g.i; nivel.value = g.n; } } catch (e) {}
+function litros() { const c = DATA.camiones[camSel.value] || DATA.camiones[0]; return c ? Math.round(c.cap * (1 - nivel.value / 100)) : 0; }
+function camion() {
+  const c = DATA.camiones[camSel.value];
+  $('nivel-o').textContent = nivel.value + ' %';
+  $('gauge').style.width = nivel.value + '%';
+  $('fill').innerHTML = c ? `Caben <b>${litros().toLocaleString('es-ES')} l</b> hasta llenar. ${c.d}` : 'Añade camiones en datos/camiones.csv';
+  try { localStorage.setItem('camion', JSON.stringify({ i: camSel.value, n: nivel.value })); } catch (e) {}
+  detail(); list();
+}
+camSel.onchange = camion; nivel.oninput = camion;
+
+const [y, m, d] = DATA.fecha.split('-');
+$('fecha').textContent = `Precios para el ${d}/${m}/${y}`;
+
+// ---- escala de precio (sobre todas las estaciones) ----
+const allP = DATA.est.map(e => e.p);
+const pMin = Math.min(...allP), pMax = Math.max(...allP);
+$('lmin').textContent = fmt(pMin); $('lmax').textContent = fmt(pMax);
+// La mayoría de precios están juntos; la escala se recorta en el percentil 90 para que se distingan
+const sorted = [...allP].sort((a, b) => a - b);
+const pTop = sorted[Math.floor(sorted.length * 0.9)];
+
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function hexToRgb(h) { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+function mix(a, b, t) { return a.map((v, i) => Math.round(v + (b[i] - v) * t)); }
+let C = {};
+function readColors() {
+  C = { dot: css('--dot'), ink: css('--ink'), muted: css('--muted'), map: css('--map'), sel: css('--sel'), labelBg: css('--label-bg'),
+        cheap: hexToRgb(css('--cheap')), mid: hexToRgb(css('--mid')), dear: hexToRgb(css('--dear')), panel: css('--panel') };
+}
+function priceColor(p) {
+  const t = Math.max(0, Math.min(1, (p - pMin) / Math.max(0.001, pTop - pMin)));
+  const c = t < .5 ? mix(C.cheap, C.mid, t * 2) : mix(C.mid, C.dear, (t - .5) * 2);
+  return `rgb(${c.join(',')})`;
+}
+
+// ---- proyección ----
+const K = Math.cos(40 * Math.PI / 180);
+const proj = (lon, lat) => [lon * K, -lat];
+const B = { x0: -9.4 * K, x1: 4.4 * K, y0: -43.9, y1: -35.9 };
+const canvas = $('map'), ctx = canvas.getContext('2d');
+let W = 0, H = 0, dpr = 1, view = { s: 1, tx: 0, ty: 0 };
+
+function fit() {
+  const s = Math.min(W / (B.x1 - B.x0), H / (B.y1 - B.y0)) * 0.94;
+  view = { s, tx: W / 2 - s * (B.x0 + B.x1) / 2, ty: H / 2 - s * (B.y0 + B.y1) / 2 };
+}
+const toScreen = (lon, lat) => { const [x, yy] = proj(lon, lat); return [x * view.s + view.tx, yy * view.s + view.ty]; };
+let baseS = 1;
+
+function resize() {
+  const r = $('mapwrap').getBoundingClientRect();
+  dpr = window.devicePixelRatio || 1;
+  const first = W === 0;
+  W = r.width; H = r.height;
+  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  if (first) { fit(); baseS = view.s; }
+  draw();
+}
+
+const CIUDADES = [['Madrid', -3.70, 40.42], ['Barcelona', 2.17, 41.39], ['Valencia', -0.38, 39.47], ['Sevilla', -5.98, 37.39],
+  ['Zaragoza', -0.88, 41.65], ['Bilbao', -2.93, 43.26], ['Murcia', -1.13, 37.99], ['Valladolid', -4.72, 41.65],
+  ['A Coruña', -8.41, 43.36], ['Málaga', -4.42, 36.72], ['Granada', -3.60, 37.18], ['Badajoz', -6.97, 38.88], ['Lleida', 0.62, 41.62], ['Alicante', -0.48, 38.35]];
+
+const visibles = () => DATA.est.filter(e => filtro === 'todas' || e.t === filtro);
+
+function marker(e, x, yy, r) {
+  ctx.beginPath();
+  if (e.t === 'DST') { ctx.moveTo(x, yy - r * 1.2); ctx.lineTo(x + r * 1.2, yy); ctx.lineTo(x, yy + r * 1.2); ctx.lineTo(x - r * 1.2, yy); ctx.closePath(); }
+  else ctx.arc(x, yy, r, 0, Math.PI * 2);
+}
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.map; ctx.fillRect(0, 0, W, H);
+  // fondo: todas las gasolineras de España
+  const z = view.s / baseS;
+  const rr = Math.min(1.6, 0.7 + z * 0.15);
+  ctx.fillStyle = C.dot; ctx.globalAlpha = z > 3 ? 0.9 : 0.7;
+  for (const [lon, lat] of DATA.bg) {
+    const [x, yy] = toScreen(lon, lat);
+    if (x < -2 || yy < -2 || x > W + 2 || yy > H + 2) continue;
+    ctx.fillRect(x - rr / 2, yy - rr / 2, rr, rr);
+  }
+  ctx.globalAlpha = 1;
+  // ciudades
+  ctx.font = `500 ${z > 2 ? 13 : 12}px Barlow, system-ui, sans-serif`;
+  ctx.fillStyle = C.muted; ctx.textAlign = 'center';
+  for (const [n, lon, lat] of CIUDADES) { const [x, yy] = toScreen(lon, lat); ctx.fillText(n.toUpperCase(), x, yy - 6); }
+
+  // estaciones de las tarjetas
+  const est = visibles().slice().sort((a, b) => b.p - a.p); // las baratas se dibujan encima
+  const r = Math.min(8, 5 + z * 0.4);
+  const boxes = [];
+  for (const e of est) {
+    const [x, yy] = toScreen(e.lon, e.lat);
+    marker(e, x, yy, r);
+    ctx.fillStyle = priceColor(e.p); ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = C.panel; ctx.stroke();
+  }
+  // etiquetas de precio, evitando solapes (primero las más baratas y la seleccionada)
+  ctx.font = '600 12px Barlow, system-ui, sans-serif'; ctx.textAlign = 'left';
+  const orden = est.slice().sort((a, b) => (b === sel) - (a === sel) || a.p - b.p);
+  for (const e of orden) {
+    const [x, yy] = toScreen(e.lon, e.lat);
+    const txt = fmt(e.p), w = ctx.measureText(txt).width + 8, bx = x + r + 3, by = yy - 9;
+    const box = [bx, by, bx + w, by + 18];
+    if (e !== sel && boxes.some(b => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]))) continue;
+    boxes.push(box);
+    ctx.fillStyle = C.labelBg; ctx.beginPath(); ctx.roundRect(bx, by, w, 18, 4); ctx.fill();
+    ctx.fillStyle = C.ink; ctx.fillText(txt, bx + 4, yy + 4);
+  }
+  if (sel && visibles().includes(sel)) {
+    const [x, yy] = toScreen(sel.lon, sel.lat);
+    marker(sel, x, yy, r + 4); ctx.lineWidth = 2.5; ctx.strokeStyle = C.sel; ctx.stroke();
+  }
+}
+
+// ---- interacción con el mapa ----
+function zoomAt(f, cx, cy) {
+  const ns = Math.max(baseS * 0.8, Math.min(baseS * 60, view.s * f)); f = ns / view.s;
+  view.tx = cx - (cx - view.tx) * f; view.ty = cy - (cy - view.ty) * f; view.s = ns; draw();
+}
+canvas.addEventListener('wheel', ev => { ev.preventDefault(); const r = canvas.getBoundingClientRect(); zoomAt(Math.exp(-ev.deltaY * 0.0015), ev.clientX - r.left, ev.clientY - r.top); }, { passive: false });
+const pts = new Map(); let moved = 0, pinch = null;
+canvas.addEventListener('pointerdown', ev => { canvas.setPointerCapture(ev.pointerId); pts.set(ev.pointerId, [ev.clientX, ev.clientY]); moved = 0; if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); } canvas.classList.add('drag'); });
+canvas.addEventListener('pointermove', ev => {
+  if (!pts.has(ev.pointerId)) return;
+  const prev = pts.get(ev.pointerId); pts.set(ev.pointerId, [ev.clientX, ev.clientY]);
+  if (pts.size === 2 && pinch) {
+    const [a, b] = [...pts.values()], dist = Math.hypot(a[0] - b[0], a[1] - b[1]), r = canvas.getBoundingClientRect();
+    zoomAt(dist / pinch, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); pinch = dist; moved += 10; return;
+  }
+  const dx = ev.clientX - prev[0], dy = ev.clientY - prev[1]; moved += Math.abs(dx) + Math.abs(dy);
+  view.tx += dx; view.ty += dy; draw();
+});
+function up(ev) {
+  if (!pts.has(ev.pointerId)) return;
+  pts.delete(ev.pointerId); if (pts.size < 2) pinch = null; canvas.classList.remove('drag');
+  if (moved < 6 && pts.size === 0) {
+    const r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, yy = ev.clientY - r.top;
+    let best = null, bd = 22;
+    for (const e of visibles()) { const [sx, sy] = toScreen(e.lon, e.lat), dd = Math.hypot(sx - x, sy - yy); if (dd < bd) { bd = dd; best = e; } }
+    if (best) select(best, false);
+  }
+}
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+$('zin').onclick = () => zoomAt(1.6, W / 2, H / 2);
+$('zout').onclick = () => zoomAt(1 / 1.6, W / 2, H / 2);
+$('zreset').onclick = () => { fit(); draw(); };
+
+function centerOn(e, zoom) {
+  const target = Math.max(view.s, baseS * zoom);
+  const [x, yy] = proj(e.lon, e.lat);
+  view.s = target; view.tx = W / 2 - x * target; view.ty = H / 2 - yy * target; draw();
+}
+
+// ---- panel ----
+function detail() {
+  const el = $('detail');
+  if (!sel) { el.innerHTML = '<p class="hint">Pulsa una gasolinera del mapa o de la lista para ver su precio.</p>'; return; }
+  const vis = visibles(), min = Math.min(...vis.map(e => e.p)), dif = sel.p - min;
+  const url = `https://www.google.com/maps/search/?api=1&query=${sel.lat},${sel.lon}`;
+  el.innerHTML = `
+    <div class="card-l"><i class="ic ${sel.t === 'DST' ? 'd' : 'v'}"></i>Tarjeta ${sel.t}</div>
+    <h2>${sel.n}</h2>
+    <div class="price"><b style="color:${priceColor(sel.p)}">${fmt(sel.p)}</b><span>€/l sin IVA · ${fmt(sel.pi)} con IVA</span></div>
+    <div class="delta">${dif < 0.0005 ? 'La más barata de la selección' : `+${cts(dif)} cts/l sobre la más barata (${fmt(min)})`}</div>
+    ${litros() > 0 ? `<dl class="cost"><dt>Llenar ${litros().toLocaleString('es-ES')} l aquí</dt><dd>${eur(litros() * sel.p)}</dd>
+      <dt>Frente a la más barata</dt><dd>${dif < 0.0005 ? '—' : '+' + eur(litros() * dif)}</dd></dl>` : ''}
+    <p class="addr">${sel.dir} · ${sel.mun} (${sel.prov})</p>
+    ${sel.c === 'media' ? '<div class="warn">Ubicación probable: confirmar antes de mandar un camión.</div>' : ''}
+    <a href="${url}" target="_blank" rel="noopener">Abrir en Google Maps ↗</a>`;
+}
+
+function list() {
+  const vis = visibles().slice().sort((a, b) => a.p - b.p), min = vis.length ? vis[0].p : 0;
+  $('count').textContent = `${vis.length} estaciones`;
+  $('list').innerHTML = '';
+  for (const e of vis) {
+    const row = document.createElement('div');
+    row.className = 'row'; row.tabIndex = 0; row.setAttribute('role', 'option'); row.setAttribute('aria-selected', e === sel);
+    row.innerHTML = `<i class="ic ${e.t === 'DST' ? 'd' : 'v'}" style="background:${priceColor(e.p)};border-color:${priceColor(e.p)}"></i>
+      <div style="min-width:0"><div class="nm">${e.n}</div><div class="mu">${e.mun} · ${e.t}</div></div>
+      <div class="pr">${fmt(e.p)}<small>${e.p - min < 0.0005 ? 'mejor' : (litros() > 0 ? '+' + eur(litros() * (e.p - min)) : '+' + cts(e.p - min) + ' cts')}</small></div>`;
+    row.onclick = () => select(e, true);
+    row.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(e, true); } };
+    $('list').appendChild(row);
+  }
+  const sin = DATA.sin.filter(e => filtro === 'todas' || e.t === filtro).sort((a, b) => a.p - b.p);
+  $('sin-sum').textContent = `${sin.length} estaciones sin ubicación confirmada`;
+  $('sin').innerHTML = sin.map(e => `<li>${e.n} (${e.t}) · ${fmt(e.p)}</li>`).join('');
+}
+
+function select(e, fromList) {
+  sel = e; detail(); list();
+  if (fromList) centerOn(e, 3.5); else draw();
+  const row = [...$('list').children].find(r => r.getAttribute('aria-selected') === 'true');
+  if (row && !fromList) row.scrollIntoView({ block: 'nearest' });
+}
+
+document.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+  filtro = b.dataset.f; try { localStorage.setItem('filtro', filtro); } catch (e) {}
+  document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+  if (sel && !visibles().includes(sel)) sel = null;
+  detail(); list(); draw();
+});
+document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.f === filtro));
+
+// tema
+const rethema = () => { readColors(); camion(); draw(); };
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', rethema);
+new MutationObserver(rethema).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+readColors(); camion();
+new ResizeObserver(resize).observe($('mapwrap'));
+document.fonts && document.fonts.ready.then(draw);
+</script>
