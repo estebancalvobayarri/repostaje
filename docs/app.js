@@ -13,6 +13,7 @@ const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFr
 const ent = n => Math.round(n).toLocaleString('es-ES');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+let elegida = null; // parada elegida por el gestor para enviar al conductor
 let D, map, capaRuta, marcadores = new Map(), ruta = null, lugares = { origen: null, destino: null };
 const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -127,6 +128,7 @@ async function calcular(e) {
     const coords = r.geometry.coordinates.map(([lo, la]) => [la, lo]);
     const acum = [0]; for (let i = 1; i < coords.length; i++) acum.push(acum[i - 1] + km(coords[i - 1], coords[i]));
     ruta = { coords, acum, km: r.distance / 1000, min: r.duration / 60, desvios: new Map() };
+    elegida = null;
     dibujarRuta();
     evaluar();
     await desviosReales();
@@ -196,6 +198,7 @@ function evaluar() {
   const lista = candidatas();
   const ok = lista.filter(x => x.alcanzable);
   const mejor = ok[0];
+  if (!lista.some(x => x.e.id === elegida && x.alcanzable)) elegida = mejor ? mejor.e.id : null;
   $('stops-n').textContent = lista.length ? `${lista.length} a menos de ${$('radio').value} km` : '';
   if (!lista.length) {
     $('stops').innerHTML = `<p class="empty">Ninguna estación de vuestras tarjetas a menos de ${$('radio').value} km de esta ruta. Amplía la distancia o revisa el depósito antes de salir.</p>`;
@@ -203,7 +206,9 @@ function evaluar() {
     $('stops').innerHTML = lista.sort((a, b) => a.k - b.k).map(x => {
       const dif = mejor && x !== mejor && x.alcanzable ? (x.efectivo - mejor.efectivo) * x.litros : 0;
       const des = `${x.real ? '' : '≈'}${x.desvio < 0.5 ? '0' : ent(x.desvio)} km de desvío${x.min != null ? ` · +${Math.round(x.min)} min` : ''}`;
-      return `<div class="stop${x === mejor ? ' best' : ''}${x.alcanzable ? '' : ' off'}" tabindex="0" data-id="${esc(x.e.id)}">
+      const sel = x.e.id === elegida;
+      return `<div class="stop${x === mejor ? ' best' : ''}${x.alcanzable ? '' : ' off'}${sel ? ' elegida' : ''}" tabindex="0" role="radio" aria-checked="${sel}" data-id="${esc(x.e.id)}" data-ok="${x.alcanzable ? 1 : 0}">
+        <span class="radio" aria-hidden="true"></span>
         <div class="km"><b>${ent(x.k)}</b>km</div>
         <div style="min-width:0"><div class="nm">${esc(x.e.n)}</div>
           <div class="sub">${x.e.t} · ${des}${x.alcanzable ? ` · caben ${ent(x.litros)} l` : ' · no llega con reserva'}</div></div>
@@ -212,16 +217,55 @@ function evaluar() {
       </div>`;
     }).join('');
     [...$('stops').children].forEach(el => {
-      const abrir = () => { const m = marcadores.get(el.dataset.id); map.setView(m.getLatLng(), Math.max(map.getZoom(), 12)); m.openPopup(); };
-      el.onclick = abrir; el.onkeydown = ev => { if (ev.key === 'Enter') abrir(); };
+      const abrir = () => {
+        if (el.dataset.ok === '1') { elegida = el.dataset.id; evaluar(); }
+        const m = marcadores.get(el.dataset.id); map.setView(m.getLatLng(), Math.max(map.getZoom(), 12)); m.openPopup();
+      };
+      el.onclick = abrir; el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } };
     });
   }
+  pintarEnvio(lista.find(x => x.e.id === elegida));
   const ids = new Set(lista.map(x => x.e.id));
   for (const [id, m] of marcadores) {
     const el = m.getElement && m.getElement(); if (!el) continue;
     el.querySelector('.pin').classList.toggle('on', ids.has(id));
     el.querySelector('.pin').classList.toggle('dim', ruta && !ids.has(id));
   }
+}
+
+// ---------- enviar la ruta al conductor ----------
+function mensajeRuta(x) {
+  const c = camionActual(), o = lugares.origen, d = lugares.destino;
+  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${x.e.lat},${x.e.lon}&travelmode=driving`;
+  const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
+  return [
+    `*Ruta:* ${o.label} → ${d.label}`,
+    `${ent(ruta.km)} km · ${h} h ${m} min`,
+    c.id ? `*Camión:* ${c.m}` : null,
+    '',
+    `*Repostar en:* ${x.e.n}`,
+    `Tarjeta ${x.e.t} · km ${ent(x.k)} de la ruta`,
+    `Precio: ${fmt(x.e.p)} €/l sin IVA · echar unos ${ent(Math.floor(x.litros / 10) * 10)} l`,
+    x.e.dir ? `Dirección: ${x.e.dir}, ${x.e.mun}` : null,
+    '',
+    `Ruta con la parada en Google Maps:`,
+    maps,
+  ].filter(v => v !== null).join('\n');
+}
+
+function pintarEnvio(x) {
+  const box = $('envio');
+  if (!x) { box.hidden = true; return; }
+  box.hidden = false;
+  $('envio-txt').innerHTML = `Parada elegida: <b>${esc(x.e.n)}</b> (${x.e.t}, km ${ent(x.k)}, ${fmt(x.e.p)} €/l). Pulsa otra parada de la lista para cambiarla.`;
+  const texto = mensajeRuta(x);
+  $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  $('b-copiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(texto); $('msg-envio').className = 'msg ok'; $('msg-envio').textContent = 'Mensaje copiado. Pégalo en el chat del conductor.'; }
+    catch (e) { $('msg-envio').className = 'msg error'; $('msg-envio').textContent = 'No se ha podido copiar automáticamente.'; }
+    $('msg-envio').hidden = false;
+    setTimeout(() => { $('msg-envio').hidden = true; }, 4000);
+  };
 }
 
 // ---------- popups ----------
