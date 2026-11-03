@@ -209,37 +209,78 @@ async function cargarAdmin() {
   } catch (e) { q('admin-lista').innerHTML = `<p class="empty">No se han podido cargar las empresas: ${escH(e.message)}</p>`; }
 }
 
+// Estado del acordeón: la lista de empresas y como mucho una empresa abierta
+let listaAbierta = false, empAbierta = null, ultimasEmpresas = [];
+const camionesTxt = n => `${n} ${n === 1 ? 'camión' : 'camiones'}`;
+
+q('admin-toggle').onclick = () => {
+  listaAbierta = !listaAbierta;
+  q('admin-toggle').setAttribute('aria-expanded', listaAbierta);
+  q('admin-lista').hidden = !listaAbierta;
+};
+
 function pintarAdmin(empresas) {
+  ultimasEmpresas = empresas;
   q('admin-n').textContent = `${empresas.length} empresa${empresas.length === 1 ? '' : 's'}`;
   if (!empresas.length) { q('admin-lista').innerHTML = '<p class="empty">Todavía no hay empresas. Crea la primera arriba.</p>'; return; }
-  q('admin-lista').innerHTML = empresas.map(e => `
+  q('admin-lista').innerHTML = empresas.map(e => {
+    const abierta = e.id === empAbierta;
+    return `
     <section class="emp" data-emp="${e.id}">
-      <div class="emp-h"><b>${escH(e.nombre)}</b><span class="small">${e.cif ? escH(e.cif) + ' · ' : ''}${e.camiones} camión${e.camiones === 1 ? '' : 'es'}</span></div>
-      ${e.usuarios.length ? e.usuarios.map(u => `
-        <div class="usr" data-user="${u.id}" data-email="${escH(u.email)}">
-          <div style="min-width:0"><div class="em">${escH(u.email || '(sin email)')}</div>
-            <div class="small">${u.nombre ? escH(u.nombre) + ' · ' : ''}<span class="pill">${u.rol}</span>${u.ha_entrado ? '' : '<span class="pill pend">Invitación pendiente</span>'}</div></div>
-          <div class="acc"><button class="mini" type="button" data-acc="reenviar">${u.ha_entrado ? 'Restablecer contraseña' : 'Reenviar invitación'}</button><button class="mini peligro" type="button" data-acc="quitar">Quitar</button></div>
-        </div>`).join('') : '<p class="small">Sin usuarios todavía.</p>'}
-      <form class="inv" data-inv="${e.id}">
-        <input class="full" type="email" required placeholder="email@empresa.es" aria-label="Email del usuario">
-        <input type="text" placeholder="Nombre (opcional)" aria-label="Nombre del usuario" maxlength="80">
-        <select aria-label="Rol"><option value="gestor">Gestor</option><option value="conductor">Conductor</option></select>
-        <button class="btn full" type="submit">Invitar usuario</button>
-        <div class="msg full" hidden></div>
-      </form>
-    </section>`).join('');
+      <button class="emp-row" type="button" aria-expanded="${abierta}" aria-controls="emp-${e.id}">
+        <span class="chev" aria-hidden="true"></span><b>${escH(e.nombre)}</b><span class="small">${camionesTxt(e.camiones)}</span>
+      </button>
+      <div class="emp-body" id="emp-${e.id}" ${abierta ? '' : 'hidden'}>
+        <div class="emp-meta">${e.cif ? 'CIF ' + escH(e.cif) + ' · ' : ''}${e.usuarios.length} usuario${e.usuarios.length === 1 ? '' : 's'}</div>
+
+        <div class="area usuarios">
+          <h3>Usuarios con acceso</h3>
+          ${e.usuarios.length ? e.usuarios.map(u => `
+            <div class="usr" data-user="${u.id}" data-email="${escH(u.email)}">
+              <div style="min-width:0"><div class="em">${escH(u.email || '(sin email)')}</div>
+                <div class="small">${u.nombre ? escH(u.nombre) : 'Sin nombre'}<span class="pill ${u.rol}">${u.rol}</span>${u.ha_entrado ? '' : '<span class="pill pend">Invitación pendiente</span>'}</div></div>
+              <div class="acc"><button class="mini" type="button" data-acc="reenviar">${u.ha_entrado ? 'Restablecer contraseña' : 'Reenviar invitación'}</button><button class="mini peligro" type="button" data-acc="quitar">Quitar acceso</button></div>
+            </div>`).join('') : '<p class="small">Todavía no tiene usuarios. Invita al gestor de la empresa aquí debajo.</p>'}
+        </div>
+
+        <form class="area nuevo inv" data-inv="${e.id}">
+          <h3>Añadir usuario</h3>
+          <div class="seg" role="radiogroup" aria-label="Rol">
+            <label><input type="radio" name="rol-${e.id}" value="gestor" checked><span>Gestor</span></label>
+            <label><input type="radio" name="rol-${e.id}" value="conductor"><span>Conductor</span></label>
+          </div>
+          <input type="email" required placeholder="email@empresa.es" aria-label="Email del usuario">
+          <input type="text" placeholder="Nombre (opcional)" aria-label="Nombre del usuario" maxlength="80">
+          <button class="btn" type="submit">Enviar invitación</button>
+          <p class="small" style="margin:0">Recibirá un email con un enlace para elegir su contraseña.</p>
+          <div class="msg" hidden></div>
+        </form>
+      </div>
+    </section>`;
+  }).join('');
+
+  // Abrir una empresa cierra la que estuviera abierta
+  q('admin-lista').querySelectorAll('.emp-row').forEach(b => b.onclick = () => {
+    const id = b.closest('.emp').dataset.emp;
+    empAbierta = empAbierta === id ? null : id;
+    q('admin-lista').querySelectorAll('.emp').forEach(sec => {
+      const on = sec.dataset.emp === empAbierta;
+      sec.querySelector('.emp-row').setAttribute('aria-expanded', on);
+      sec.querySelector('.emp-body').hidden = !on;
+    });
+  });
 
   q('admin-lista').querySelectorAll('form[data-inv]').forEach(f => f.onsubmit = async (ev) => {
     ev.preventDefault();
-    const [email, nombre] = f.querySelectorAll('input'), rol = f.querySelector('select'), msg = f.querySelector('.msg'), b = f.querySelector('button');
+    const email = f.querySelector('input[type=email]'), nombre = f.querySelector('input[type=text]');
+    const rol = f.querySelector('input[type=radio]:checked').value, msg = f.querySelector('.msg'), b = f.querySelector('button');
     b.disabled = true; b.textContent = 'Enviando…';
     try {
-      const r = await llamarAdmin({ accion: 'invitar', empresa_id: f.dataset.inv, email: email.value, nombre: nombre.value, rol: rol.value });
+      const r = await llamarAdmin({ accion: 'invitar', empresa_id: f.dataset.inv, email: email.value, nombre: nombre.value, rol });
       await cargarAdmin();
       const m = q('admin-lista').querySelector(`form[data-inv="${f.dataset.inv}"] .msg`);
-      if (m) { m.hidden = false; m.className = 'msg full ok'; m.textContent = r.invitado ? `Invitación enviada a ${email.value}. Recibirá un email para elegir su contraseña.` : `${email.value} ya tenía cuenta: ahora pertenece a esta empresa.`; }
-    } catch (e) { msg.hidden = false; msg.className = 'msg full error'; msg.textContent = e.message; b.disabled = false; b.textContent = 'Invitar usuario'; }
+      if (m) { m.hidden = false; m.className = 'msg ok'; m.textContent = r.invitado ? `Invitación enviada a ${email.value}.` : `${email.value} ya tenía cuenta: ahora tiene acceso a esta empresa.`; }
+    } catch (e) { msg.hidden = false; msg.className = 'msg error'; msg.textContent = e.message; b.disabled = false; b.textContent = 'Enviar invitación'; }
   });
 
   q('admin-lista').querySelectorAll('.usr button[data-acc]').forEach(b => b.onclick = async () => {
@@ -250,8 +291,8 @@ function pintarAdmin(empresas) {
       catch (e) { acc.innerHTML = `<span class="small">${escH(e.message)}</span>`; }
       return;
     }
-    acc.innerHTML = `<span class="small">¿Quitar a ${escH(email)}? Perderá el acceso.</span><button class="mini peligro" type="button" data-si>Sí, quitar</button><button class="mini" type="button" data-no>No</button>`;
-    acc.querySelector('[data-no]').onclick = cargarAdmin;
+    acc.innerHTML = `<span class="small">¿Quitar el acceso a ${escH(email)}?</span><button class="mini peligro" type="button" data-si>Sí, quitar</button><button class="mini" type="button" data-no>No</button>`;
+    acc.querySelector('[data-no]').onclick = () => pintarAdmin(ultimasEmpresas);
     acc.querySelector('[data-si]').onclick = async () => {
       try { await llamarAdmin({ accion: 'quitar_usuario', user_id: fila.dataset.user }); cargarAdmin(); }
       catch (e) { acc.innerHTML = `<span class="small">${escH(e.message)}</span>`; }
@@ -265,7 +306,9 @@ q('f-empresa').addEventListener('submit', async (e) => {
   try {
     const { empresa } = await llamarAdmin({ accion: 'crear_empresa', nombre: q('emp-nombre').value, cif: q('emp-cif').value });
     q('emp-nombre').value = ''; q('emp-cif').value = '';
-    mensaje('msg-empresa', `Empresa "${empresa.nombre}" creada. Ahora invita a su gestor más abajo.`, 'ok');
+    mensaje('msg-empresa', `Empresa "${empresa.nombre}" creada. Invita a su gestor en la lista de empresas.`, 'ok');
+    empAbierta = empresa.id;
+    if (!listaAbierta) q('admin-toggle').click();
     await cargarAdmin();
   } catch (err) { mensaje('msg-empresa', err.message); }
   q('b-empresa').disabled = false;

@@ -35,8 +35,8 @@ body { background: var(--bg); color: var(--ink); font: 15px/1.4 var(--f-body); }
 .head p { margin: 2px 0 0; color: var(--muted); font-size: .9rem; }
 .block { padding: 14px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 12px; padding-left: max(18px, env(safe-area-inset-left)); }
 .lbl { font: 600 .72rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px; }
-select, input[type=text] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
-input[type=text]:focus, select:focus { outline: 2px solid var(--sel); outline-offset: 0; border-color: transparent; }
+select, input[type=text], input[type=email] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+input[type=text]:focus, input[type=email]:focus, select:focus { outline: 2px solid var(--sel); outline-offset: 0; border-color: transparent; }
 .lvl { display: flex; align-items: center; gap: 10px; }
 .lvl input { flex: 1; min-width: 0; accent-color: var(--sel); }
 .num { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
@@ -137,16 +137,39 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .form-cam { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-cam .full { grid-column: 1 / -1; }
 .form-cam input[type=number] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
-.emp { border-top: 1px solid var(--line); padding: 14px 18px; padding-left: max(18px, env(safe-area-inset-left)); display: grid; gap: 10px; }
-.emp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.emp-h b { font: 700 1.1rem var(--f-display); }
-.usr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: .9rem; }
-.usr .em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.usr .acc { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+/* acordeón de empresas */
+.sec-t { width: 100%; display: flex; align-items: center; gap: 10px; padding: 14px 18px; padding-left: max(18px, env(safe-area-inset-left)); background: none; border: 0; border-top: 1px solid var(--line); color: var(--ink); cursor: pointer; text-align: left; }
+.sec-t h2 { font: 700 1.05rem var(--f-display); letter-spacing: .04em; text-transform: uppercase; margin: 0; flex: 1; }
+.chev { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; flex: none; margin-right: 2px; }
+[aria-expanded=true] > .chev { transform: rotate(45deg); }
+.emp { border-top: 1px solid var(--line); }
+.emp-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 18px; padding-left: max(30px, env(safe-area-inset-left)); background: none; border: 0; color: var(--ink); cursor: pointer; text-align: left; }
+.emp-row:hover { background: var(--soft); }
+.emp-row[aria-expanded=true] { background: var(--soft); }
+.emp-row b { font: 700 1.05rem var(--f-display); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emp-row .small { white-space: nowrap; }
+.emp-body { padding: 4px 18px 18px; padding-left: max(18px, env(safe-area-inset-left)); display: grid; gap: 14px; background: var(--soft); }
+.emp-meta { font-size: .85rem; color: var(--muted); }
+.area { border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
+.area h3 { font: 600 .72rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.area.usuarios { background: var(--panel); border: 1px solid var(--line); }
+.area.nuevo { border: 1.5px dashed var(--sel); background: transparent; }
+.usr { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.usr:first-of-type { border-top: 0; padding-top: 0; }
+.usr .em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.usr .acc { display: flex; gap: 6px; flex-wrap: wrap; }
 .pill { display: inline-block; font: 600 .7rem var(--f-body); letter-spacing: .05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); margin-left: 4px; }
+.pill.gestor { color: var(--sel); border-color: var(--sel); }
 .pill.pend { color: var(--mid); border-color: var(--mid); }
-.inv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
-.inv .full { grid-column: 1 / -1; }
+.inv { display: grid; gap: 8px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg label { text-align: center; padding: 8px; cursor: pointer; font-weight: 600; font-size: .9rem; color: var(--muted); background: var(--panel); }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg input:checked + span { color: var(--ink); }
+.seg label:has(input:checked) { background: var(--ink); }
+.seg label:has(input:checked) span { color: var(--panel); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--sel); outline-offset: -2px; }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 @media (max-width: 820px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto 70vh; height: auto; }
@@ -256,8 +279,9 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <div class="msg" id="msg-empresa" hidden></div>
         <button class="btn" type="submit" id="b-empresa">Crear empresa</button>
       </form>
-      <div class="stops-h"><h2>Empresas</h2><small class="small" id="admin-n"></small></div>
-      <div id="admin-lista"><p class="empty">Cargando…</p></div>
+      <button class="sec-t" type="button" id="admin-toggle" aria-expanded="false" aria-controls="admin-lista">
+        <span class="chev" aria-hidden="true"></span><h2>Empresas</h2><small class="small" id="admin-n"></small></button>
+      <div id="admin-lista" hidden><p class="empty">Cargando…</p></div>
     </div>
 
     <footer class="foot">
@@ -270,6 +294,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="app.js?v=6"></script>
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 </body>
 </html>
