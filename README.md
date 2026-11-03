@@ -18,19 +18,10 @@ según la ruta y el combustible que le queda a cada camión.
 
 ## Datos privados
 
-El repositorio es privado y guarda también los datos reales de la empresa en
-`datos/`: precios pactados, emails recibidos y la flota. **No lo hagas público
-ni actives GitHub Pages** (las páginas de Pages son públicas aunque el
-repositorio sea privado). Si algún día se abre, antes hay que sacar `datos/`
-y `web/mapa.html` del repositorio y de su historial.
-
-```
-datos/
-  muestras/          PDF de precios recibidos y geoportal.xls del Ministerio
-  camiones.csv       la flota real (mismo formato que config/camiones.ejemplo.csv)
-  pistas_*.csv       municipio y palabras clave de cada estación de cada proveedor
-  estaciones_manual.csv  ubicaciones confirmadas a mano
-```
+El repositorio es público. Los datos de la empresa (PDF y emails recibidos,
+precios, flota) van en `datos/`, que está excluida y no se sube.
+La web publicada con GitHub Pages está en `docs/index.html` y la genera
+`src/generar_mapa.py`; quien tenga el enlace puede ver los precios.
 
 ## Uso
 

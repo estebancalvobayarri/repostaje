@@ -1,5 +1,7 @@
-# El repositorio es privado: los datos de la empresa (datos/) sí se guardan.
-# Si algún día se hace público, volver a excluir datos/ y web/mapa.html.
+# El repositorio es público: los datos de la empresa (precios pactados,
+# emails, flota) se quedan fuera. docs/index.html es la web publicada.
+datos/
+web/mapa.html
 
 __pycache__/
 *.pyc
