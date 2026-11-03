@@ -48,14 +48,26 @@ function sobreRuta(pt, coords, acum) {
 }
 
 // ---------- camión ----------
-const camionActual = () => D.camiones[$('camion').value] || D.camiones[0];
+// Camiones de la empresa (vienen de Supabase, pantalla Flota)
+let CAMIONES = [];
+const SIN_CAMION = { id: null, m: 'Sin camiones', d: 'Añade tus camiones en la pestaña Flota. Mientras, se calcula con un depósito de 1.000 l.', cap: 1000, con: 35 };
+const camionActual = () => CAMIONES[$('camion').value] || CAMIONES[0] || SIN_CAMION;
+function ponerCamiones(lista) {
+  CAMIONES = lista.filter(c => c.activo).map(c => ({ id: c.id, m: c.matricula, d: c.descripcion || '', cap: c.capacidad_litros, con: +c.consumo_l_100km }));
+  $('camion').innerHTML = CAMIONES.length
+    ? CAMIONES.map((c, i) => `<option value="${i}">${esc(c.m)} · ${ent(c.cap)} l</option>`).join('')
+    : '<option value="0">Sin camiones · 1.000 l</option>';
+  const g = leer('camion');
+  if (g) { const i = CAMIONES.findIndex(c => c.id === g.id); if (i >= 0) $('camion').value = i; if (g.n != null) $('nivel').value = g.n; }
+  pintarCamion();
+}
 const litrosQueLleva = () => camionActual().cap * $('nivel').value / 100;
 function pintarCamion() {
   const c = camionActual(), n = $('nivel').value;
   $('nivel-o').textContent = n + ' %';
   $('gauge').style.width = n + '%';
   $('lleva').textContent = `Lleva unos ${ent(litrosQueLleva())} l de ${ent(c.cap)} l · consume ${String(c.con).replace('.', ',')} l/100 km. ${c.d}`;
-  guardar('camion', { i: $('camion').value, n });
+  guardar('camion', { id: c.id, n });
   if (ruta) evaluar();
 }
 
@@ -227,7 +239,7 @@ function popup(e) {
 }
 
 // ---------- arranque ----------
-async function iniciar() {
+async function iniciar(camiones) {
   D = await (await fetch('datos.json', { cache: 'no-cache' })).json();
   const [y, m, d] = D.fecha.split('-');
   $('fecha').textContent = `Precios para el ${d}/${m}/${y} · ${D.est.length} estaciones de vuestras tarjetas`;
@@ -255,8 +267,7 @@ async function iniciar() {
     div.innerHTML = `<span>${fmt(pMin)}</span><span class="ramp"></span><span>${fmt(ps.at(-1))} €/l</span><span><i class="v"></i>Valcarce</span><span><i class="d"></i>DST</span>`; return div; };
   ley.addTo(map);
 
-  $('camion').innerHTML = D.camiones.map((c, i) => `<option value="${i}">${esc(c.m)} · ${ent(c.cap)} l</option>`).join('');
-  const g = leer('camion'); if (g && D.camiones[g.i]) { $('camion').value = g.i; $('nivel').value = g.n; }
+  ponerCamiones(camiones);
   $('camion').onchange = pintarCamion; $('nivel').oninput = pintarCamion;
   // Distancia a la ruta: barra y casilla sincronizadas
   let tRadio;
@@ -283,7 +294,11 @@ async function iniciar() {
     origen: { label: 'Riba-roja de Túria, Valencia', lat: 39.5444, lon: -0.5707 },
     destino: { label: 'Cartagena, Murcia', lat: 37.6253, lon: -0.9972 } };
   $('origen').value = lugares.origen.label; $('destino').value = lugares.destino.label;
-  pintarCamion();
   calcular();
 }
-iniciar().catch(() => { $('fecha').textContent = 'No se han podido cargar los precios (datos.json).'; });
+// Lo arranca auth.js cuando el usuario ha entrado
+window.Ruta = {
+  iniciar: (camiones) => iniciar(camiones).catch(() => { $('fecha').textContent = 'No se han podido cargar los precios (datos.json).'; }),
+  ponerCamiones,
+  refrescarMapa: () => map && map.invalidateSize(),
+};

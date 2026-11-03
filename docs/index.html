@@ -107,6 +107,36 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .legend i { display: inline-block; width: 10px; height: 10px; border: 1.5px solid var(--ink); vertical-align: -1px; margin-right: 3px; }
 .legend i.v { border-radius: 50%; } .legend i.d { transform: rotate(45deg) scale(.85); }
 
+/* --- entrada --- */
+.entrar { min-height: 100%; display: grid; place-items: center; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.caja { width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: grid; gap: 14px; }
+.caja h1 { font: 700 1.9rem var(--f-display); margin: 0; }
+.caja p { margin: 0; color: var(--muted); }
+.caja input { width: 100%; font: 500 1rem var(--f-body); padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.caja .btn { width: 100%; padding: 12px; }
+.enlace { background: none; border: 0; padding: 0; color: var(--sel); font: 600 .9rem var(--f-body); cursor: pointer; justify-self: start; }
+.msg { font-size: .9rem; border-radius: 6px; padding: 8px 10px; }
+.msg.error { color: var(--dear); border: 1px solid var(--dear); }
+.msg.ok { color: var(--cheap); border: 1px solid var(--cheap); }
+/* --- cabecera con usuario y pestañas --- */
+.who { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 6px; font-size: .85rem; color: var(--muted); }
+.who b { color: var(--ink); font-weight: 600; }
+.tabs { display: flex; gap: 4px; padding: 8px 18px 0; padding-left: max(18px, env(safe-area-inset-left)); border-bottom: 1px solid var(--line); }
+.tab { font: 600 .95rem var(--f-body); border: 0; background: none; color: var(--muted); padding: 8px 12px; border-bottom: 3px solid transparent; cursor: pointer; }
+.tab[aria-selected=true] { color: var(--ink); border-bottom-color: var(--sel); }
+/* --- flota --- */
+.flota-list { display: grid; }
+.cam { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 12px 18px; padding-left: max(18px, env(safe-area-inset-left)); border-top: 1px solid var(--line); }
+.cam .mat { font: 700 1.15rem var(--f-display); letter-spacing: .03em; }
+.cam .sub { font-size: .85rem; color: var(--muted); }
+.cam.inactivo { opacity: .55; }
+.cam .acc { display: flex; gap: 6px; }
+.mini { font: 600 .85rem var(--f-body); border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.mini.peligro { color: var(--dear); border-color: var(--dear); }
+.form-cam { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-cam .full { grid-column: 1 / -1; }
+.form-cam input[type=number] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 @media (max-width: 820px) {
   .app { grid-template-columns: 1fr; grid-template-rows: auto 70vh; height: auto; }
   .side { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
@@ -116,12 +146,38 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 </style>
 </head>
 <body>
-<div class="app">
+<main class="entrar" id="pantalla-entrar" hidden>
+  <form class="caja" id="f-entrar">
+    <h1>Repostaje en ruta</h1>
+    <p>Entra con el usuario de tu empresa.</p>
+    <div><label class="lbl" for="email">Email</label><input type="email" id="email" autocomplete="username" required></div>
+    <div><label class="lbl" for="pass">Contraseña</label><input type="password" id="pass" autocomplete="current-password" required></div>
+    <div class="msg" id="msg-entrar" hidden></div>
+    <button class="btn" type="submit" id="b-entrar">Entrar</button>
+    <button class="enlace" type="button" id="b-olvido">He olvidado mi contraseña</button>
+  </form>
+  <form class="caja" id="f-nueva" hidden>
+    <h1>Nueva contraseña</h1>
+    <p>Escribe la contraseña que quieres usar a partir de ahora (mínimo 8 caracteres).</p>
+    <div><label class="lbl" for="pass-nueva">Contraseña nueva</label><input type="password" id="pass-nueva" autocomplete="new-password" minlength="8" required></div>
+    <div class="msg" id="msg-nueva" hidden></div>
+    <button class="btn" type="submit">Guardar contraseña</button>
+  </form>
+</main>
+
+<div class="app" id="pantalla-app" hidden>
   <aside class="side">
     <header class="head">
       <h1>Repostaje en ruta</h1>
       <p id="fecha">Cargando precios…</p>
+      <div class="who"><span><b id="empresa"></b> · <span id="usuario"></span></span><button class="mini" id="b-salir" type="button">Salir</button></div>
     </header>
+    <nav class="tabs" role="tablist" aria-label="Secciones">
+      <button class="tab" role="tab" id="t-ruta" aria-selected="true" aria-controls="vista-ruta">Ruta</button>
+      <button class="tab" role="tab" id="t-flota" aria-selected="false" aria-controls="vista-flota">Flota</button>
+    </nav>
+
+    <div id="vista-ruta" role="tabpanel" aria-labelledby="t-ruta">
 
     <section class="block" aria-label="Camión">
       <div><label class="lbl" for="camion">Camión</label><select id="camion"></select></div>
@@ -159,6 +215,26 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
       <div class="stops-h"><h2>Paradas en la ruta</h2><small class="small" id="stops-n"></small></div>
       <div id="stops"><p class="empty">Elige origen y destino para ver qué estaciones de vuestras tarjetas pillan de camino.</p></div>
     </section>
+    </div>
+
+    <div id="vista-flota" role="tabpanel" aria-labelledby="t-flota" hidden>
+      <section class="block">
+        <div class="stops-h" style="padding:0"><h2>Camiones de la empresa</h2><small class="small" id="flota-n"></small></div>
+        <p class="small" id="flota-aviso" hidden>Tu usuario es de conductor: puedes ver la flota pero no modificarla.</p>
+        <button class="btn" type="button" id="b-nuevo">Añadir camión</button>
+      </section>
+      <form class="block form-cam" id="f-cam" hidden>
+        <input type="hidden" id="cam-id">
+        <div class="full"><label class="lbl" for="cam-mat">Matrícula</label><input type="text" id="cam-mat" maxlength="20" required placeholder="1234 ABC"></div>
+        <div><label class="lbl" for="cam-cap">Depósito (litros)</label><input type="number" id="cam-cap" min="50" max="3000" step="10" required placeholder="1000"></div>
+        <div><label class="lbl" for="cam-con">Consumo (l/100 km)</label><input type="number" id="cam-con" min="10" max="80" step="0.5" value="35" required></div>
+        <div class="full"><label class="lbl" for="cam-desc">Descripción (opcional)</label><input type="text" id="cam-desc" maxlength="80" placeholder="Tractora Volvo FH, doble depósito"></div>
+        <label class="check full"><input type="checkbox" id="cam-activo" checked> En servicio</label>
+        <div class="msg full" id="msg-cam" hidden></div>
+        <div class="row2 full"><button class="btn" type="submit" id="b-guardar">Guardar</button><button class="btn ghost" type="button" id="b-cancelar">Cancelar</button></div>
+      </form>
+      <div class="flota-list" id="flota"></div>
+    </div>
 
     <footer class="foot">
       Precios sin IVA de las tarjetas de la empresa. Rutas calculadas para turismo con OSRM; para camión pueden variar. Mapa © OpenStreetMap.
@@ -168,6 +244,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="app.js?v=4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="app.js?v=5"></script>
+<script src="auth.js?v=1"></script>
 </body>
 </html>
