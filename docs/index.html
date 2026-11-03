@@ -84,6 +84,9 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .foot { margin-top: auto; padding: 12px 18px 16px; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); padding-left: max(18px, env(safe-area-inset-left)); }
 
 #map { height: 100%; min-height: 0; background: var(--bg); }
+/* mapa base apagado para que destaquen la ruta y los precios; en oscuro se invierte */
+#map .leaflet-tile-pane { filter: saturate(.35) contrast(.95); }
+#map.oscuro .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) saturate(.3) brightness(.85) contrast(.9); }
 .pin { display: block; width: 14px; height: 14px; background: var(--c); border: 2px solid var(--panel); box-shadow: 0 0 0 1px rgba(0,0,0,.25); border-radius: 50%; }
 .pin.d { border-radius: 2px; transform: rotate(45deg); width: 13px; height: 13px; }
 .pin.on { box-shadow: 0 0 0 3px var(--route); }
@@ -154,7 +157,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     </section>
 
     <footer class="foot">
-      Precios sin IVA de las tarjetas de la empresa. Rutas calculadas para turismo con OSRM; para camión pueden variar. Mapa © OpenStreetMap, © CARTO.
+      Precios sin IVA de las tarjetas de la empresa. Rutas calculadas para turismo con OSRM; para camión pueden variar. Mapa © OpenStreetMap.
     </footer>
   </aside>
   <div id="map" aria-label="Mapa"></div>

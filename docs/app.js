@@ -235,8 +235,9 @@ async function iniciar() {
 
   const oscuro = matchMedia('(prefers-color-scheme: dark)').matches;
   map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${oscuro ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`, {
-    maxZoom: 19, subdomains: 'abcd', attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>' }).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+  if (oscuro) $('map').classList.add('oscuro');
   capaRuta = L.layerGroup().addTo(map);
   const zoomClase = () => $('map').classList.toggle('zoomed-out', map.getZoom() < 8);
   map.on('zoomend', zoomClase); zoomClase();
