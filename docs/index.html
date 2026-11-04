@@ -376,6 +376,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .dash { overflow: visible; }
   .cards { grid-template-columns: 1fr; }
   #map { height: 70vh; }
+  /* En móvil, Flota y Administración no necesitan el mapa */
+  .app[data-vista="flota"] #map, .app[data-vista="admin"] #map { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
