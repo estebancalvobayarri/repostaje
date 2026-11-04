@@ -204,6 +204,7 @@ function evaluar() {
   if (!lista.length) {
     $('stops').innerHTML = `<p class="empty">Ninguna estación de vuestras tarjetas a menos de ${$('radio').value} km de esta ruta. Amplía la distancia o revisa el depósito antes de salir.</p>`;
   } else {
+    const scrollPrevio = $('stops').scrollTop;
     $('stops').innerHTML = lista.sort((a, b) => a.k - b.k).map(x => {
       const dif = mejor && x !== mejor && x.alcanzable ? (x.efectivo - mejor.efectivo) * x.litros : 0;
       const des = `${x.real ? '' : '≈'}${x.desvio < 0.5 ? '0' : ent(x.desvio)} km de desvío${x.min != null ? ` · +${Math.round(x.min)} min` : ''}`;
@@ -224,7 +225,9 @@ function evaluar() {
       };
       el.onclick = abrir; el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } };
     });
+    $('stops').scrollTop = scrollPrevio;   // al elegir otra parada la lista no salta arriba
   }
+  avisoMas();
   pintarEnvio(lista.find(x => x.e.id === elegida), ok);
   const ids = new Set(lista.map(x => x.e.id));
   for (const [id, m] of marcadores) {
@@ -232,6 +235,17 @@ function evaluar() {
     el.querySelector('.pin').classList.toggle('on', ids.has(id));
     el.querySelector('.pin').classList.toggle('dim', ruta && !ids.has(id));
   }
+}
+
+// Si la lista de paradas tiene scroll, se avisa de cuántas quedan por debajo
+function avisoMas() {
+  const lista = $('stops'), b = $('mas-paradas');
+  const fondo = lista.getBoundingClientRect().top + lista.clientHeight;
+  const ocultas = lista.scrollHeight > lista.clientHeight + 2
+    ? [...lista.querySelectorAll('.stop')].filter(el => { const r = el.getBoundingClientRect(); return r.top + r.height / 2 > fondo; }).length : 0;
+  b.hidden = !ocultas;
+  b.textContent = ocultas === 1 ? '1 parada más ↓' : `${ocultas} paradas más ↓`;
+  $('stops-sec').toggleAttribute('data-mas', ocultas > 0);
 }
 
 // ---------- enviar la ruta al conductor ----------
@@ -379,6 +393,9 @@ async function iniciar(camiones) {
     map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
   map.on('popupopen', ev => { ev.popup.options.autoPanPaddingTopLeft = L.point(20, altoFlot() + 20); ev.popup.update(); });
   repartir();
+  $('stops').addEventListener('scroll', avisoMas, { passive: true });
+  new ResizeObserver(avisoMas).observe($('stops'));
+  $('mas-paradas').onclick = () => $('stops').scrollBy({ top: $('stops').clientHeight * .8, behavior: 'smooth' });
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
   capaRuta = L.layerGroup().addTo(map);

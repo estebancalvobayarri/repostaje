@@ -95,7 +95,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .litros-fila .num input { width: 5.5em; }
 #litros-nota { margin: 4px 0 0; }
 .btn.wa { background: #1a8f4c; color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; flex: 1; }
-.ahorro-txt { color: var(--cheap); font-weight: 600; }
+.ahorro-txt { color: var(--cheap); font-weight: 600; font-size: .76rem; }
+.mas-paradas { display: none; }
 .kpi.destaca b { color: var(--cheap); }
 .meses { display: grid; gap: 6px; }
 .mes { display: grid; grid-template-columns: 64px minmax(0, 1fr) 72px; gap: 8px; align-items: center; font-size: .85rem; font-variant-numeric: tabular-nums; }
@@ -116,7 +117,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .stop .pr small { display: block; font-size: .8rem; color: var(--muted); }
 .tagb { display: inline-block; font: 600 .7rem var(--f-body); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: var(--cheap); color: var(--panel); margin-left: 4px; vertical-align: 1px; }
 .empty { padding: 14px 18px; color: var(--muted); }
-.foot { margin-top: auto; padding: 12px 18px 16px; font-size: .8rem; color: var(--muted); border-top: 1px solid var(--line); padding-left: max(18px, env(safe-area-inset-left)); }
+.foot { margin-top: auto; padding: 12px 18px 16px; font-size: .68rem; color: var(--muted); border-top: 1px solid var(--line); padding-left: max(18px, env(safe-area-inset-left)); }
 
 #map { height: 100%; min-height: 0; background: var(--bg); }
 /* mapa base apagado para que destaquen la ruta y los precios */
@@ -292,7 +293,29 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .app[data-vista="ruta"] #caja-litros > .lbl { grid-column: 1 / -1; }
   .app[data-vista="ruta"] #caja-litros .litros-fila { margin: 0; }
   .app[data-vista="ruta"] #litros-nota { margin: 0; font-size: .8rem; }
-  .flotante .aviso-ruta { display: block; margin-top: 8px; font-size: .78rem; }
+  .flotante .aviso-ruta { display: block; margin-top: 2px; font-size: .66rem; }
+  /* Paneles flotantes más compactos */
+  .flotante { gap: 10px; padding: 10px; }
+  .flotante > section { padding: 9px 12px; border-radius: 10px; }
+  .flotante #resumen { gap: 6px; max-width: 420px; }
+  .flotante .summary { gap: 6px; }
+  .flotante .kpi { padding: 4px 8px; display: flex; align-items: baseline; gap: 5px; }
+  .flotante .kpi b { display: inline; font-size: 1.05rem; }
+  .flotante .kpi span { font-size: .72rem; white-space: nowrap; }
+  .flotante .verdict { padding: 6px 10px; font-size: .84rem; line-height: 1.3; }
+  .flotante #envio { gap: 3px 14px; border-top-width: 3px; }
+  .flotante #envio > .lbl { font-size: .66rem; }
+  .flotante #envio > #envio-txt { font-size: .82rem; line-height: 1.3; }
+  .flotante #envio > .row2 { gap: 6px; }
+  .flotante #envio .btn { padding: 6px 12px; font-size: .85rem; }
+  /* Lista de paradas con scroll: barra visible, degradado y botón «N paradas más» */
+  .app[data-vista="ruta"] #stops-sec { position: relative; }
+  .app[data-vista="ruta"] #stops { scrollbar-width: thin; scrollbar-color: var(--off) transparent; }
+  .app[data-vista="ruta"] #stops::-webkit-scrollbar { width: 8px; }
+  .app[data-vista="ruta"] #stops::-webkit-scrollbar-thumb { background: var(--off); border-radius: 4px; }
+  .app[data-vista="ruta"] #stops-sec[data-mas]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 1px; height: 46px; background: linear-gradient(rgba(255,255,255,0), var(--panel) 85%); pointer-events: none; z-index: 1; }
+  .app[data-vista="ruta"] .mas-paradas { display: block; position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2; font: 700 .78rem var(--f-body); color: var(--ink); background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 999px; padding: 4px 12px; cursor: pointer; box-shadow: 0 2px 6px -2px rgba(18, 38, 63, .25); }
+  .app[data-vista="ruta"] .mas-paradas[hidden] { display: none; }
   .app[data-vista="ruta"] .head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 12px; padding-block: 10px 8px; }
   .app[data-vista="ruta"] .head h1 { grid-row: 1; grid-column: 1; }
   .app[data-vista="ruta"] .head .who { grid-row: 1; grid-column: 2; justify-content: flex-end; margin: 0; min-width: 0; }
@@ -383,6 +406,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 
     <section class="stops" id="stops-sec" aria-label="Paradas en la ruta">
       <div class="stops-h"><h2>Paradas en la ruta</h2><small class="small" id="stops-n"></small></div>
+      <button class="mas-paradas" id="mas-paradas" type="button" hidden></button>
       <div id="stops" role="radiogroup" aria-label="Parada elegida"><p class="empty">Elige origen y destino para ver qué estaciones de vuestras tarjetas pillan de camino.</p></div>
     </section>
 
@@ -507,7 +531,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 <script src="auth.js?v=9"></script>
 </body>
 </html>
