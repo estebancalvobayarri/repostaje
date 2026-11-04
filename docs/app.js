@@ -129,8 +129,8 @@ async function calcular(e) {
     const acum = [0]; for (let i = 1; i < coords.length; i++) acum.push(acum[i - 1] + km(coords[i - 1], coords[i]));
     ruta = { coords, acum, km: r.distance / 1000, min: r.duration / 60, desvios: new Map() };
     elegida = null;
-    dibujarRuta();
     evaluar();
+    dibujarRuta();
     await desviosReales();
   } catch (err) {
     $('stops').innerHTML = '<p class="empty">No he podido calcular la ruta: el servicio de rutas no responde. Vuelve a intentarlo en un momento.</p>';
@@ -142,7 +142,7 @@ function dibujarRuta() {
   const linea = L.polyline(ruta.coords, { color: css('--route'), weight: 5, opacity: .85 }).addTo(capaRuta);
   [['origen', false], ['destino', true]].forEach(([k, lleno]) => L.circleMarker([lugares[k].lat, lugares[k].lon], {
     radius: 7, color: css('--route'), weight: 3, fillColor: lleno ? css('--route') : css('--panel'), fillOpacity: 1 }).bindTooltip(lugares[k].label).addTo(capaRuta));
-  map.fitBounds(linea.getBounds(), { padding: [30, 30] });
+  map.fitBounds(linea.getBounds(), { paddingTopLeft: [30, 30 + altoFlot()], paddingBottomRight: [30, 30] });
 }
 
 // Desvío real: ruta pasando por la estación menos ruta directa
@@ -336,6 +336,33 @@ const PROVEEDORES = ['Valcarce', 'DST', 'Staroil', 'Andamur'];
 const TRIANGULO = '<svg viewBox="0 0 16 15" width="16" height="15"><path d="M8 1.5 14.8 13.6H1.2z" fill="var(--c)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>';
 const forma = t => ({ Valcarce: 'v', DST: 'd', Staroil: 's', Andamur: 'a' }[t] || 'v');
 
+// ---------- reparto de la pantalla en escritorio ----------
+// Escritorio ancho: litros y paradas van al panel (antes de «Calcular ruta») y el resumen
+// y el envío flotan sobre la parte de arriba del mapa. En móvil todo queda como siempre.
+const altoFlot = () => (document.getElementById('flotante')?.offsetHeight || 0);
+const ANCHO = matchMedia('(min-width: 1100px)');
+const MOVIBLES = ['caja-litros', 'stops-sec', 'fila-calc', 'resumen', 'envio'];
+const sitios = new Map();
+function repartir() {
+  const sec = (id) => { let s = $(id); if (!s) { s = document.createElement('section'); s.className = 'block'; s.id = id; } return s; };
+  if (!sitios.size) for (const id of MOVIBLES) { const el = $(id), a = document.createComment(id); el.before(a); sitios.set(id, a); }
+  if (ANCHO.matches) {
+    const vista = $('vista-ruta'), litros = sec('sec-litros'), calc = sec('sec-calc');
+    litros.append($('caja-litros')); calc.append($('fila-calc'));
+    $('ruta').after(litros); litros.after($('stops-sec')); $('stops-sec').after(calc);
+    $('flotante').append($('resumen'), $('envio'));
+  } else {
+    for (const [id, a] of sitios) a.after($(id));
+    $('sec-litros')?.remove(); $('sec-calc')?.remove();
+  }
+  if (map) { map.invalidateSize(); }
+}
+ANCHO.addEventListener('change', repartir);
+new ResizeObserver(() => {
+  const h = altoFlot(), app = $('pantalla-app');
+  app.style.setProperty('--alto-flot', h + 'px'); app.toggleAttribute('data-flot', h > 0);
+}).observe(document.getElementById('flotante'));
+
 // ---------- arranque ----------
 async function iniciar(camiones) {
   D = await window.Precios.cargar();
@@ -350,6 +377,8 @@ async function iniciar(camiones) {
   pMin = ps[0]; pTop = ps[Math.floor(ps.length * .9)];
 
     map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
+  map.on('popupopen', ev => { ev.popup.options.autoPanPaddingTopLeft = L.point(20, altoFlot() + 20); ev.popup.update(); });
+  repartir();
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
   capaRuta = L.layerGroup().addTo(map);

@@ -104,6 +104,7 @@ sb.auth.onAuthStateChange((evento, session) => {
 
 // ---------- pestañas ----------
 function pestaña(cual) {
+  q('pantalla-app').dataset.vista = cual;
   for (const t of ['ruta', 'flota', 'ahorro', 'admin']) {
     q('t-' + t).setAttribute('aria-selected', cual === t);
     q('vista-' + t).hidden = cual !== t;
