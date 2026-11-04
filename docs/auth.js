@@ -423,7 +423,9 @@ async function cargarCorreos() {
   const emp = perfil?.empresas;
   q('reenvio-dir').textContent = emp?.reenvio || 'Pide al administrador que te asigne una dirección';
   const { data, error } = await sb.from('correos').select('recibido, remitente, proveedor, fecha_precios, n_precios, n_sin_ubicar, estado').order('recibido', { ascending: false }).limit(10);
-  if (error) { q('correos').innerHTML = `<p class="empty">No se han podido cargar: ${escH(error.message)}</p>`; return; }
+  if (error) { q('correos-n').textContent = ''; q('correos').innerHTML = `<p class="empty">No se han podido cargar: ${escH(error.message)}</p>`; return; }
+  const avisos = data.filter(c => c.estado !== 'ok' || c.n_sin_ubicar).length;
+  q('correos-n').textContent = data.length ? `${data.length} último${data.length === 1 ? '' : 's'}${avisos ? ` · ${avisos} con aviso${avisos === 1 ? '' : 's'}` : ''}` : '';
   q('correos').innerHTML = data.length ? data.map(c => {
     const d = new Date(c.recibido);
     const estado = c.estado === 'ok'
@@ -433,6 +435,12 @@ async function cargarCorreos() {
       <div class="sub">${c.fecha_precios ? 'Precios del ' + new Date(c.fecha_precios + 'T12:00').toLocaleDateString('es-ES') + ' · ' : ''}${estado}</div></div>`;
   }).join('') : '<p class="empty">Todavía no ha llegado ningún email de precios.</p>';
 }
+
+q('correos-toggle').onclick = () => {
+  const abrir = q('correos').hidden;
+  q('correos').hidden = !abrir;
+  q('correos-toggle').setAttribute('aria-expanded', abrir);
+};
 
 q('b-copiar-reenvio').onclick = async () => {
   try { await navigator.clipboard.writeText(q('reenvio-dir').textContent); q('b-copiar-reenvio').textContent = 'Copiada'; }

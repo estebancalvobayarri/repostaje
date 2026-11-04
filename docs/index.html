@@ -377,9 +377,10 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <div class="stops-h" style="padding:0"><h2>Precios de los proveedores</h2></div>
         <p class="small" style="margin:0">Reenvía (o pon un reenvío automático) los emails de precios de tus tarjetas a esta dirección. Los precios aparecen en el mapa en unos minutos.</p>
         <div class="reenvio"><code id="reenvio-dir">…</code><button class="mini" type="button" id="b-copiar-reenvio">Copiar</button></div>
-        <span class="lbl" style="margin-top:4px">Últimos emails recibidos</span>
       </section>
-      <div id="correos"><p class="empty">Cargando…</p></div>
+      <button class="sec-t" type="button" id="correos-toggle" aria-expanded="false" aria-controls="correos">
+        <span class="chev" aria-hidden="true"></span><h2>Últimos emails recibidos</h2><small class="small" id="correos-n"></small></button>
+      <div id="correos" hidden><p class="empty">Cargando…</p></div>
     </div>
 
     <div id="vista-ahorro" role="tabpanel" aria-labelledby="t-ahorro" hidden>
