@@ -204,6 +204,10 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .seg label:has(input:checked) { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .seg label:has(input:checked) span { color: var(--ink); }
 .seg label:has(input:focus-visible) { outline: 2px solid var(--sel); outline-offset: -2px; }
+.reenvio { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.reenvio .lbl { width: 100%; margin: 0; }
+.reenvio code { font: 600 .9rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; word-break: break-all; user-select: all; }
+.precios-rec { border-top: 2px solid var(--line); }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
 /* --- cuadro de mando --- */
 #map, .dash { grid-column: 2; grid-row: 1; }
@@ -363,6 +367,14 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <div class="row2 full"><button class="btn" type="submit" id="b-guardar">Guardar</button><button class="btn ghost" type="button" id="b-cancelar">Cancelar</button></div>
       </form>
       <div class="flota-list" id="flota"></div>
+
+      <section class="block precios-rec">
+        <div class="stops-h" style="padding:0"><h2>Precios de los proveedores</h2></div>
+        <p class="small" style="margin:0">Reenvía (o pon un reenvío automático) los emails de precios de tus tarjetas a esta dirección. Los precios aparecen en el mapa en unos minutos.</p>
+        <div class="reenvio"><code id="reenvio-dir">…</code><button class="mini" type="button" id="b-copiar-reenvio">Copiar</button></div>
+        <span class="lbl" style="margin-top:4px">Últimos emails recibidos</span>
+      </section>
+      <div id="correos"><p class="empty">Cargando…</p></div>
     </div>
 
     <div id="vista-ahorro" role="tabpanel" aria-labelledby="t-ahorro" hidden>
@@ -440,8 +452,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="dash.js?v=2"></script>
-<script src="app.js?v=8"></script>
-<script src="auth.js?v=6"></script>
+<script src="dash.js?v=3"></script>
+<script src="app.js?v=9"></script>
+<script src="auth.js?v=7"></script>
 </body>
 </html>

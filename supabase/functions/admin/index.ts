@@ -1,0 +1,137 @@
+// Administración de la app: crear empresas e invitar a sus usuarios.
+// Usa la clave secreta del proyecto (solo existe en el servidor) y comprueba
+// en cada llamada que quien la hace está en la tabla de administradores.
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const WEB = 'https://estebancalvobayarri.github.io/repostaje/';
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+
+const url = Deno.env.get('SUPABASE_URL')!;
+const secreta = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const sb = createClient(url, secreta, { auth: { persistSession: false, autoRefreshToken: false } });
+
+const emailValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+// Alias para la dirección de reenvío: minúsculas, sin acentos ni símbolos
+const PALABRAS_VACIAS = /\b(sl|sa|slu|sll|scoop|s l|s a|transportes|transporte|trans|y|de|del|la|las|los|el)\b/g;
+function aliasDe(texto: string) {
+  const base = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9 ]+/g, ' ').replace(PALABRAS_VACIAS, ' ').trim().split(/\s+/).filter(Boolean).slice(0, 2).join('');
+  return (base || 'empresa').slice(0, 24);
+}
+async function aliasLibre(deseado: string) {
+  let a = deseado, n = 2;
+  while (true) {
+    const { data } = await sb.from('empresas').select('id').eq('alias', a).maybeSingle();
+    if (!data) return a;
+    a = `${deseado}${n++}`;
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
+
+  // 1. Quién llama
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!token) return json({ error: 'Falta la sesión' }, 401);
+  const { data: u, error: eu } = await sb.auth.getUser(token);
+  if (eu || !u?.user) return json({ error: 'Sesión no válida' }, 401);
+  const { data: adm } = await sb.from('administradores').select('user_id').eq('user_id', u.user.id).maybeSingle();
+  if (!adm) return json({ error: 'Solo los administradores pueden hacer esto' }, 403);
+
+  // 2. Qué quiere hacer
+  let body: Record<string, unknown>;
+  try { body = await req.json(); } catch { return json({ error: 'Petición no válida' }, 400); }
+  const accion = String(body.accion || '');
+
+  try {
+    if (accion === 'listar') {
+      const [{ data: empresas, error: e1 }, { data: perfiles, error: e2 }, { data: camiones, error: e3 }] = await Promise.all([
+        sb.from('empresas').select('id, nombre, cif, alias, reenvio, creado').order('nombre'),
+        sb.from('perfiles').select('id, empresa_id, nombre, rol, creado'),
+        sb.from('camiones').select('empresa_id, activo'),
+      ]);
+      if (e1 || e2 || e3) throw e1 || e2 || e3;
+      const { data: lista, error: e4 } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (e4) throw e4;
+      const usuarios = new Map(lista.users.map((x) => [x.id, x]));
+      return json({
+        empresas: (empresas || []).map((e) => ({
+          ...e,
+          camiones: (camiones || []).filter((c) => c.empresa_id === e.id && c.activo).length,
+          usuarios: (perfiles || []).filter((p) => p.empresa_id === e.id).map((p) => {
+            const au = usuarios.get(p.id);
+            return { ...p, email: au?.email, ha_entrado: !!au?.last_sign_in_at, ultimo_acceso: au?.last_sign_in_at || null };
+          }),
+        })),
+      });
+    }
+
+    if (accion === 'crear_empresa') {
+      const nombre = String(body.nombre || '').trim();
+      const cif = String(body.cif || '').trim().toUpperCase() || null;
+      if (nombre.length < 2) return json({ error: 'Escribe el nombre de la empresa' }, 400);
+      const alias = await aliasLibre(aliasDe(String(body.alias || '').trim() || nombre));
+      const { data, error } = await sb.from('empresas').insert({ nombre, cif, alias }).select().single();
+      if (error) throw error;
+      return json({ empresa: data });
+    }
+
+    if (accion === 'invitar') {
+      const email = String(body.email || '').trim().toLowerCase();
+      const empresa_id = String(body.empresa_id || '');
+      const nombre = String(body.nombre || '').trim() || null;
+      const rol = body.rol === 'conductor' ? 'conductor' : 'gestor';
+      if (!emailValido(email)) return json({ error: 'El email no es válido' }, 400);
+      const { data: emp } = await sb.from('empresas').select('id').eq('id', empresa_id).maybeSingle();
+      if (!emp) return json({ error: 'La empresa no existe' }, 400);
+
+      // ¿Ya tiene cuenta? (p. ej. creada desde el panel de Supabase)
+      const { data: lista } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      let usuario = lista?.users.find((x) => x.email?.toLowerCase() === email);
+      let invitado = false;
+      if (!usuario) {
+        const { data, error } = await sb.auth.admin.inviteUserByEmail(email, { redirectTo: WEB, data: { nombre } });
+        if (error) throw error;
+        usuario = data.user; invitado = true;
+      }
+      const { data: ya } = await sb.from('perfiles').select('empresa_id').eq('id', usuario!.id).maybeSingle();
+      if (ya && ya.empresa_id !== empresa_id) return json({ error: 'Ese email ya pertenece a otra empresa' }, 409);
+      const { error: ep } = await sb.from('perfiles').upsert({ id: usuario!.id, empresa_id, nombre, rol });
+      if (ep) throw ep;
+      return json({ ok: true, invitado });
+    }
+
+    if (accion === 'reenviar') {
+      const email = String(body.email || '').trim().toLowerCase();
+      if (!emailValido(email)) return json({ error: 'El email no es válido' }, 400);
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: WEB });
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    if (accion === 'quitar_usuario') {
+      const id = String(body.user_id || '');
+      if (id === u.user.id) return json({ error: 'No puedes quitarte a ti mismo' }, 400);
+      const { data: esAdm } = await sb.from('administradores').select('user_id').eq('user_id', id).maybeSingle();
+      if (esAdm) return json({ error: 'No se puede quitar a otro administrador desde aquí' }, 400);
+      const { error } = await sb.auth.admin.deleteUser(id);
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    return json({ error: 'Acción desconocida' }, 400);
+  } catch (err) {
+    const msg = (err as { message?: string })?.message || String(err);
+    const amable = /rate limit/i.test(msg)
+      ? 'Se ha alcanzado el límite de emails por hora de Supabase. Prueba dentro de un rato.'
+      : msg;
+    return json({ error: amable }, 500);
+  }
+});

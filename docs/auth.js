@@ -26,7 +26,7 @@ function verEntrada(modo = 'entrar') {
 
 async function verApp(session) {
   const [{ data, error }, { data: adm }] = await Promise.all([
-    sb.from('perfiles').select('empresa_id, rol, nombre, empresas(nombre)').eq('id', session.user.id).maybeSingle(),
+    sb.from('perfiles').select('empresa_id, rol, nombre, empresas(nombre, alias, reenvio)').eq('id', session.user.id).maybeSingle(),
     sb.from('administradores').select('user_id').eq('user_id', session.user.id).maybeSingle(),
   ]);
   esAdmin = !!adm;
@@ -56,6 +56,7 @@ async function verApp(session) {
   q('b-nuevo').hidden = data.rol !== 'gestor';
   q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
   await cargarCamiones();
+  cargarCorreos();
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
@@ -245,6 +246,7 @@ function pintarAdmin(empresas) {
       </button>
       <div class="emp-body" id="emp-${e.id}" ${abierta ? '' : 'hidden'}>
         <div class="emp-meta">${e.cif ? 'CIF ' + escH(e.cif) + ' · ' : ''}${e.usuarios.length} usuario${e.usuarios.length === 1 ? '' : 's'}</div>
+        ${e.reenvio ? `<div class="reenvio"><span class="lbl">Dirección para reenviar los precios</span><code>${escH(e.reenvio)}</code></div>` : ''}
 
         <div class="area usuarios">
           <h3>Usuarios con acceso</h3>
@@ -389,4 +391,51 @@ q('b-csv').onclick = () => {
   a.download = `ahorro-${q('periodo').value}-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ---------- precios de la empresa (Supabase) ----------
+window.Precios = {
+  async cargar() {
+    const desde = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+    const { data, error } = await sb.from('precios')
+      .select('fecha, precio_sin_iva, precio_con_iva, estaciones(id, proveedor, codigo, nombre, direccion, municipio, provincia, lat, lon, confianza)')
+      .gte('fecha', desde).order('fecha', { ascending: false }).limit(5000);
+    if (error) throw error;
+    // De cada proveedor, los precios de su último día
+    const ultima = new Map();
+    for (const r of data) { const pr = r.estaciones.proveedor; if (!ultima.has(pr)) ultima.set(pr, r.fecha); }
+    const est = [], sin = [], vistas = new Set();
+    for (const r of data) {
+      const e = r.estaciones;
+      if (r.fecha !== ultima.get(e.proveedor) || vistas.has(e.id)) continue;
+      vistas.add(e.id);
+      const d = { id: e.id, n: e.nombre, t: e.proveedor, p: +r.precio_sin_iva, pi: +(r.precio_con_iva ?? r.precio_sin_iva * 1.21) };
+      if (e.lat != null && e.confianza !== 'pendiente') est.push({ ...d, lat: e.lat, lon: e.lon, dir: e.direccion || '', mun: e.municipio || '', prov: e.provincia || '', c: e.confianza });
+      else sin.push(d);
+    }
+    const fecha = [...ultima.values()].sort().at(-1) || null;
+    return { est, sin, fecha, fechas: Object.fromEntries(ultima) };
+  },
+};
+
+// ---------- emails de precios recibidos (pestaña Flota) ----------
+async function cargarCorreos() {
+  const emp = perfil?.empresas;
+  q('reenvio-dir').textContent = emp?.reenvio || 'Pide al administrador que te asigne una dirección';
+  const { data, error } = await sb.from('correos').select('recibido, remitente, proveedor, fecha_precios, n_precios, n_sin_ubicar, estado').order('recibido', { ascending: false }).limit(10);
+  if (error) { q('correos').innerHTML = `<p class="empty">No se han podido cargar: ${escH(error.message)}</p>`; return; }
+  q('correos').innerHTML = data.length ? data.map(c => {
+    const d = new Date(c.recibido);
+    const estado = c.estado === 'ok'
+      ? `${c.n_precios} precios${c.n_sin_ubicar ? ` · <span class="pill pend">${c.n_sin_ubicar} sin ubicar</span>` : ''}`
+      : c.estado === 'sin_lector' ? '<span class="pill pend">Proveedor aún no reconocido</span>' : '<span class="pill pend">Error al leerlo</span>';
+    return `<div class="env"><div class="nm">${escH(c.proveedor || c.remitente || 'Email')}</div><div class="sub" style="text-align:right">${d.toLocaleDateString('es-ES')} ${d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="sub">${c.fecha_precios ? 'Precios del ' + new Date(c.fecha_precios + 'T12:00').toLocaleDateString('es-ES') + ' · ' : ''}${estado}</div></div>`;
+  }).join('') : '<p class="empty">Todavía no ha llegado ningún email de precios.</p>';
+}
+
+q('b-copiar-reenvio').onclick = async () => {
+  try { await navigator.clipboard.writeText(q('reenvio-dir').textContent); q('b-copiar-reenvio').textContent = 'Copiada'; }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(q('reenvio-dir')); getSelection().removeAllRanges(); getSelection().addRange(r); }
+  setTimeout(() => { q('b-copiar-reenvio').textContent = 'Copiar'; }, 2000);
 };

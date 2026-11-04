@@ -7,8 +7,9 @@ Uso (desde la raíz del repositorio):
 Lee:  datos/precios.csv, datos/estaciones.csv, datos/estaciones_manual.csv,
       datos/camiones.csv (si no existe, usa config/camiones.ejemplo.csv),
       datos/muestras/geoportal.xls (fondo del mapa)
-Crea: web/mapa.html  (página para publicar como Artifact)
-      docs/datos.json (datos de la webapp publicada en GitHub Pages)
+Crea: web/mapa.html  (mapa estático, solo para uso interno)
+
+La webapp publicada (docs/) ya no usa archivos: lee los precios de Supabase.
 """
 import csv
 import json
@@ -83,11 +84,6 @@ def main():
     html = open("web/plantilla.html", encoding="utf-8").read()
     html = html.replace("__DATA__", json.dumps(datos, ensure_ascii=False, separators=(",", ":")))
     open("web/mapa.html", "w", encoding="utf-8").write(html)
-    # Webapp de GitHub Pages: lee sus datos de docs/datos.json (sin el fondo de puntos,
-    # porque allí el mapa base es un mapa de calles real)
-    os.makedirs("docs", exist_ok=True)
-    app = {k: v for k, v in datos.items() if k != "bg"}
-    open("docs/datos.json", "w", encoding="utf-8").write(json.dumps(app, ensure_ascii=False, indent=1))
     print(f"web/mapa.html: {len(est)} estaciones en el mapa, {len(sin)} sin ubicación, "
           f"{len(camiones)} camiones ({ruta_cam})")
 

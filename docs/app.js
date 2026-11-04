@@ -1,5 +1,5 @@
 // Repostaje en ruta — webapp para el gestor de tráfico.
-// Datos: datos.json (estaciones con precio, camiones). Rutas: OSRM. Buscador: Photon (OpenStreetMap).
+// Datos: precios de la empresa en Supabase (los carga auth.js), camiones de la Flota. Rutas: OSRM. Buscador: Photon (OpenStreetMap).
 'use strict';
 
 const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
@@ -321,10 +321,15 @@ function popup(e) {
 
 // ---------- arranque ----------
 async function iniciar(camiones) {
-  D = await (await fetch('datos.json', { cache: 'no-cache' })).json();
-  const [y, m, d] = D.fecha.split('-');
-  $('fecha').textContent = `Precios para el ${d}/${m}/${y} · ${D.est.length} estaciones de vuestras tarjetas`;
-  const ps = D.est.map(e => e.p).sort((a, b) => a - b);
+  D = await window.Precios.cargar();
+  if (!D.est.length) {
+    $('fecha').textContent = 'Todavía no hay precios: reenvía los emails de tus proveedores a la dirección de la pestaña Flota.';
+    D.est = [];
+  } else {
+    const [y, m, d] = D.fecha.split('-');
+    $('fecha').textContent = `Precios para el ${d}/${m}/${y} · ${D.est.length} estaciones de vuestras tarjetas`;
+  }
+  const ps = D.est.length ? D.est.map(e => e.p).sort((a, b) => a - b) : [0];
   pMin = ps[0]; pTop = ps[Math.floor(ps.length * .9)];
 
     map = L.map('map', { zoomControl: true }).setView([40.2, -3.6], 6);
@@ -377,7 +382,7 @@ async function iniciar(camiones) {
 }
 // Lo arranca auth.js cuando el usuario ha entrado
 window.Ruta = {
-  iniciar: (camiones) => iniciar(camiones).catch(() => { $('fecha').textContent = 'No se han podido cargar los precios (datos.json).'; }),
+  iniciar: (camiones) => iniciar(camiones).catch(() => { $('fecha').textContent = 'No se han podido cargar los precios. Recarga la página.'; }),
   ponerCamiones,
   refrescarMapa: () => map && map.invalidateSize(),
 };
