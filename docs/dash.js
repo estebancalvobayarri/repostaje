@@ -11,8 +11,8 @@
   const graficos = {};
 
   // Color fijo por tarjeta (sigue a la tarjeta, no a su posición)
-  const COLOR_TARJETA = { Valcarce: '--series-1', DST: '--series-2' };
-  const colorTarjeta = t => css(COLOR_TARJETA[t] || '--series-3');
+  const COLOR_TARJETA = { Valcarce: '--series-1', DST: '--series-2', Staroil: '--series-3', Andamur: '--series-4' };
+  const colorTarjeta = t => css(COLOR_TARJETA[t] || '--series-5');
 
   function agrupar(env, clave) {
     const m = new Map();

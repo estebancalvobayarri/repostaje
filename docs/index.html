@@ -28,7 +28,7 @@
   --on-accent: #12263F;
   --sel: #12263F; --route: #12263F;
   --cheap: #1D7A4C; --mid: #A87400; --dear: #B8412C; --off: #A9A69C;
-  --series-1: #12263F; --series-2: #F2A900; --series-3: #9AA9BB;
+  --series-1: #12263F; --series-2: #F2A900; --series-3: #4F86B5; --series-4: #7A5C99; --series-5: #9AA9BB;
   --bar-2: #A9BACD;
   --f-display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -120,6 +120,10 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 #map .leaflet-tile-pane { filter: saturate(.35) contrast(.95); }
 .pin { display: block; width: 14px; height: 14px; background: var(--c); border: 2px solid var(--panel); box-shadow: 0 0 0 1px rgba(0,0,0,.25); border-radius: 50%; }
 .pin.d { border-radius: 2px; transform: rotate(45deg); width: 13px; height: 13px; }
+.pin.s { border-radius: 2px; }
+.pin.a { width: 16px; height: 15px; background: none; border: 0; border-radius: 0; box-shadow: none; margin: -1px 0 0 -1px; }
+.pin.a svg { display: block; overflow: visible; filter: drop-shadow(0 0 .6px rgba(0,0,0,.55)); }
+.pin.a.on svg { filter: drop-shadow(0 0 1.5px var(--route)) drop-shadow(0 0 1.5px var(--route)); }
 .pin.on { box-shadow: 0 0 0 3px var(--route); }
 .pin.dim { opacity: .45; }
 .ptag { position: absolute; left: 16px; top: -4px; white-space: nowrap; font: 600 12px var(--f-body); background: var(--panel); color: var(--ink); padding: 1px 5px; border-radius: 4px; box-shadow: 0 0 0 1px var(--line); font-variant-numeric: tabular-nums; }
@@ -134,7 +138,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .legend { background: var(--panel); color: var(--ink); padding: 6px 9px; border-radius: 6px; font-size: .78rem; box-shadow: 0 0 0 1px var(--line); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .legend .ramp { width: 70px; height: 7px; border-radius: 4px; background: linear-gradient(90deg, var(--cheap), var(--mid), var(--dear)); }
 .legend i { display: inline-block; width: 10px; height: 10px; border: 1.5px solid var(--ink); vertical-align: -1px; margin-right: 3px; }
-.legend i.v { border-radius: 50%; } .legend i.d { transform: rotate(45deg) scale(.85); }
+.legend i.v { border-radius: 50%; } .legend i.d { transform: rotate(45deg) scale(.85); } .legend i.s { border-radius: 1px; }
+.legend i.a { border: 0; width: 12px; height: 11px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 11'%3E%3Cpath d='M6 1 11 10H1z' fill='none' stroke='%2312263F' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center; }
 
 /* --- entrada --- */
 .entrar { min-height: 100%; display: grid; place-items: center; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
@@ -452,8 +457,8 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="dash.js?v=3"></script>
-<script src="app.js?v=9"></script>
+<script src="dash.js?v=4"></script>
+<script src="app.js?v=10"></script>
 <script src="auth.js?v=7"></script>
 </body>
 </html>

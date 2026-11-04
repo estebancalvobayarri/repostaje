@@ -319,6 +319,11 @@ function popup(e) {
     <a href="https://www.google.com/maps/search/?api=1&query=${e.lat},${e.lon}" target="_blank" rel="noopener">Abrir en Google Maps ↗</a></div>`;
 }
 
+// Forma del marcador por tarjeta: círculo, rombo, cuadrado, triángulo
+const PROVEEDORES = ['Valcarce', 'DST', 'Staroil', 'Andamur'];
+const TRIANGULO = '<svg viewBox="0 0 16 15" width="16" height="15"><path d="M8 1.5 14.8 13.6H1.2z" fill="var(--c)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>';
+const forma = t => ({ Valcarce: 'v', DST: 'd', Staroil: 's', Andamur: 'a' }[t] || 'v');
+
 // ---------- arranque ----------
 async function iniciar(camiones) {
   D = await window.Precios.cargar();
@@ -341,14 +346,14 @@ async function iniciar(camiones) {
 
   for (const e of D.est) {
     const icon = L.divIcon({ className: '', iconSize: [14, 14], iconAnchor: [7, 7],
-      html: `<span class="pin ${e.t === 'DST' ? 'd' : 'v'}" style="--c:${colorPrecio(e.p)}"></span><span class="ptag">${fmt(e.p)}</span>` });
+      html: `<span class="pin ${forma(e.t)}" style="--c:${colorPrecio(e.p)}">${forma(e.t) === 'a' ? TRIANGULO : ''}</span><span class="ptag">${fmt(e.p)}</span>` });
     const mk = L.marker([e.lat, e.lon], { icon, title: `${e.n} · ${fmt(e.p)} €/l`, riseOnHover: true }).addTo(map);
     mk.bindPopup(() => popup(e), { maxWidth: 300 });
     marcadores.set(e.id, mk);
   }
   const ley = L.control({ position: 'bottomleft' });
   ley.onAdd = () => { const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<span>${fmt(pMin)}</span><span class="ramp"></span><span>${fmt(ps.at(-1))} €/l</span><span><i class="v"></i>Valcarce</span><span><i class="d"></i>DST</span>`; return div; };
+    div.innerHTML = `<span>${fmt(pMin)}</span><span class="ramp"></span><span>${fmt(ps.at(-1))} €/l</span>${PROVEEDORES.filter(p => D.est.some(e => e.t === p)).map(p => `<span><i class="${forma(p)}"></i>${p}</span>`).join('')}`; return div; };
   ley.addTo(map);
 
   ponerCamiones(camiones);
