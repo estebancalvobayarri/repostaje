@@ -114,6 +114,11 @@ function pestaña(cual) {
   q('map').hidden = cual === 'ahorro';
   q('dash').hidden = cual !== 'ahorro';
   if (cual === 'ahorro') cargarAhorro();
+  // En móvil, si las pestañas ya están fijas arriba, la sección nueva se ve desde su principio
+  if (matchMedia('(max-width: 820px)').matches) {
+    const tope = document.querySelector('#pantalla-app .head').getBoundingClientRect().bottom + window.scrollY;
+    if (window.scrollY > tope) window.scrollTo({ top: tope });
+  }
   else window.Ruta.refrescarMapa();
 }
 q('t-ruta').onclick = () => pestaña('ruta');

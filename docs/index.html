@@ -325,11 +325,15 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 }
 
 @media (max-width: 820px) {
-  #map, .dash { grid-column: 1; grid-row: 2; }
+  /* El panel se «deshace» para que las pestañas puedan quedarse fijas arriba en toda la página */
+  .app { grid-template-columns: 1fr; grid-template-rows: none; height: auto; }
+  .side { display: contents; }
+  .side > * { background: var(--panel); }
+  .foot { margin-top: 0; border-bottom: 1px solid var(--line); }
+  .tabs { position: sticky; top: 0; z-index: 1100; box-shadow: 0 6px 12px -10px rgba(18, 38, 63, .35); }
+  #map, .dash { grid-column: 1; grid-row: auto; }
   .dash { overflow: visible; }
   .cards { grid-template-columns: 1fr; }
-  .app { grid-template-columns: 1fr; grid-template-rows: auto 70vh; height: auto; }
-  .side { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
   #map { height: 70vh; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -532,6 +536,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=13"></script>
-<script src="auth.js?v=9"></script>
+<script src="auth.js?v=10"></script>
 </body>
 </html>
