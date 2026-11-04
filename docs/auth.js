@@ -424,6 +424,27 @@ window.Precios = {
   },
 };
 
+// ---------- estaciones quitadas del mapa por el gestor (toda la empresa) ----------
+window.Seleccion = {
+  puedeEditar: () => perfil?.rol === 'gestor',
+  async cargar() {
+    if (!perfil) return new Set();
+    const { data, error } = await sb.from('estaciones_excluidas').select('estacion_id');
+    if (error) throw error;
+    return new Set(data.map(r => r.estacion_id));
+  },
+  async guardar(quitar, poner) {
+    if (quitar.length) {
+      const { error } = await sb.from('estaciones_excluidas').upsert(quitar.map(id => ({ empresa_id: perfil.empresa_id, estacion_id: id })), { onConflict: 'empresa_id,estacion_id', ignoreDuplicates: true });
+      if (error) throw error;
+    }
+    if (poner.length) {
+      const { error } = await sb.from('estaciones_excluidas').delete().in('estacion_id', poner);
+      if (error) throw error;
+    }
+  },
+};
+
 // ---------- emails de precios recibidos (pestaña Flota) ----------
 async function cargarCorreos() {
   const emp = perfil?.empresas;

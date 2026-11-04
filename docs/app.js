@@ -165,6 +165,7 @@ function candidatas() {
   const c = camionActual(), radio = +$('radio').value, lleva = litrosQueLleva();
   const out = [];
   for (const e of D.est) {
+    if (excluidas.has(e.id)) continue;
     const s = sobreRuta([e.lat, e.lon], ruta.coords, ruta.acum);
     if (s.d > radio) continue;
     const real = ruta.desvios.get(e.id);
@@ -350,6 +351,94 @@ const PROVEEDORES = ['Valcarce', 'DST', 'Staroil', 'Andamur'];
 const TRIANGULO = '<svg viewBox="0 0 16 15" width="16" height="15"><path d="M8 1.5 14.8 13.6H1.2z" fill="var(--c)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>';
 const forma = t => ({ Valcarce: 'v', DST: 'd', Staroil: 's', Andamur: 'a' }[t] || 'v');
 
+// ---------- qué estaciones se ven (solo escritorio) ----------
+// El gestor puede quitar estaciones del mapa y de las rutas. Se guarda para toda la empresa;
+// las estaciones nuevas que lleguen por email aparecen marcadas.
+let excluidas = new Set(), guardadas = new Set(), tGuardar;
+function aplicarSeleccion() {
+  for (const e of D.est) {
+    const m = marcadores.get(e.id); if (!m) continue;
+    if (excluidas.has(e.id)) m.remove(); else if (!map.hasLayer(m)) m.addTo(map);
+  }
+  const n = D.est.filter(e => !excluidas.has(e.id)).length;
+  $('sel-cuenta').textContent = n === D.est.length ? 'todas' : `${n} de ${D.est.length}`;
+  if (ruta) evaluar();
+  clearTimeout(tGuardar); tGuardar = setTimeout(guardarSeleccion, 700);
+}
+async function guardarSeleccion() {
+  const quitar = [...excluidas].filter(id => !guardadas.has(id)), poner = [...guardadas].filter(id => !excluidas.has(id));
+  if (!quitar.length && !poner.length) return;
+  const estado = $('sel-estado');
+  estado.textContent = 'Guardando…'; estado.className = 'sel-estado';
+  try {
+    await window.Seleccion.guardar(quitar, poner);
+    guardadas = new Set(excluidas);
+    estado.textContent = 'Guardado para toda la empresa'; estado.className = 'sel-estado ok';
+  } catch (e) { estado.textContent = 'No se ha podido guardar: ' + e.message; estado.className = 'sel-estado error'; }
+}
+function montarSeleccion() {
+  const panel = L.control({ position: 'bottomleft' });
+  panel.onAdd = () => {
+    const div = L.DomUtil.create('div', 'sel-est'); div.id = 'sel-est'; div.hidden = true;
+    div.setAttribute('role', 'dialog'); div.setAttribute('aria-label', 'Estaciones en el mapa');
+    div.innerHTML = `<div class="sel-cab"><b>Estaciones en el mapa</b><span id="sel-n"></span><button type="button" class="sel-x" id="sel-x" aria-label="Cerrar">×</button></div>
+      <input type="search" id="sel-buscar" placeholder="Buscar estación, población o tarjeta" autocomplete="off">
+      <label class="sel-todas"><input type="checkbox" id="sel-todas"> <span id="sel-todas-t">Seleccionar todas</span></label>
+      <div class="sel-lista" id="sel-lista"></div>
+      <p class="sel-pie"><span id="sel-estado" class="sel-estado"></span><span id="sel-nota">Solo las marcadas salen en el mapa y en las paradas de las rutas. Las estaciones nuevas aparecen marcadas.</span></p>`;
+    L.DomEvent.disableClickPropagation(div); L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  panel.addTo(map);
+  const editar = window.Seleccion.puedeEditar();
+  if (!editar) $('sel-nota').textContent = 'Solo un gestor puede cambiar qué estaciones se ven.';
+  const lista = D.est.slice().sort((a, b) => PROVEEDORES.indexOf(a.t) - PROVEEDORES.indexOf(b.t) || a.n.localeCompare(b.n, 'es'));
+  const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const visibles = () => { const q = norm($('sel-buscar').value.trim()); return q ? lista.filter(e => norm(`${e.n} ${e.mun} ${e.prov} ${e.t}`).includes(q)) : lista; };
+  const pintar = () => {
+    const vis = visibles(), marcadas = vis.filter(e => !excluidas.has(e.id)).length;
+    const todas = $('sel-todas');
+    todas.checked = vis.length > 0 && marcadas === vis.length; todas.indeterminate = marcadas > 0 && marcadas < vis.length;
+    todas.disabled = !editar || !vis.length;
+    const filtro = vis.length !== lista.length ? ` (${vis.length})` : '';
+    $('sel-todas-t').textContent = (todas.checked ? 'Deseleccionar todas' : 'Seleccionar todas') + filtro;
+    $('sel-n').textContent = `${lista.filter(e => !excluidas.has(e.id)).length} de ${lista.length}`;
+    let html = '', grupo = null;
+    for (const e of vis) {
+      if (e.t !== grupo) {
+        grupo = e.t; const g = vis.filter(x => x.t === grupo), gm = g.filter(x => !excluidas.has(x.id)).length;
+        html += `<div class="sel-grupo"><i class="${forma(grupo)}"></i>${esc(grupo)}<span>${gm} de ${g.length}</span></div>`;
+      }
+      html += `<label class="sel-item"><input type="checkbox" data-id="${esc(e.id)}"${excluidas.has(e.id) ? '' : ' checked'}${editar ? '' : ' disabled'}>
+        <span class="sel-nm">${esc(e.n)}<small>${esc([e.mun, e.prov].filter(Boolean).join(' · '))}</small></span><span class="sel-pr">${fmt(e.p)}</span></label>`;
+    }
+    const caja = $('sel-lista'), arriba = caja.scrollTop;
+    caja.innerHTML = html || '<p class="sel-vacio">Ninguna estación coincide con la búsqueda.</p>';
+    caja.scrollTop = arriba;
+  };
+  const abrir = (si) => {
+    $('sel-est').hidden = !si; $('b-sel').setAttribute('aria-expanded', si);
+    $('b-sel').querySelector('span').textContent = si ? '▾' : '▴';
+    if (si) { pintar(); $('sel-buscar').focus(); }
+  };
+  $('b-sel').onclick = () => abrir($('sel-est').hidden);
+  $('sel-x').onclick = () => abrir(false);
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('sel-est').hidden) abrir(false); });
+  $('sel-buscar').oninput = pintar;
+  $('sel-todas').onchange = () => {
+    const vis = visibles(), marcar = $('sel-todas').checked;
+    for (const e of vis) marcar ? excluidas.delete(e.id) : excluidas.add(e.id);
+    pintar(); aplicarSeleccion();
+  };
+  $('sel-lista').onchange = ev => {
+    const c = ev.target.closest('input[data-id]'); if (!c) return;
+    c.checked ? excluidas.delete(c.dataset.id) : excluidas.add(c.dataset.id);
+    pintar(); aplicarSeleccion();
+  };
+  const n = D.est.filter(e => !excluidas.has(e.id)).length;
+  $('sel-cuenta').textContent = n === D.est.length ? 'todas' : `${n} de ${D.est.length}`;
+}
+
 // ---------- reparto de la pantalla en escritorio ----------
 // Escritorio ancho: litros y paradas van al panel (antes de «Calcular ruta») y el resumen
 // y el envío flotan sobre la parte de arriba del mapa. En móvil todo queda como siempre.
@@ -380,6 +469,7 @@ new ResizeObserver(() => {
 // ---------- arranque ----------
 async function iniciar(camiones) {
   D = await window.Precios.cargar();
+  try { excluidas = await window.Seleccion.cargar(); guardadas = new Set(excluidas); } catch (e) { excluidas = new Set(); }
   if (!D.est.length) {
     $('fecha').textContent = 'Todavía no hay precios: reenvía los emails de tus proveedores a la dirección de la pestaña Flota.';
     D.est = [];
@@ -405,14 +495,18 @@ async function iniciar(camiones) {
   for (const e of D.est) {
     const icon = L.divIcon({ className: '', iconSize: [14, 14], iconAnchor: [7, 7],
       html: `<span class="pin ${forma(e.t)}" style="--c:${colorPrecio(e.p)}">${forma(e.t) === 'a' ? TRIANGULO : ''}</span><span class="ptag">${fmt(e.p)}</span>` });
-    const mk = L.marker([e.lat, e.lon], { icon, title: `${e.n} · ${fmt(e.p)} €/l`, riseOnHover: true }).addTo(map);
+    const mk = L.marker([e.lat, e.lon], { icon, title: `${e.n} · ${fmt(e.p)} €/l`, riseOnHover: true });
+    if (!excluidas.has(e.id)) mk.addTo(map);
     mk.bindPopup(() => popup(e), { maxWidth: 300 });
     marcadores.set(e.id, mk);
   }
   const ley = L.control({ position: 'bottomleft' });
   ley.onAdd = () => { const div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = `<span>${fmt(pMin)}</span><span class="ramp"></span><span>${fmt(ps.at(-1))} €/l</span>${PROVEEDORES.filter(p => D.est.some(e => e.t === p)).map(p => `<span><i class="${forma(p)}"></i>${p}</span>`).join('')}`; return div; };
+    div.innerHTML = `<span>${fmt(pMin)}</span><span class="ramp"></span><span>${fmt(ps.at(-1))} €/l</span>${PROVEEDORES.filter(p => D.est.some(e => e.t === p)).map(p => `<span><i class="${forma(p)}"></i>${p}</span>`).join('')}
+    <button type="button" class="b-sel" id="b-sel" aria-expanded="false" aria-controls="sel-est">Estaciones <b id="sel-cuenta"></b> <span aria-hidden="true">▴</span></button>`;
+    L.DomEvent.disableClickPropagation(div); return div; };
   ley.addTo(map);
+  montarSeleccion();
 
   ponerCamiones(camiones);
   $('camion').onchange = () => { litrosManual = null; pintarCamion(); }; $('nivel').oninput = pintarCamion;
