@@ -13,7 +13,7 @@ const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SE
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-type Precio = { codigo: string; nombre: string; sin_iva: number; con_iva: number | null };
+type Precio = { codigo: string; nombre: string; sin_iva: number; con_iva: number | null; zona?: string };
 type Lectura = { proveedor: string; fecha: string | null; cliente?: string; precios: Precio[] };
 
 // ---------- utilidades de texto ----------
@@ -89,6 +89,45 @@ const LECTORES: { proveedor: string; marca: RegExp; leer: (t: string) => Lectura
       return { proveedor: 'DST', fecha: f ? fechaIso(f[1]) : null, precios };
     },
   },
+  {
+    proveedor: 'Staroil',
+    marca: /staroil\.es|PRECIOS STAROIL|email de precios Staroil/i,
+    leer(t) {
+      const f = t.match(/PRECIOS DE GAS.LEO A[\s\S]{0,200}?Fecha:\s*(\d{2}\/\d{2}\/\d{4})/i) || t.match(/Fecha:\s*(\d{2}\/\d{2}\/\d{4})/i);
+      // Una celda por línea (texto) o por tabulador (HTML): nombre, comunidad, provincia, PVP, dto., con IVA, sin IVA
+      const celdas = t.split(/[\n\t]/).map((l) => l.replace(/\r/g, '').replace(/^[\s>]+/, '').trim()).filter(Boolean);
+      const esPrecio = (c: string) => /^\d+,\d{3}\s*€?$/.test(c);
+      const precios: Precio[] = [];
+      for (let i = 3; i + 3 < celdas.length; i++) {
+        if (![0, 1, 2, 3].every((k) => esPrecio(celdas[i + k])) || [1, 2, 3].some((k) => esPrecio(celdas[i - k]))) continue;
+        const nombre = limpiar(celdas[i - 3]);
+        if (/area servicio|sin iva/i.test(nombre)) continue;
+        precios.push({ codigo: slug(nombre), nombre, sin_iva: numero(celdas[i + 3]), con_iva: numero(celdas[i + 2]), zona: `${celdas[i - 1]} (${celdas[i - 2]})` });
+        i += 3;
+      }
+      return { proveedor: 'Staroil', fecha: f ? fechaIso(f[1]) : null, precios };
+    },
+  },
+  {
+    proveedor: 'Andamur',
+    marca: /andamur\.com|Andamur, precios para/i,
+    leer(t) {
+      const f = t.match(/Validez desde\s*(\d{2})-(\d{2})-(\d{4})/i);
+      const c = t.match(/Andamur, precios para\s+([^\r\n]+)/i);
+      // Por fila: estación, vía, localidad, provincia y precio sin IVA
+      const celdas = t.split(/[\n\t]/).map((l) => l.replace(/\r/g, '').replace(/^[\s>]+/, '').trim()).filter(Boolean);
+      const esPrecio = (x: string) => /^\d+,\d{3}$/.test(x);
+      const cabecera = /^(VIA|LOCALIDAD|PROVINCIA|PRECIO)\b/i;
+      const precios: Precio[] = [];
+      for (let i = 4; i < celdas.length; i++) {
+        if (!esPrecio(celdas[i]) || [1, 2, 3, 4].some((k) => esPrecio(celdas[i - k]) || cabecera.test(celdas[i - k]))) continue;
+        const [nombre, via, localidad, provincia] = [celdas[i - 4], celdas[i - 3], celdas[i - 2], celdas[i - 1]].map(limpiar);
+        const sin = numero(celdas[i]);
+        precios.push({ codigo: slug(`${nombre} ${localidad}`), nombre, sin_iva: sin, con_iva: Math.round(sin * 1.21 * 1000) / 1000, zona: `${localidad} (${provincia}) · ${via}` });
+      }
+      return { proveedor: 'Andamur', fecha: f ? `${f[3]}-${f[2]}-${f[1]}` : null, cliente: c ? limpiar(c[1]) : undefined, precios };
+    },
+  },
 ];
 
 async function sha256(s: string) {
@@ -109,6 +148,25 @@ Deno.serve(async (req) => {
 
   let b: Record<string, any>;
   try { b = await req.json(); } catch { return json({ error: 'Petición no válida' }, 400); }
+
+  // Leer un email guardado sin lector (para preparar su lector)
+  if (b.accion === 'ver_guardado') {
+    const { data, error } = await sb.storage.from('correos').download(String(b.ruta || ''));
+    if (error || !data) return json({ error: 'No encontrado' }, 404);
+    const e = JSON.parse(await data.text());
+    return json({ remitente: e.remitente, asunto: e.asunto, texto: e.texto, html_texto: e.html ? htmlATexto(e.html) : null });
+  }
+
+  // Volver a procesar un email guardado sin lector (cuando ya existe su lector)
+  if (b.accion === 'reprocesar') {
+    const ruta = String(b.ruta || ''), [empresaId, correoId] = ruta.split('/');
+    const { data, error } = await sb.storage.from('correos').download(ruta);
+    if (error || !data) return json({ error: 'No encontrado' }, 404);
+    const e = JSON.parse(await data.text());
+    const { data: emp } = await sb.from('empresas').select('alias').eq('id', empresaId).maybeSingle();
+    if (!emp) return json({ error: 'Empresa no encontrada' }, 404);
+    b = { alias: emp.alias, remitente: e.remitente, asunto: e.asunto, fecha: e.fecha, texto: e.texto, html: e.html, adjuntos: [], _guardado: { ruta, correoId } };
+  }
 
   if (b.accion === 'alias') {
     const { data } = await sb.from('empresas').select('alias').not('alias', 'is', null);
@@ -148,6 +206,7 @@ Deno.serve(async (req) => {
   }
 
   if (!lecturas.length) {
+    if (b._guardado) return json({ ok: false, estado: 'sin_lector', mensaje: 'Sigue sin haber un lector para este email' });
     const { data: c } = await sb.from('correos').insert({
       empresa_id: empresa.id, recibido, remitente, asunto, estado: 'sin_lector',
       detalle: `Ningún lector reconoce este email. Adjuntos: ${adjuntos.map((a: any) => a.nombre).join(', ') || 'ninguno'}`,
@@ -165,10 +224,12 @@ Deno.serve(async (req) => {
   const resumen = [];
   for (const l of lecturas) {
     const fecha = l.fecha || recibido.toISOString().slice(0, 10);
+    // Algunas estaciones salen repetidas (en varias zonas): se queda la primera
+    l.precios = l.precios.filter((p, i, a) => a.findIndex((q) => q.codigo === p.codigo) === i);
     // Estaciones: las nuevas entran pendientes de ubicar
     const codigos = [...new Set(l.precios.map((p) => p.codigo))];
     const nuevas = l.precios.filter((p, i, a) => a.findIndex((q) => q.codigo === p.codigo) === i)
-      .map((p) => ({ proveedor: l.proveedor, codigo: p.codigo, nombre: p.nombre }));
+      .map((p) => ({ proveedor: l.proveedor, codigo: p.codigo, nombre: p.nombre, provincia: p.zona ?? null }));
     await sb.from('estaciones').upsert(nuevas, { onConflict: 'proveedor,codigo', ignoreDuplicates: true });
     const { data: est, error: ee } = await sb.from('estaciones').select('id, codigo, confianza').eq('proveedor', l.proveedor).in('codigo', codigos);
     if (ee) return json({ error: ee.message }, 500);
@@ -191,6 +252,12 @@ Deno.serve(async (req) => {
       return json({ error: ep.message }, 500);
     }
     resumen.push({ proveedor: l.proveedor, fecha, precios: l.precios.length, sin_ubicar: sinUbicar });
+  }
+  // Si venía de un email guardado, se borra su registro de "sin lector" y la copia
+  if (b._guardado) {
+    await sb.from('correos').delete().eq('id', b._guardado.correoId).eq('estado', 'sin_lector');
+    const { data: lista } = await sb.storage.from('correos').list(b._guardado.ruta.split('/').slice(0, 2).join('/'));
+    await sb.storage.from('correos').remove((lista || []).map((o) => `${b._guardado.ruta.split('/').slice(0, 2).join('/')}/${o.name}`));
   }
   return json({ ok: true, empresa: empresa.nombre, resumen });
 });
