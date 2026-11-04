@@ -91,6 +91,9 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .stop.elegida .radio { border-color: var(--sel); box-shadow: inset 0 0 0 3px var(--panel); background: var(--sel); }
 .envio { border-top: 2px solid var(--accent); }
 .envio .small b { color: var(--ink); }
+.litros-fila { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.litros-fila .num input { width: 5.5em; }
+#litros-nota { margin: 4px 0 0; }
 .btn.wa { background: #1a8f4c; color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; flex: 1; }
 .ahorro-txt { color: var(--cheap); font-weight: 600; }
 .kpi.destaca b { color: var(--cheap); }
@@ -347,6 +350,10 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     <section class="block envio" id="envio" hidden aria-live="polite">
       <span class="lbl">Enviar al conductor</span>
       <p class="small" id="envio-txt"></p>
+      <div><label class="lbl" for="litros">Litros a repostar</label>
+        <div class="litros-fila"><span class="num"><input type="number" id="litros" min="1" step="10" inputmode="numeric"> l</span>
+          <button class="mini" type="button" id="litros-lleno" hidden>Llenar depósito</button></div>
+        <p class="small" id="litros-nota"></p></div>
       <p class="small ahorro-txt" id="envio-ahorro"></p>
       <div class="row2">
         <a class="btn wa" id="b-wa" href="#" target="_blank" rel="noopener">Enviar por WhatsApp</a>
@@ -460,7 +467,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 <script src="auth.js?v=7"></script>
 </body>
 </html>

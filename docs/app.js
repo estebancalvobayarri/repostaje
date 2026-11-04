@@ -171,10 +171,11 @@ function candidatas() {
     const desvio = real ? real.km : s.d * 2 * 1.3;          // estimación: ida y vuelta x factor de carretera
     const quedan = lleva - (s.k + desvio / 2) * c.con / 100; // litros al llegar a la estación
     const alcanzable = quedan >= c.cap * RESERVA * 0.5;
-    const litros = Math.max(0, c.cap - Math.max(0, quedan));
+    const caben = Math.max(0, c.cap - Math.max(0, quedan));
+    const litros = litrosManual != null ? Math.min(litrosManual, caben) : caben;   // lo que elige el gestor, si cabe
     const costeDesvio = desvio * c.con / 100 * e.p;
     const efectivo = litros > 0 ? e.p + costeDesvio / litros : Infinity; // €/l con el desvío repartido
-    out.push({ e, k: s.k, d: s.d, desvio, real: !!real, min: real ? real.min : null, quedan, alcanzable, litros, coste: litros * e.p + costeDesvio, efectivo });
+    out.push({ e, k: s.k, d: s.d, desvio, real: !!real, min: real ? real.min : null, quedan, alcanzable, caben, litros, coste: litros * e.p + costeDesvio, efectivo });
   }
   return out.sort((a, b) => (b.alcanzable - a.alcanzable) || a.efectivo - b.efectivo);
 }
@@ -211,7 +212,7 @@ function evaluar() {
         <span class="radio" aria-hidden="true"></span>
         <div class="km"><b>${ent(x.k)}</b>km</div>
         <div style="min-width:0"><div class="nm">${esc(x.e.n)}</div>
-          <div class="sub">${x.e.t} · ${des}${x.alcanzable ? ` · caben ${ent(x.litros)} l` : ' · no llega con reserva'}</div></div>
+          <div class="sub">${x.e.t} · ${des}${x.alcanzable ? ` · caben ${ent(x.caben)} l` : ' · no llega con reserva'}</div></div>
         <div class="pr"><b style="color:${colorPrecio(x.e.p)}">${fmt(x.e.p)}</b>
           <small>${x === mejor ? '<span class="tagb">Mejor</span>' : x.alcanzable ? '+' + eur(dif) : '—'}</small></div>
       </div>`;
@@ -234,7 +235,7 @@ function evaluar() {
 }
 
 // ---------- enviar la ruta al conductor ----------
-function mensajeRuta(x) {
+function mensajeRuta(x, litros) {
   const c = camionActual(), o = lugares.origen, d = lugares.destino;
   const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${x.e.lat},${x.e.lon}&travelmode=driving`;
   const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
@@ -245,7 +246,7 @@ function mensajeRuta(x) {
     '',
     `*Repostar en:* ${x.e.n}`,
     `Tarjeta ${x.e.t} · km ${ent(x.k)} de la ruta`,
-    `Precio: ${fmt(x.e.p)} €/l sin IVA · echar unos ${ent(Math.floor(x.litros / 10) * 10)} l`,
+    `Precio: ${fmt(x.e.p)} €/l sin IVA · echar ${ent(litros)} l`,
     x.e.dir ? `Dirección: ${x.e.dir}, ${x.e.mun}` : null,
     '',
     `Ruta con la parada en Google Maps:`,
@@ -255,11 +256,22 @@ function mensajeRuta(x) {
 
 // La parada más cara de la ruta sirve de referencia para el ahorro
 let envioActual = null;
+let litrosManual = null;   // null = llenar el depósito
 function pintarEnvio(x, alcanzables = []) {
   const box = $('envio');
   if (!x) { box.hidden = true; envioActual = null; return; }
   const cara = alcanzables.reduce((m, y) => (!m || y.e.p > m.e.p ? y : m), null);
-  const litros = Math.floor(x.litros / 10) * 10, c = camionActual();
+  // Litros: los que pone el gestor (si caben al llegar) o, por defecto, llenar el depósito
+  const caben = Math.floor(x.caben / 10) * 10, c = camionActual();
+  const litros = litrosManual != null ? Math.min(litrosManual, Math.floor(x.caben)) : caben;
+  if (document.activeElement !== $('litros')) $('litros').value = litros;
+  $('litros').max = Math.floor(x.caben);
+  $('litros-lleno').hidden = litrosManual == null;
+  $('litros-nota').textContent = litrosManual == null
+    ? `Por defecto, llenar el depósito: al llegar caben unos ${ent(caben)} l.`
+    : litrosManual > x.caben
+      ? `Al llegar solo caben unos ${ent(x.caben)} l: se cuentan ${ent(litros)} l.`
+      : `Al llegar caben unos ${ent(caben)} l.`;
   envioActual = {
     fecha_precios: D.fecha, camion_id: c.id, matricula: c.id ? c.m : null,
     origen: lugares.origen.label, destino: lugares.destino.label, km_ruta: Math.round(ruta.km * 10) / 10,
@@ -268,7 +280,7 @@ function pintarEnvio(x, alcanzables = []) {
   };
   box.hidden = false;
   $('envio-txt').innerHTML = `Parada elegida: <b>${esc(x.e.n)}</b> (${x.e.t}, km ${ent(x.k)}, ${fmt(x.e.p)} €/l). Pulsa otra parada de la lista para cambiarla.`;
-  const texto = mensajeRuta(x);
+  const texto = mensajeRuta(x, litros);
   $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
   const ahorro = Math.max(0, envioActual.precio_cara - envioActual.precio_elegido) * litros;
   $('envio-ahorro').textContent = cara && cara !== x
@@ -357,7 +369,20 @@ async function iniciar(camiones) {
   ley.addTo(map);
 
   ponerCamiones(camiones);
-  $('camion').onchange = pintarCamion; $('nivel').oninput = pintarCamion;
+  $('camion').onchange = () => { litrosManual = null; pintarCamion(); }; $('nivel').oninput = pintarCamion;
+  // Litros a repostar: el gestor los decide en cada ruta
+  let tLitros;
+  $('litros').oninput = () => {
+    clearTimeout(tLitros);
+    tLitros = setTimeout(() => {
+      const v = Math.round(+$('litros').value);
+      if ($('litros').value === '' || !(v > 0)) return;
+      litrosManual = v; if (ruta) evaluar();
+    }, 300);
+  };
+  $('litros').onchange = () => { if ($('litros').value === '' || !(+$('litros').value > 0)) litrosManual = null; };
+  $('litros').onblur = () => { clearTimeout(tLitros); const v = Math.round(+$('litros').value); if (v > 0) litrosManual = v; if (ruta) evaluar(); };
+  $('litros-lleno').onclick = () => { litrosManual = null; $('litros').blur(); if (ruta) evaluar(); };
   // Distancia a la ruta: barra y casilla sincronizadas
   let tRadio;
   const ponerRadio = (v, desde) => {
