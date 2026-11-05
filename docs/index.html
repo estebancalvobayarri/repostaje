@@ -384,6 +384,23 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .exportar input[type=date] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
 .exportar .btn { justify-self: start; }
 
+/* --- Facturación de cada empresa (Administración) --- */
+.fact-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.estado-fact { font: 700 .85rem var(--f-body); padding: 4px 10px; border-radius: 999px; border: 1px solid; }
+.estado-fact.prueba { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.estado-fact.ok { color: var(--cheap); border-color: var(--cheap); }
+.estado-fact.mal { color: var(--dear); border-color: var(--dear); }
+.fact-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+.fila-prueba { display: flex; gap: 8px; flex-wrap: wrap; }
+.fila-prueba input { flex: 1 1 160px; min-width: 0; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.prueba-f { display: grid; gap: 8px; }
+.rapido-prueba { display: flex; gap: 6px; flex-wrap: wrap; }
+.kpis-fact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kpis-fact > div { background: var(--soft); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; }
+.kpis-fact b { font: 800 1.35rem var(--f-display); font-variant-numeric: tabular-nums; }
+.kpis-fact span { font-size: .75rem; color: var(--muted); }
+.tabla.eventos { max-height: 260px; overflow-y: auto; }
+
 /* --- Elegir qué estaciones se ven (solo escritorio) --- */
 .b-sel { display: none; }
 .sel-est { display: none; }
@@ -647,6 +664,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=15"></script>
+<script src="auth.js?v=16"></script>
 </body>
 </html>

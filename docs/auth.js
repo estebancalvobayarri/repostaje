@@ -263,7 +263,7 @@ function pintarAdmin(empresas) {
       <div class="emp-body" id="emp-${e.id}" ${abierta ? '' : 'hidden'}>
         <div class="emp-meta">${e.cif ? 'CIF ' + escH(e.cif) + ' · ' : ''}${e.usuarios.length} usuario${e.usuarios.length === 1 ? '' : 's'}</div>
         <div class="emp-tabs" role="tablist" aria-label="Secciones de ${escH(e.nombre)}">
-          ${[['usuarios', 'Usuarios'], ['flota', 'Flota y precios'], ['informes', 'Informes de ahorro']].map(([k, t]) =>
+          ${[['usuarios', 'Usuarios'], ['flota', 'Flota y precios'], ['informes', 'Informes de ahorro'], ['facturacion', 'Facturación']].map(([k, t]) =>
             `<button class="emp-tab" type="button" role="tab" data-sub="${k}" aria-selected="${empSub === k}">${t}</button>`).join('')}
         </div>
         <div class="emp-panel" data-panel="usuarios" ${empSub === 'usuarios' ? '' : 'hidden'}>
@@ -292,6 +292,7 @@ function pintarAdmin(empresas) {
         </div>
         <div class="emp-panel" data-panel="flota" ${empSub === 'flota' ? '' : 'hidden'}><p class="small">Cargando…</p></div>
         <div class="emp-panel emp-informes" data-panel="informes" ${empSub === 'informes' ? '' : 'hidden'}></div>
+        <div class="emp-panel" data-panel="facturacion" ${empSub === 'facturacion' ? '' : 'hidden'}><p class="small">Cargando…</p></div>
       </div>
     </section>`;
   }).join('');
@@ -348,6 +349,7 @@ function abrirSub(sub) {
   sec.querySelectorAll('.emp-tab').forEach(b => b.setAttribute('aria-selected', b.dataset.sub === sub));
   sec.querySelectorAll('.emp-panel').forEach(p => { p.hidden = p.dataset.panel !== sub; });
   if (sub === 'flota') cargarFlotaAdmin(sec);
+  if (sub === 'facturacion') cargarFacturacion(sec);
   if (sub === 'informes') { sec.querySelector('.emp-informes').append(q('dash')); q('dash').hidden = false; cargarInformeAdmin(); }
   else devolverDash();
 }
@@ -371,6 +373,96 @@ async function cargarFlotaAdmin(sec) {
         <div class="lista-correos">${htmlCorreos(correos)}</div>
       </div>`;
   } catch (err) { panel.innerHTML = `<p class="small">No se ha podido cargar la flota: ${escH(err.message)}</p>`; }
+}
+
+// ---------- facturación de la empresa abierta ----------
+const eur2 = n => (+n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: 'always' }) + ' €';
+const fechaEs = iso => iso ? new Date(iso.length === 10 ? iso + 'T12:00' : iso).toLocaleDateString('es-ES') : '';
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const nombreMes = iso => { const [y, m] = iso.split('-'); return `${MESES_ES[+m - 1]} ${y}`; };
+const IVA = 0.21;
+
+async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
+  const panel = sec.querySelector('[data-panel="facturacion"]'), empresa_id = empAbierta;
+  let f;
+  try { f = await llamarAdmin({ ...accion, empresa_id }); }
+  catch (err) { panel.querySelector('.msg-fact') ? (panel.querySelector('.msg-fact').hidden = false, panel.querySelector('.msg-fact').textContent = err.message) : (panel.innerHTML = `<p class="small">No se ha podido cargar la facturación: ${escH(err.message)}</p>`); return; }
+  if (empAbierta !== empresa_id) return;
+  const actual = f.meses.find(m => m.en_curso) || { maximo: f.en_servicio, importe: 0, en_prueba: true };
+  const pendientes = f.meses.filter(m => !m.en_curso && !m.en_prueba && !m.sin_datos && m.importe > 0 && !m.pago);
+  const deuda = pendientes.reduce((t, m) => t + m.importe, 0);
+  const ESTADO = {
+    prueba: ['prueba', f.prueba_hasta ? `En prueba hasta el ${fechaEs(f.prueba_hasta)}` : 'En prueba, sin fecha de fin'],
+    al_dia: ['ok', 'Al día'],
+    pendiente: ['mal', `Pendiente: ${pendientes.length} ${pendientes.length === 1 ? 'mes' : 'meses'} · ${eur2(deuda)} + IVA`],
+  }[f.estado];
+  const estimado = actual.en_prueba ? 0 : (actual.importe || 0);
+  const hoy = new Date(), masUnMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, hoy.getDate());
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const finDeMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+  const EVENTO = { alta: 'Alta', baja: 'Baja', borrado: 'Borrado', inicio: 'Situación inicial' };
+
+  panel.innerHTML = `
+    <div class="fact-cab"><span class="estado-fact ${ESTADO[0]}">${escH(ESTADO[1])}</span>
+      <span class="small">Se cobra a mes vencido el máximo de camiones que ha tenido en servicio a la vez durante el mes.</span></div>
+    <div class="fact-grid">
+      <div class="area usuarios">
+        <h3>Prueba gratis</h3>
+        <form class="prueba-f">
+          <label class="lbl" for="prueba-${empresa_id}">Gratis hasta (incluido)</label>
+          <div class="fila-prueba"><input type="date" id="prueba-${empresa_id}" value="${f.prueba_hasta || ''}"><button class="btn" type="submit">Guardar</button></div>
+          <div class="rapido-prueba">
+            <button class="mini" type="button" data-hasta="${iso(finDeMes)}">Hasta fin de este mes</button>
+            <button class="mini" type="button" data-hasta="${iso(masUnMes)}">1 mes desde hoy</button>
+            ${f.prueba_hasta ? '<button class="mini" type="button" data-hasta="">Quitar fecha</button>' : ''}
+          </div>
+          <p class="small" style="margin:0">El mes en que termina la prueba no se cobra; se empieza a cobrar el mes siguiente. Sin fecha, la empresa sigue en prueba.</p>
+        </form>
+      </div>
+      <div class="area usuarios">
+        <h3>Mes en curso · ${escH(nombreMes(f.meses[0]?.mes || iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1))))}</h3>
+        <div class="kpis-fact">
+          <div><b>${f.en_servicio}</b><span>en servicio ahora</span></div>
+          <div><b>${actual.maximo ?? f.en_servicio}</b><span>máximo del mes</span></div>
+          <div><b>${actual.en_prueba ? '0 €' : eur2(estimado)}</b><span>${actual.en_prueba ? 'en prueba' : `+ IVA · ${eur2(estimado * (1 + IVA))} con IVA`}</span></div>
+        </div>
+        <p class="small" style="margin:0">Estimación: el importe se cierra el último día del mes.</p>
+      </div>
+    </div>
+    <div class="area usuarios">
+      <h3>Meses</h3>
+      <div class="tabla"><table><thead><tr><th>Mes</th><th>Camiones</th><th>Importe</th><th>Con IVA</th><th>Estado</th><th></th></tr></thead><tbody>
+      ${f.meses.map(m => {
+        const estado = m.en_curso ? 'En curso' : m.sin_datos ? 'Sin datos' : m.en_prueba ? 'En prueba' : m.pago ? `Cobrado el ${fechaEs(m.pago.pagado_el)}` : m.importe > 0 ? '<span class="pill pend">Pendiente</span>' : 'Sin camiones';
+        const accion = m.pago ? `<button class="mini" type="button" data-mes="${m.mes}" data-pagado="0">Deshacer</button>`
+          : !m.en_curso && !m.en_prueba && !m.sin_datos && m.importe > 0 ? `<button class="mini" type="button" data-mes="${m.mes}" data-pagado="1">Marcar cobrado</button>` : '';
+        const imp = m.pago ? m.pago.importe : m.importe;
+        return `<tr><td style="text-transform:capitalize">${nombreMes(m.mes)}</td><td>${m.sin_datos ? '—' : (m.pago ? m.pago.camiones : m.maximo)}</td>
+          <td>${m.sin_datos || m.en_prueba ? '—' : eur2(imp)}</td><td>${m.sin_datos || m.en_prueba ? '—' : eur2(imp * (1 + IVA))}</td><td>${estado}</td><td>${accion}</td></tr>`;
+      }).join('')}
+      </tbody></table></div>
+      <div class="msg msg-fact" hidden></div>
+    </div>
+    <div class="fact-grid">
+      <div class="area usuarios">
+        <h3>Tarifa por camión y mes (sin IVA)</h3>
+        <div class="tabla"><table><tbody>
+          ${f.tramos.map(t => `<tr><td>${t.hasta ? `Del ${t.desde} al ${t.hasta}` : `Más de ${t.desde - 1}`}</td><td>${eur2(t.precio)}</td></tr>`).join('')}
+        </tbody></table></div>
+        <p class="small" style="margin:0">Escalonado: cada camión paga el precio de su tramo. 20 camiones = 10 × 5 € + 10 × 4,50 € = 95 €.</p>
+      </div>
+      <div class="area usuarios">
+        <h3>Altas y bajas de camiones · últimos 6 meses</h3>
+        ${f.eventos.length ? `<div class="tabla eventos"><table><thead><tr><th>Fecha</th><th>Camión</th><th>Cambio</th><th>En servicio</th></tr></thead><tbody>
+          ${f.eventos.map(e => `<tr><td>${new Date(e.creado).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td><td style="text-align:left">${escH(e.matricula || '—')}</td><td>${EVENTO[e.evento] || e.evento}</td><td>${e.en_servicio}</td></tr>`).join('')}
+        </tbody></table></div>` : '<p class="small">Todavía no hay cambios.</p>'}
+      </div>
+    </div>`;
+
+  const guardarPrueba = hasta => cargarFacturacion(sec, { accion: 'prueba', hasta });
+  panel.querySelector('.prueba-f').onsubmit = ev => { ev.preventDefault(); guardarPrueba(panel.querySelector('input[type=date]').value || null); };
+  panel.querySelectorAll('[data-hasta]').forEach(b => b.onclick = () => guardarPrueba(b.dataset.hasta || null));
+  panel.querySelectorAll('button[data-mes]').forEach(b => b.onclick = () => { b.disabled = true; cargarFacturacion(sec, { accion: 'pago', mes: b.dataset.mes, pagado: b.dataset.pagado === '1' }); });
 }
 
 async function cargarInformeAdmin() {

@@ -33,6 +33,55 @@ async function aliasLibre(deseado: string) {
   }
 }
 
+// ---------- facturación ----------
+// Precio por camión y mes, escalonado por tramos (sin IVA): los 10 primeros a 5 €, del 11 al 25 a 4,50 €…
+const TRAMOS: [number, number][] = [[10, 5], [25, 4.5], [50, 4], [100, 3.5], [Infinity, 3]];
+function importe(camiones: number) {
+  let total = 0, desde = 0;
+  for (const [hasta, precio] of TRAMOS) {
+    const n = Math.max(0, Math.min(camiones, hasta) - desde);
+    total += n * precio; desde = hasta;
+    if (camiones <= hasta) break;
+  }
+  return Math.round(total * 100) / 100;
+}
+const hoyMadrid = () => new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Madrid' }));
+const isoDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+async function facturacion(empresa_id: string) {
+  const hoy = hoyMadrid(), mesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  const primero = new Date(hoy.getFullYear(), hoy.getMonth() - 6, 1);
+  const [{ data: emp, error: e0 }, { data: filas, error: e1 }, { data: pagos, error: e2 }, { data: eventos, error: e3 }, { count, error: e4 }] = await Promise.all([
+    sb.from('empresas').select('id, nombre, cif, prueba_hasta, creado').eq('id', empresa_id).single(),
+    sb.from('camiones_mes').select('mes, maximo, actual').eq('empresa_id', empresa_id).order('mes'),
+    sb.from('pagos_mes').select('mes, camiones, importe, pagado_el, nota').eq('empresa_id', empresa_id),
+    sb.from('camiones_eventos').select('matricula, evento, en_servicio, creado').eq('empresa_id', empresa_id).order('creado', { ascending: false }).limit(300),
+    sb.from('camiones').select('id', { count: 'exact', head: true }).eq('empresa_id', empresa_id).eq('activo', true),
+  ]);
+  if (e0 || e1 || e2 || e3 || e4) throw e0 || e1 || e2 || e3 || e4;
+  const porMes = new Map((filas || []).map((f) => [f.mes, f]));
+  const pagado = new Map((pagos || []).map((p) => [p.mes, p]));
+  const prueba = emp.prueba_hasta as string | null;
+  const creadoMes = new Date(new Date(emp.creado).getFullYear(), new Date(emp.creado).getMonth(), 1);
+  const meses = [];
+  let arrastre: number | null = null;   // camiones en servicio al acabar el mes anterior con datos
+  for (let d = new Date(primero); d <= mesActual; d.setMonth(d.getMonth() + 1)) {
+    const k = isoDia(d), f = porMes.get(k);
+    const maximo = f ? f.maximo : arrastre;
+    if (f) arrastre = f.actual;
+    if (d < creadoMes && maximo == null) continue;
+    const enCurso = +d === +mesActual;
+    // Un mes se cobra si la prueba terminó antes de que empezara (el mes en que acaba la prueba no se cobra)
+    const enPrueba = !prueba || prueba >= k;
+    meses.push({ mes: k, maximo, importe: maximo == null || enPrueba ? 0 : importe(maximo), en_prueba: enPrueba, en_curso: enCurso, sin_datos: maximo == null, pago: pagado.get(k) || null });
+  }
+  const hoyIso = isoDia(hoy);
+  const pendientes = meses.filter((m) => !m.en_curso && !m.en_prueba && !m.sin_datos && m.importe > 0 && !m.pago);
+  const estado = !prueba || prueba >= hoyIso ? 'prueba' : pendientes.length ? 'pendiente' : 'al_dia';
+  return { prueba_hasta: prueba, estado, en_servicio: count || 0, meses: meses.reverse(), eventos: eventos || [],
+    tramos: TRAMOS.map(([hasta, precio], i) => ({ desde: i ? TRAMOS[i - 1][0] + 1 : 1, hasta: hasta === Infinity ? null : hasta, precio })) };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
@@ -112,6 +161,34 @@ Deno.serve(async (req) => {
       const nombreEmpresa = new Map((empresas || []).map((e) => [e.id, e.nombre]));
       const emailUsuario = new Map(lista.users.map((x) => [x.id, x.email]));
       return json({ envios: (envios || []).map((e) => ({ ...e, empresa: nombreEmpresa.get(e.empresa_id) || '', enviado_por: emailUsuario.get(e.usuario_id) || '' })) });
+    }
+
+    if (accion === 'facturacion') return json(await facturacion(String(body.empresa_id || '')));
+
+    // Fin de la prueba gratis (vacío = sin fecha: la empresa sigue en prueba)
+    if (accion === 'prueba') {
+      const empresa_id = String(body.empresa_id || '');
+      const hasta = body.hasta ? String(body.hasta) : null;
+      if (hasta && !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) return json({ error: 'La fecha no es válida' }, 400);
+      const { error } = await sb.from('empresas').update({ prueba_hasta: hasta }).eq('id', empresa_id);
+      if (error) throw error;
+      return json(await facturacion(empresa_id));
+    }
+
+    // Marcar un mes como cobrado (o deshacerlo). El importe lo calcula el servidor.
+    if (accion === 'pago') {
+      const empresa_id = String(body.empresa_id || ''), mes = String(body.mes || '');
+      if (body.pagado) {
+        const f = await facturacion(empresa_id);
+        const m = f.meses.find((x) => x.mes === mes);
+        if (!m || m.en_curso || m.en_prueba || m.sin_datos) return json({ error: 'Ese mes no se puede marcar como cobrado' }, 400);
+        const { error } = await sb.from('pagos_mes').upsert({ empresa_id, mes, camiones: m.maximo, importe: m.importe, nota: body.nota ? String(body.nota).slice(0, 200) : null });
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('pagos_mes').delete().eq('empresa_id', empresa_id).eq('mes', mes);
+        if (error) throw error;
+      }
+      return json(await facturacion(empresa_id));
     }
 
     if (accion === 'crear_empresa') {
