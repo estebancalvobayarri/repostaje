@@ -1,0 +1,43 @@
+/* Textos legales de Fuelfy: lectura cómoda, misma marca que la app */
+:root {
+  --bg: #F6F4EF; --panel: #FFFFFF; --ink: #12263F; --muted: #4A5563; --line: #E4E0D6;
+  --accent: #F2A900; --accent-soft: #FDF3D6; --accent-line: #F0D78F;
+  --f: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--f); }
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { color: #0B1A2C; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cab { background: var(--ink); color: #FFFFFF; padding-block: 14px; padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+.cab-in { max-width: 920px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cab a { color: #FFFFFF; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.cab .wm { font: 800 1.45rem/.85 var(--f); letter-spacing: -.045em; }
+.cab .wm i { font-style: normal; color: var(--accent); }
+.cab .volver { font-weight: 600; font-size: .9rem; border: 1px solid rgba(255,255,255,.45); border-radius: 6px; padding: 5px 10px; }
+.cab .volver:hover { background: rgba(255,255,255,.12); }
+nav.textos { border-bottom: 1px solid var(--line); background: var(--panel); padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+nav.textos ul { max-width: 920px; margin: 0 auto; padding: 0; list-style: none; display: flex; gap: 4px; flex-wrap: wrap; }
+nav.textos a { display: block; padding: 10px 12px; font-weight: 600; font-size: .92rem; color: var(--muted); text-decoration: none; border-bottom: 3px solid transparent; }
+nav.textos a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
+main { max-width: 920px; margin: 0 auto; padding-block: 32px 56px; padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+article { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: clamp(20px, 4vw, 44px); }
+h1 { font: 800 clamp(1.7rem, 4vw, 2.3rem)/1.15 var(--f); letter-spacing: -.02em; margin: 0 0 6px; text-wrap: balance; }
+.fecha { color: var(--muted); font-size: .9rem; margin: 0 0 24px; }
+h2 { font: 800 1.15rem/1.3 var(--f); margin: 30px 0 8px; text-wrap: balance; }
+h3 { font: 700 1rem/1.3 var(--f); margin: 20px 0 6px; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 12px; padding-left: 22px; }
+li { margin-bottom: 4px; }
+.resumen { background: var(--accent-soft); border: 1px solid var(--accent-line); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; }
+.resumen p:last-child, .resumen ul:last-child { margin-bottom: 0; }
+.tabla { overflow-x: auto; margin: 8px 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 .75rem var(--f); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+mark.falta { background: #FFE08A; color: var(--ink); padding: 0 4px; border-radius: 3px; font-weight: 700; }
+footer { max-width: 920px; margin: 0 auto; padding: 0 18px 32px; color: var(--muted); font-size: .85rem; }

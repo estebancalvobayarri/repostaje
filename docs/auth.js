@@ -58,6 +58,8 @@ async function verApp(session) {
     return;
   }
   perfil = data;
+  // La primera vez (y con cada versión nueva de los textos) hay que aceptar las condiciones
+  if (!(await aceptarCondiciones(session.user.id))) return;
   q('empresa').textContent = data.empresas?.nombre || '';
   q('usuario').textContent = session.user.email;
   q('flota-aviso').hidden = data.rol === 'gestor';
@@ -68,6 +70,27 @@ async function verApp(session) {
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
+}
+
+// ---------- aceptación de condiciones y privacidad ----------
+const VERSION_LEGAL = '1.0';
+async function aceptarCondiciones(userId) {
+  const { data, error } = await sb.from('aceptaciones_legales').select('version').eq('user_id', userId).eq('version', VERSION_LEGAL).maybeSingle();
+  if (data || error) return true;   // si no se puede comprobar, no se bloquea la app
+  q('pantalla-entrar').hidden = true;
+  q('aceptar').hidden = false;
+  return new Promise((resolver) => {
+    q('f-aceptar').onsubmit = async (ev) => {
+      ev.preventDefault(); mensaje('msg-aceptar', '');
+      q('b-aceptar').disabled = true;
+      const { error: e } = await sb.from('aceptaciones_legales').insert({ user_id: userId, version: VERSION_LEGAL, empresa_id: perfil?.empresa_id || null });
+      q('b-aceptar').disabled = false;
+      if (e && !/duplicate/i.test(e.message)) return mensaje('msg-aceptar', 'No se ha podido guardar: ' + e.message);
+      q('aceptar').hidden = true;
+      resolver(true);
+    };
+    q('b-no-acepto').onclick = async () => { q('aceptar').hidden = true; resolver(false); await sb.auth.signOut(); };
+  });
 }
 
 // ---------- entrar / salir / contraseña ----------

@@ -279,6 +279,18 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .caja .logo .wm { font-size: 2.4rem; }
 .caja .marca { display: grid; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .caja { box-shadow: 0 1px 0 var(--line), 0 18px 40px -24px rgba(18, 38, 63, .25); }
+.entrar { align-content: center; gap: 16px; }
+.legal-links { margin: 0; font-size: .82rem; color: var(--muted); text-align: center; }
+.legal-links a { color: var(--muted); text-underline-offset: 3px; }
+.legal-links a:hover { color: var(--ink); }
+.foot .legal-links { display: block; text-align: left; margin-top: 6px; }
+.aceptar { position: fixed; inset: 0; z-index: 3000; background: rgba(11, 26, 44, .55); display: grid; place-items: center; overflow-y: auto; padding-block: 24px; padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+.aceptar .caja { max-width: 520px; }
+.aceptar h2 { font: 800 1.5rem/1.15 var(--f-display); margin: 0; }
+.aceptar ul { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 4px; font-size: .92rem; }
+.aceptar .check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-size: .92rem; cursor: pointer; }
+.aceptar .check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ink); }
+.aceptar .check a { color: var(--ink); font-weight: 600; }
 .entrar { background: var(--bg); }
 
 /* --- Escritorio: litros y paradas en el panel; resumen y envío flotando sobre la parte de arriba del mapa --- */
@@ -469,7 +481,24 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     <div class="msg" id="msg-nueva" hidden></div>
     <button class="btn" type="submit">Guardar contraseña</button>
   </form>
+  <p class="legal-links"><a href="legal/aviso-legal.html">Aviso legal</a> · <a href="legal/privacidad.html">Privacidad y cookies</a> · <a href="legal/condiciones.html">Condiciones</a></p>
 </main>
+
+<div class="aceptar" id="aceptar" hidden>
+  <form class="caja" id="f-aceptar" role="dialog" aria-modal="true" aria-labelledby="aceptar-t">
+    <h2 id="aceptar-t">Antes de empezar</h2>
+    <p>Para usar Fuelfy necesitamos que aceptes las condiciones del servicio y que conozcas cómo tratamos los datos. Lo más importante:</p>
+    <ul>
+      <li>Prueba gratis y, después, pago por camión en servicio y mes, con descuentos por tramos.</li>
+      <li>Puedes darte de baja cuando quieras; tus datos se pueden descargar y se borran tras la baja.</li>
+      <li>Los precios vienen de tus proveedores y las rutas y ahorros son estimaciones.</li>
+    </ul>
+    <label class="check"><input type="checkbox" id="acepto" required> <span>He leído y acepto las <a href="legal/condiciones.html" target="_blank" rel="noopener">Condiciones de uso y contratación</a> (incluido el anexo de encargo del tratamiento) y la <a href="legal/privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>.</span></label>
+    <div class="msg" id="msg-aceptar" hidden></div>
+    <button class="btn" type="submit" id="b-aceptar">Aceptar y continuar</button>
+    <button class="enlace" type="button" id="b-no-acepto">Ahora no, salir</button>
+  </form>
+</div>
 
 <div class="app" id="pantalla-app" data-vista="ruta" hidden>
   <aside class="side">
@@ -609,6 +638,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 
     <footer class="foot">
       Precios sin IVA de las tarjetas de la empresa. Rutas calculadas para turismo con OSRM; para camión pueden variar. Mapa © OpenStreetMap.
+      <span class="legal-links"><a href="legal/aviso-legal.html">Aviso legal</a> · <a href="legal/privacidad.html">Privacidad y cookies</a> · <a href="legal/condiciones.html">Condiciones</a></span>
     </footer>
   </aside>
   <div id="map" aria-label="Mapa"></div>
@@ -664,6 +694,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=16"></script>
+<script src="auth.js?v=17"></script>
 </body>
 </html>
