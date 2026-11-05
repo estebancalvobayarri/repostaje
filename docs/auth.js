@@ -5,7 +5,7 @@
 
 const SUPABASE_URL = 'https://sqtgnlfsydcecpxtumol.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jlUCcinmm04OR4euF_p8fw_ZBPV-c96';
-const WEB = 'https://estebancalvobayarri.github.io/repostaje/';
+const WEB = 'https://fuelfy.app/';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const q = id => document.getElementById(id);
