@@ -269,13 +269,16 @@ function mensajeRuta(x, litros) {
   ].filter(v => v !== null).join('\n');
 }
 
-// La parada más cara de la ruta sirve de referencia para el ahorro
+// Referencia del ahorro: media de precios de las otras paradas de la ruta a las que llega
+// (solo estaciones habilitadas por la empresa, porque las quitadas ya no entran en la lista)
 let envioActual = null;
 let litrosManual = null;   // null = llenar el depósito
 function pintarEnvio(x, alcanzables = []) {
   const box = $('envio');
   if (!x) { box.hidden = true; envioActual = null; return; }
-  const cara = alcanzables.reduce((m, y) => (!m || y.e.p > m.e.p ? y : m), null);
+  const otras = alcanzables.filter(y => y.e.id !== x.e.id);
+  const media = otras.length ? otras.reduce((t, y) => t + y.e.p, 0) / otras.length : null;
+  const cara = otras.reduce((m, y) => (!m || y.e.p > m.e.p ? y : m), null);
   // Litros: los que pone el gestor (si caben al llegar) o, por defecto, llenar el depósito
   const caben = Math.floor(x.caben / 10) * 10, c = camionActual();
   const litros = litrosManual != null ? Math.min(litrosManual, Math.floor(x.caben)) : caben;
@@ -292,15 +295,18 @@ function pintarEnvio(x, alcanzables = []) {
     origen: lugares.origen.label, destino: lugares.destino.label, km_ruta: Math.round(ruta.km * 10) / 10,
     estacion_id: x.e.id, estacion_nombre: x.e.n, tarjeta: x.e.t, precio_elegido: x.e.p, litros,
     estacion_cara_nombre: cara ? cara.e.n : null, precio_cara: cara ? cara.e.p : x.e.p,
+    precio_referencia: media != null ? Math.round(media * 10000) / 10000 : x.e.p, n_referencia: otras.length, referencia: 'media',
   };
   box.hidden = false;
   $('envio-txt').innerHTML = `Parada elegida: <b>${esc(x.e.n)}</b> (${x.e.t}, km ${ent(x.k)}, ${fmt(x.e.p)} €/l). Pulsa otra parada de la lista para cambiarla.`;
   const texto = mensajeRuta(x, litros);
   $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
-  const ahorro = Math.max(0, envioActual.precio_cara - envioActual.precio_elegido) * litros;
-  $('envio-ahorro').textContent = cara && cara !== x
-    ? `Ahorro estimado: ${eur(ahorro)} frente a la parada más cara de la ruta (${cara.e.n}, ${fmt(cara.e.p)} €/l).`
-    : 'Es la única parada de la ruta: no hay ahorro que comparar.';
+  const ahorro = Math.round((envioActual.precio_referencia - envioActual.precio_elegido) * litros * 100) / 100;
+  const frente = `frente a la media de ${otras.length === 1 ? 'la otra parada' : `las otras ${otras.length} paradas`} de la ruta (${fmt(media ?? x.e.p)} €/l).`;
+  $('envio-ahorro').classList.toggle('extra', ahorro < 0);
+  $('envio-ahorro').textContent = !otras.length
+    ? 'Es la única parada de la ruta: no hay ahorro que comparar.'
+    : ahorro < 0 ? `Coste extra estimado: ${eur(-ahorro)} ${frente}` : `Ahorro estimado: ${eur(ahorro)} ${frente}`;
   $('b-wa').onclick = async () => {
     // El enlace se abre igual; el registro se guarda a la vez
     const datos = { ...envioActual };

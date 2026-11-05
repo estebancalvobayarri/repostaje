@@ -104,6 +104,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 #litros-nota { margin: 4px 0 0; }
 .btn.wa { background: #1a8f4c; color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; flex: 1; }
 .ahorro-txt { color: var(--cheap); font-weight: 600; font-size: .76rem; }
+.ahorro-txt.extra { color: var(--dear); }
 .mas-paradas { display: none; }
 .kpi.destaca b { color: var(--cheap); }
 .meses { display: grid; gap: 6px; }
@@ -505,7 +506,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
       <section class="block"><p class="small" style="margin:0">El cuadro de mando de la derecha resume el periodo elegido. Aquí tienes cada ruta enviada.</p></section>
       <div class="stops-h"><h2>Repostajes enviados</h2><button class="mini" type="button" id="b-csv">Descargar CSV</button></div>
       <div id="a-lista"><p class="empty">Cargando…</p></div>
-      <p class="small" style="padding:12px 18px">El ahorro se calcula al enviar la ruta: diferencia entre el precio de la parada elegida y el de la parada más cara de esa ruta, por los litros que se iban a echar. Es una estimación: no comprueba lo que se repostó de verdad.</p>
+      <p class="small" style="padding:12px 18px">El ahorro se calcula al enviar la ruta: diferencia entre el precio de la parada elegida y la media de precios de las otras paradas de esa ruta (solo estaciones habilitadas), por los litros que se iban a echar. Si se elige una parada más cara que la media, cuenta como coste extra. Es una estimación: no comprueba lo que se repostó de verdad.</p>
     </div>
 
     <div id="vista-admin" role="tabpanel" aria-labelledby="t-admin" hidden>
@@ -545,7 +546,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 
     <div class="d-vacio" id="d-vacio" hidden>
       <h3>Todavía no hay rutas en este periodo</h3>
-      <p>Cada vez que un gestor envía una ruta por WhatsApp desde la pestaña Ruta, se guarda aquí con la parada elegida y el ahorro frente a la parada más cara de esa ruta. Prueba con otro periodo o envía la primera ruta.</p>
+      <p>Cada vez que un gestor envía una ruta por WhatsApp desde la pestaña Ruta, se guarda aquí con la parada elegida y el ahorro frente a la media de las otras paradas de esa ruta. Prueba con otro periodo o envía la primera ruta.</p>
     </div>
 
     <div id="d-contenido" hidden>
@@ -569,7 +570,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <article class="card ancho"><h3>Estaciones más elegidas</h3>
           <div class="tabla"><table><thead><tr><th>Estación</th><th>Veces</th><th>Litros</th><th>Ahorro</th></tr></thead><tbody id="t-estaciones"></tbody></table></div></article>
       </div>
-      <p class="small d-nota">Estimación: diferencia entre el precio de la parada elegida y el de la parada más cara de cada ruta, por los litros que se iban a echar. No comprueba lo que se repostó de verdad.</p>
+      <p class="small d-nota">Estimación: diferencia entre el precio de la parada elegida y la media de las otras paradas de cada ruta (solo estaciones habilitadas), por los litros que se iban a echar. Los envíos anteriores al 5/11/2026 se calcularon frente a la parada más cara. No comprueba lo que se repostó de verdad.</p>
     </div>
   </section>
 </div>
@@ -578,7 +579,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
-<script src="app.js?v=14"></script>
-<script src="auth.js?v=11"></script>
+<script src="app.js?v=15"></script>
+<script src="auth.js?v=12"></script>
 </body>
 </html>

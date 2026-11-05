@@ -386,11 +386,11 @@ function pintarAhorro(env) {
 }
 
 q('b-csv').onclick = () => {
-  const cab = ['fecha', 'matricula', 'origen', 'destino', 'km_ruta', 'estacion', 'tarjeta', 'precio_elegido', 'litros', 'estacion_mas_cara', 'precio_mas_cara', 'ahorro_eur'];
+  const cab = ['fecha', 'matricula', 'origen', 'destino', 'km_ruta', 'estacion', 'tarjeta', 'precio_elegido', 'litros', 'referencia', 'precio_referencia', 'paradas_en_la_media', 'estacion_mas_cara', 'precio_mas_cara', 'ahorro_eur'];
   const celda = v => { const t = v == null ? '' : String(v); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   const num = v => v == null ? '' : String(v).replace('.', ',');
   const filas = enviosPeriodo.map(e => [new Date(e.creado).toLocaleString('es-ES'), e.matricula, e.origen, e.destino, num(e.km_ruta), e.estacion_nombre, e.tarjeta,
-    num(e.precio_elegido), num(e.litros), e.estacion_cara_nombre, num(e.precio_cara), num(e.ahorro_eur)].map(celda).join(';'));
+    num(e.precio_elegido), num(e.litros), e.referencia === 'media' ? 'media de la ruta' : 'parada más cara', num(e.precio_referencia ?? e.precio_cara), e.n_referencia ?? '', e.estacion_cara_nombre, num(e.precio_cara), num(e.ahorro_eur)].map(celda).join(';'));
   const blob = new Blob(['﻿' + [cab.join(';'), ...filas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
