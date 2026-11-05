@@ -20,11 +20,17 @@ function mensaje(id, texto, tipo = 'error') {
 
 // ---------- pantallas ----------
 function verEntrada(modo = 'entrar') {
+  try { const aviso = sessionStorage.getItem('avisoEntrada'); if (aviso) { sessionStorage.removeItem('avisoEntrada'); setTimeout(() => mensaje('msg-entrar', aviso), 0); } } catch (e) {}
   q('pantalla-app').hidden = true; q('pantalla-entrar').hidden = false;
   q('f-entrar').hidden = modo !== 'entrar'; q('f-nueva').hidden = modo !== 'nueva';
 }
 
+// Al cambiar de usuario se recarga la página: así no queda nada (precios, estaciones elegidas,
+// camiones) del usuario anterior, que puede ser de otra empresa
+let usuarioActual = null;
 async function verApp(session) {
+  if (usuarioActual && usuarioActual !== session.user.id) { location.reload(); return; }
+  usuarioActual = session.user.id;
   const [{ data, error }, { data: adm }] = await Promise.all([
     sb.from('perfiles').select('empresa_id, rol, nombre, empresas(nombre, alias, reenvio)').eq('id', session.user.id).maybeSingle(),
     sb.from('administradores').select('user_id').eq('user_id', session.user.id).maybeSingle(),
@@ -47,8 +53,7 @@ async function verApp(session) {
     return;
   }
   if (error || !data) {
-    verEntrada();
-    mensaje('msg-entrar', 'Tu usuario no está asociado a ninguna empresa todavía. Pide que te den de alta y vuelve a entrar.');
+    try { sessionStorage.setItem('avisoEntrada', 'Tu usuario no está asociado a ninguna empresa todavía. Pide que te den de alta y vuelve a entrar.'); } catch (e) {}
     await sb.auth.signOut();
     return;
   }
@@ -95,7 +100,7 @@ q('b-salir').addEventListener('click', async () => { await sb.auth.signOut(); })
 
 sb.auth.onAuthStateChange((evento, session) => {
   if (evento === 'PASSWORD_RECOVERY') return verEntrada('nueva');
-  if (evento === 'SIGNED_OUT') { perfil = null; q('pass').value = ''; return verEntrada(); }
+  if (evento === 'SIGNED_OUT') { q('pass').value = ''; q('pantalla-app').hidden = true; location.reload(); return; }
   if (evento === 'SIGNED_IN' && session && !modoNueva && q('f-nueva').hidden) verApp(session);
 });
 
