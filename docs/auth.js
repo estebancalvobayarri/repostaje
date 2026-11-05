@@ -67,6 +67,7 @@ async function verApp(session) {
   q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
   await cargarCamiones();
   cargarCorreos();
+  cargarRemitentes();
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
@@ -380,7 +381,7 @@ function abrirSub(sub) {
 async function cargarFlotaAdmin(sec) {
   const panel = sec.querySelector('[data-panel="flota"]'), e = ultimasEmpresas.find(x => x.id === empAbierta);
   try {
-    const { camiones: cam, correos } = await llamarAdmin({ accion: 'empresa', empresa_id: empAbierta });
+    const { camiones: cam, correos, remitentes = [] } = await llamarAdmin({ accion: 'empresa', empresa_id: empAbierta });
     const num = (n, d = 0) => (+n).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: 'always' });
     const activos = cam.filter(c => c.activo).length;
     panel.innerHTML = `
@@ -393,8 +394,27 @@ async function cargarFlotaAdmin(sec) {
       <div class="area usuarios">
         <h3>Precios de los proveedores</h3>
         ${e?.reenvio ? `<div class="reenvio"><span class="lbl">Dirección para reenviar los precios</span><code>${escH(e.reenvio)}</code></div>` : '<p class="small">Sin dirección de reenvío.</p>'}
+        <div class="remitentes">
+          <span class="lbl">Direcciones desde las que reenvía</span>
+          <ul class="rem-lista"></ul>
+          <form class="rem-form"><input type="email" required placeholder="trafico@empresa.es" aria-label="Dirección desde la que reenvía"><button class="mini" type="submit">Añadir</button></form>
+          <div class="msg" hidden></div>
+        </div>
         <div class="lista-correos">${htmlCorreos(correos)}</div>
       </div>`;
+    const caja = panel.querySelector('.remitentes'), avisar = (t) => { const m = caja.querySelector('.msg'); m.hidden = !t; m.className = 'msg error'; m.textContent = t || ''; };
+    const cambiar = async (cuerpo) => {
+      try { const r = await llamarAdmin({ accion: 'remitente', empresa_id: empAbierta, ...cuerpo }); avisar(''); pintar(r.remitentes); return true; }
+      catch (err) { avisar(err.message); return false; }
+    };
+    const pintar = (lista) => pintarRemitentes(caja.querySelector('.rem-lista'), lista, true, (r) => cambiar({ remitente: r, quitar: true }));
+    pintar(remitentes);
+    caja.querySelector('form').onsubmit = async (ev) => {
+      ev.preventDefault();
+      const inp = caja.querySelector('input'), r = inp.value.trim().toLowerCase();
+      if (!emailOk(r)) return avisar('Escribe una dirección de email válida.');
+      if (await cambiar({ remitente: r })) inp.value = '';
+    };
   } catch (err) { panel.innerHTML = `<p class="small">No se ha podido cargar la flota: ${escH(err.message)}</p>`; }
 }
 
@@ -702,6 +722,36 @@ q('correos-toggle').onclick = () => {
   q('correos').hidden = !abrir;
   q('correos-toggle').setAttribute('aria-expanded', abrir);
 };
+
+// ---------- direcciones desde las que la empresa reenvía los precios ----------
+const emailOk = e => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e);
+function pintarRemitentes(ul, lista, puedeQuitar, quitar) {
+  ul.innerHTML = lista.length ? lista.map(r => `<li><span>${escH(r)}</span>${puedeQuitar ? `<button class="mini" type="button" data-rem="${escH(r)}">Quitar</button>` : ''}</li>`).join('')
+    : '<li class="small">Todavía no hay ninguna: los emails de precios no se cargarán hasta que añadas al menos una.</li>';
+  ul.querySelectorAll('[data-rem]').forEach(b => b.onclick = () => { b.disabled = true; quitar(b.dataset.rem); });
+}
+async function cargarRemitentes() {
+  const gestor = perfil?.rol === 'gestor';
+  q('f-rem').hidden = !gestor;
+  const { data, error } = await sb.from('empresa_remitentes').select('remitente').order('remitente');
+  if (error) { q('rem-lista').innerHTML = `<li class="small">No se han podido cargar: ${escH(error.message)}</li>`; return; }
+  pintarRemitentes(q('rem-lista'), data.map(r => r.remitente), gestor, async (r) => {
+    const { error: e } = await sb.from('empresa_remitentes').delete().eq('remitente', r);
+    if (e) mensaje('msg-rem', 'No se ha podido quitar: ' + e.message); else mensaje('msg-rem', '');
+    cargarRemitentes();
+  });
+}
+q('f-rem').addEventListener('submit', async (ev) => {
+  ev.preventDefault(); mensaje('msg-rem', '');
+  const r = q('rem-email').value.trim().toLowerCase();
+  if (!emailOk(r)) return mensaje('msg-rem', 'Escribe una dirección de email válida.');
+  q('b-rem').disabled = true;
+  const { error } = await sb.from('empresa_remitentes').insert({ remitente: r, empresa_id: perfil.empresa_id });
+  q('b-rem').disabled = false;
+  if (error) return mensaje('msg-rem', /duplicate|23505/.test(error.message + error.code) ? 'Esa dirección ya está dada de alta (en tu empresa o en otra). Si crees que es un error, escribe a hola@fuelfy.app.' : 'No se ha podido añadir: ' + error.message);
+  q('rem-email').value = '';
+  cargarRemitentes();
+});
 
 q('b-copiar-reenvio').onclick = async () => {
   try { await navigator.clipboard.writeText(q('reenvio-dir').textContent); q('b-copiar-reenvio').textContent = 'Copiada'; }

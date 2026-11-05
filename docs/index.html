@@ -413,6 +413,17 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .kpis-fact span { font-size: .75rem; color: var(--muted); }
 .tabla.eventos { max-height: 260px; overflow-y: auto; }
 
+/* --- Direcciones desde las que una empresa reenvía los precios --- */
+.remitentes { display: grid; gap: 6px; margin-top: 6px; }
+.remitentes .lbl { margin: 0; }
+.rem-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.rem-lista li { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px 5px 10px; font: 600 .88rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; min-width: 0; }
+.rem-lista li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.rem-lista li.small { font: inherit; background: none; border: 0; padding: 0; color: var(--muted); }
+.rem-form { display: flex; gap: 6px; }
+.emp-panel .remitentes { max-width: 560px; }
+.rem-form input { flex: 1; min-width: 0; font: 500 .9rem var(--f-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+
 /* --- Elegir qué estaciones se ven (solo escritorio) --- */
 .b-sel { display: none; }
 .sel-est { display: none; }
@@ -593,6 +604,13 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <div class="stops-h" style="padding:0"><h2>Precios de los proveedores</h2></div>
         <p class="small" style="margin:0">Reenvía (o pon un reenvío automático) los emails de precios de tus tarjetas a esta dirección. Los precios aparecen en el mapa en unos minutos.</p>
         <div class="reenvio"><code id="reenvio-dir">…</code><button class="mini" type="button" id="b-copiar-reenvio">Copiar</button></div>
+        <div class="remitentes">
+          <span class="lbl">Direcciones desde las que reenvías</span>
+          <p class="small" style="margin:0">Así sabemos que los emails son de tu empresa. Los que lleguen desde otras direcciones no se cargan.</p>
+          <ul class="rem-lista" id="rem-lista"><li class="small">Cargando…</li></ul>
+          <form class="rem-form" id="f-rem"><input type="email" id="rem-email" required placeholder="trafico@tuempresa.es" aria-label="Dirección desde la que reenvías"><button class="mini" type="submit" id="b-rem">Añadir</button></form>
+          <div class="msg" id="msg-rem" hidden></div>
+        </div>
       </section>
       <button class="sec-t" type="button" id="correos-toggle" aria-expanded="false" aria-controls="correos">
         <span class="chev" aria-hidden="true"></span><h2>Últimos emails recibidos</h2><small class="small" id="correos-n"></small></button>
@@ -694,6 +712,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=18"></script>
+<script src="auth.js?v=19"></script>
 </body>
 </html>

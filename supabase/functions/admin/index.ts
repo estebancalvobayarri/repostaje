@@ -125,12 +125,30 @@ Deno.serve(async (req) => {
     // Flota y emails de precios de una empresa (para verlos desde Administración)
     if (accion === 'empresa') {
       const empresa_id = String(body.empresa_id || '');
-      const [{ data: camiones, error: e1 }, { data: correos, error: e2 }] = await Promise.all([
+      const [{ data: camiones, error: e1 }, { data: correos, error: e2 }, { data: rem, error: e3 }] = await Promise.all([
         sb.from('camiones').select('id, matricula, descripcion, capacidad_litros, consumo_l_100km, activo').eq('empresa_id', empresa_id).order('activo', { ascending: false }).order('matricula'),
         sb.from('correos').select('recibido, remitente, proveedor, fecha_precios, n_precios, n_sin_ubicar, estado').eq('empresa_id', empresa_id).order('recibido', { ascending: false }).limit(10),
+        sb.from('empresa_remitentes').select('remitente').eq('empresa_id', empresa_id).order('remitente'),
       ]);
-      if (e1 || e2) throw e1 || e2;
-      return json({ camiones: camiones || [], correos: correos || [] });
+      if (e1 || e2 || e3) throw e1 || e2 || e3;
+      return json({ camiones: camiones || [], correos: correos || [], remitentes: (rem || []).map((r) => r.remitente) });
+    }
+
+    // Añadir o quitar una dirección desde la que la empresa reenvía los precios
+    if (accion === 'remitente') {
+      const empresa_id = String(body.empresa_id || ''), remitente = String(body.remitente || '').trim().toLowerCase();
+      if (!emailValido(remitente)) return json({ error: 'Escribe una dirección de email válida' }, 400);
+      if (body.quitar) {
+        const { error } = await sb.from('empresa_remitentes').delete().eq('remitente', remitente).eq('empresa_id', empresa_id);
+        if (error) throw error;
+      } else {
+        const { data: ya } = await sb.from('empresa_remitentes').select('empresa_id, empresas(nombre)').eq('remitente', remitente).maybeSingle();
+        if (ya && ya.empresa_id !== empresa_id) return json({ error: `Esa dirección ya es de otra empresa (${(ya as any).empresas?.nombre || '?'})` }, 409);
+        if (!ya) { const { error } = await sb.from('empresa_remitentes').insert({ remitente, empresa_id }); if (error) throw error; }
+      }
+      const { data: rem, error: e } = await sb.from('empresa_remitentes').select('remitente').eq('empresa_id', empresa_id).order('remitente');
+      if (e) throw e;
+      return json({ remitentes: (rem || []).map((r) => r.remitente) });
     }
 
     // Repostajes enviados por una empresa en un periodo (informe de ahorro)
