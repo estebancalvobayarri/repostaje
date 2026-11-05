@@ -322,7 +322,7 @@ function pintarEnvio(x, alcanzables = []) {
       await window.Registro.guardar(datos);
       guardar('ultimoEnvio', { clave, t: Date.now() });
       $('msg-envio').className = 'msg ok';
-      $('msg-envio').textContent = `Guardado en el informe de ahorro (${eur(ahorro)}).`;
+      $('msg-envio').textContent = ahorro < 0 ? `Guardado en el informe de ahorro (coste extra de ${eur(-ahorro)}).` : `Guardado en el informe de ahorro (${eur(ahorro)}).`;
     } catch (e) {
       $('msg-envio').className = 'msg error';
       $('msg-envio').textContent = 'Se ha abierto WhatsApp, pero no se ha podido guardar en el informe: ' + e.message;

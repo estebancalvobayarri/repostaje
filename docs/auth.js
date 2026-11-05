@@ -378,7 +378,7 @@ function pintarAhorro(env) {
   q('a-lista').innerHTML = env.length ? env.map(e => {
     const d = new Date(e.creado);
     return `<div class="env">
-      <div class="nm">${escH(e.estacion_nombre)}</div><div class="ah">${eurA(e.ahorro_eur)}</div>
+      <div class="nm">${escH(e.estacion_nombre)}</div><div class="ah${+e.ahorro_eur < 0 ? ' extra' : ''}" title="${e.referencia === 'media' ? 'Frente a la media de las otras paradas de la ruta' : 'Frente a la parada más cara de la ruta (cálculo anterior)'}">${eurA(e.ahorro_eur)}</div>
       <div class="sub">${d.toLocaleDateString('es-ES')} · ${escH(e.matricula || 'sin camión')} · ${escH(e.origen)} → ${escH(e.destino)}</div>
       <div class="sub" style="text-align:right">${(+e.precio_elegido).toFixed(3).replace('.', ',')} €/l · ${Math.round(e.litros)} l</div>
     </div>`;
