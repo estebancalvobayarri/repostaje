@@ -1,7 +1,7 @@
-// Recibe los emails de precios (los envían el lector del buzón fuelfy@fuelfy.app y, mientras dure, el script de Gmail), lee los precios
-// con el lector de cada proveedor y los guarda en la empresa correspondiente.
+// Recibe los emails de precios (los envían la función leer-buzon, que lee fuelfy@fuelfy.app, y, mientras dure, el script de Gmail),
+// lee los precios con el lector de cada proveedor y los guarda en la empresa correspondiente.
 //
-// POST con cabecera x-ingesta-token. Cuerpo:
+// POST con cabecera x-ingesta-token (vale el token de ingesta o el de leer-buzon). Cuerpo:
 //   { accion: 'alias' }                         -> { buzon, aliases: [...] }
 //   { alias?, remitentes?: [...], remitente, asunto, fecha, texto, html, adjuntos: [{ nombre, tipo, base64 }] }
 //   La empresa se reconoce por «remitentes» (buzón fuelfy@fuelfy.app: la primera dada de alta en empresa_remitentes)
@@ -146,8 +146,8 @@ const deBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   const token = req.headers.get('x-ingesta-token') || '';
-  const esperado = await ajuste('ingesta_token_sha256');
-  if (!token || !esperado || (await sha256(token)) !== esperado) return json({ error: 'No autorizado' }, 401);
+  const validos = [await ajuste('ingesta_token_sha256'), await ajuste('buzon_token_sha256')].filter(Boolean);
+  if (!token || !validos.includes(await sha256(token))) return json({ error: 'No autorizado' }, 401);
 
   let b: Record<string, any>;
   try { b = await req.json(); } catch { return json({ error: 'Petición no válida' }, 400); }
