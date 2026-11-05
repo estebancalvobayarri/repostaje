@@ -136,7 +136,8 @@ def main():
     # Diagnóstico: carpetas del buzón y cuántos emails tiene cada una
     _, lista = imap.list()
     for linea in lista or []:
-        nombre = linea.decode(errors='replace').rsplit(' ', 1)[-1].strip('"')
+        m = re.search(r'"(?:[^"]*)" (?:"(.*)"|(\S+))$', linea.decode(errors='replace'))
+        nombre = (m.group(1) or m.group(2)) if m else ''
         st, n = imap.status(f'"{nombre}"', '(MESSAGES)')
         print(f'  carpeta {nombre}: {n[0].decode(errors="replace") if st == "OK" else "?"}')
     imap.select('INBOX')
