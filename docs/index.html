@@ -334,6 +334,30 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .app[data-vista="ruta"] #sec-calc { border-bottom: 0; }
 }
 
+/* --- Administración a pantalla completa, sin mapa --- */
+.app[data-vista="admin"] { grid-template-columns: minmax(0, 1fr); }
+.app[data-vista="admin"] #map, .app[data-vista="admin"] .flotante, .app[data-vista="admin"] .foot { display: none !important; }
+.app[data-vista="admin"] .side { border-right: 0; }
+.app[data-vista="admin"] .side > * { width: 100%; max-width: 1180px; margin-inline: auto; }
+.app[data-vista="admin"] .head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 16px; }
+.app[data-vista="admin"] .head h1 { grid-row: 1; grid-column: 1; }
+.app[data-vista="admin"] .head .who { grid-row: 1; grid-column: 2; justify-content: flex-end; margin: 0; gap: 14px; }
+.app[data-vista="admin"] .head #fecha { grid-column: 1 / -1; }
+.app[data-vista="admin"] #vista-admin { padding-bottom: 32px; }
+.emp-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.emp-tab { font: 600 .92rem var(--f-body); border: 0; background: none; color: var(--muted); padding: 8px 12px; border-bottom: 3px solid transparent; cursor: pointer; margin-bottom: -1px; }
+.emp-tab[aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
+.emp-tab:hover { color: var(--ink); }
+.emp-panel { display: grid; gap: 14px; }
+.emp-panel[hidden] { display: none; }
+.emp-informes .dash { grid-column: auto; grid-row: auto; overflow: visible; background: transparent; padding: 0; }
+.emp-panel .tabla td { white-space: nowrap; }
+.emp-panel .tabla tr.baja td { color: var(--muted); }
+.lista-correos .env { padding-inline: 0; }
+@media (min-width: 900px) {
+  .app[data-vista="admin"] .emp-panel[data-panel="usuarios"] { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+}
+
 /* --- Elegir qué estaciones se ven (solo escritorio) --- */
 .b-sel { display: none; }
 .sel-est { display: none; }
@@ -581,6 +605,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=12"></script>
+<script src="auth.js?v=13"></script>
 </body>
 </html>

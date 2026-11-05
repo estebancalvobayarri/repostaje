@@ -33,13 +33,16 @@ async function verApp(session) {
   q('t-admin').hidden = !esAdmin;
   q('t-flota').hidden = !data;
   q('t-ahorro').hidden = !data;
+  // Administrador sin empresa: solo el panel de administración, sin mapa ni ruta
+  q('pantalla-app').toggleAttribute('data-solo-admin', esAdmin && !data);
+  q('t-ruta').hidden = esAdmin && !data;
   if (esAdmin && !data) {
     perfil = null;
     q('empresa').textContent = 'Administración';
     q('usuario').textContent = session.user.email;
+    q('fecha').textContent = 'Panel de administración: empresas, usuarios, flotas e informes de ahorro';
     q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
     camiones = [];
-    if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar([]); }
     pestaña('admin');
     return;
   }
@@ -105,6 +108,7 @@ sb.auth.onAuthStateChange((evento, session) => {
 // ---------- pestañas ----------
 function pestaña(cual) {
   q('pantalla-app').dataset.vista = cual;
+  if (cual !== 'admin') devolverDash();
   for (const t of ['ruta', 'flota', 'ahorro', 'admin']) {
     q('t-' + t).setAttribute('aria-selected', cual === t);
     q('vista-' + t).hidden = cual !== t;
@@ -223,7 +227,7 @@ async function cargarAdmin() {
 }
 
 // Estado del acordeón: la lista de empresas y como mucho una empresa abierta
-let listaAbierta = false, empAbierta = null, ultimasEmpresas = [];
+let listaAbierta = false, empAbierta = null, empSub = 'usuarios', ultimasEmpresas = [];
 const camionesTxt = n => `${n} ${n === 1 ? 'camión' : 'camiones'}`;
 
 q('nueva-toggle').onclick = () => {
@@ -240,6 +244,7 @@ q('admin-toggle').onclick = () => {
 };
 
 function pintarAdmin(empresas) {
+  devolverDash();
   ultimasEmpresas = empresas;
   q('admin-n').textContent = `${empresas.length} empresa${empresas.length === 1 ? '' : 's'}`;
   if (!empresas.length) { q('admin-lista').innerHTML = '<p class="empty">Todavía no hay empresas. Crea la primera arriba.</p>'; return; }
@@ -252,8 +257,11 @@ function pintarAdmin(empresas) {
       </button>
       <div class="emp-body" id="emp-${e.id}" ${abierta ? '' : 'hidden'}>
         <div class="emp-meta">${e.cif ? 'CIF ' + escH(e.cif) + ' · ' : ''}${e.usuarios.length} usuario${e.usuarios.length === 1 ? '' : 's'}</div>
-        ${e.reenvio ? `<div class="reenvio"><span class="lbl">Dirección para reenviar los precios</span><code>${escH(e.reenvio)}</code></div>` : ''}
-
+        <div class="emp-tabs" role="tablist" aria-label="Secciones de ${escH(e.nombre)}">
+          ${[['usuarios', 'Usuarios'], ['flota', 'Flota y precios'], ['informes', 'Informes de ahorro']].map(([k, t]) =>
+            `<button class="emp-tab" type="button" role="tab" data-sub="${k}" aria-selected="${empSub === k}">${t}</button>`).join('')}
+        </div>
+        <div class="emp-panel" data-panel="usuarios" ${empSub === 'usuarios' ? '' : 'hidden'}>
         <div class="area usuarios">
           <h3>Usuarios con acceso</h3>
           ${e.usuarios.length ? e.usuarios.map(u => `
@@ -276,6 +284,9 @@ function pintarAdmin(empresas) {
           <p class="small" style="margin:0">Recibirá un email con un enlace para elegir su contraseña.</p>
           <div class="msg" hidden></div>
         </form>
+        </div>
+        <div class="emp-panel" data-panel="flota" ${empSub === 'flota' ? '' : 'hidden'}><p class="small">Cargando…</p></div>
+        <div class="emp-panel emp-informes" data-panel="informes" ${empSub === 'informes' ? '' : 'hidden'}></div>
       </div>
     </section>`;
   }).join('');
@@ -289,7 +300,10 @@ function pintarAdmin(empresas) {
       sec.querySelector('.emp-row').setAttribute('aria-expanded', on);
       sec.querySelector('.emp-body').hidden = !on;
     });
+    abrirSub(empSub);
   });
+  q('admin-lista').querySelectorAll('.emp-tab').forEach(b => b.onclick = () => abrirSub(b.dataset.sub));
+  if (empAbierta) abrirSub(empSub);
 
   q('admin-lista').querySelectorAll('form[data-inv]').forEach(f => f.onsubmit = async (ev) => {
     ev.preventDefault();
@@ -319,6 +333,58 @@ function pintarAdmin(empresas) {
       catch (e) { acc.innerHTML = `<span class="small">${escH(e.message)}</span>`; }
     };
   });
+}
+
+// Pestañas dentro de la empresa abierta: usuarios, flota y precios, informes de ahorro
+function abrirSub(sub) {
+  empSub = sub;
+  const sec = empAbierta && q('admin-lista').querySelector(`.emp[data-emp="${empAbierta}"]`);
+  if (!sec) { devolverDash(); return; }
+  sec.querySelectorAll('.emp-tab').forEach(b => b.setAttribute('aria-selected', b.dataset.sub === sub));
+  sec.querySelectorAll('.emp-panel').forEach(p => { p.hidden = p.dataset.panel !== sub; });
+  if (sub === 'flota') cargarFlotaAdmin(sec);
+  if (sub === 'informes') { sec.querySelector('.emp-informes').append(q('dash')); q('dash').hidden = false; cargarInformeAdmin(); }
+  else devolverDash();
+}
+
+async function cargarFlotaAdmin(sec) {
+  const panel = sec.querySelector('[data-panel="flota"]'), e = ultimasEmpresas.find(x => x.id === empAbierta);
+  try {
+    const { camiones: cam, correos } = await llamarAdmin({ accion: 'empresa', empresa_id: empAbierta });
+    const num = (n, d = 0) => (+n).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: 'always' });
+    const activos = cam.filter(c => c.activo).length;
+    panel.innerHTML = `
+      <div class="area usuarios">
+        <h3>Camiones · ${activos} en servicio${cam.length > activos ? ` de ${cam.length}` : ''}</h3>
+        ${cam.length ? `<div class="tabla"><table><thead><tr><th>Matrícula</th><th>Descripción</th><th>Depósito</th><th>Consumo</th><th>Estado</th></tr></thead><tbody>
+          ${cam.map(c => `<tr${c.activo ? '' : ' class="baja"'}><td><b>${escH(c.matricula)}</b></td><td style="text-align:left">${escH(c.descripcion || '—')}</td><td>${num(c.capacidad_litros)} l</td><td>${num(c.consumo_l_100km, 1)} l/100 km</td><td>${c.activo ? 'En servicio' : 'De baja'}</td></tr>`).join('')}
+        </tbody></table></div>` : '<p class="small">Esta empresa todavía no ha dado de alta camiones.</p>'}
+      </div>
+      <div class="area usuarios">
+        <h3>Precios de los proveedores</h3>
+        ${e?.reenvio ? `<div class="reenvio"><span class="lbl">Dirección para reenviar los precios</span><code>${escH(e.reenvio)}</code></div>` : '<p class="small">Sin dirección de reenvío.</p>'}
+        <div class="lista-correos">${htmlCorreos(correos)}</div>
+      </div>`;
+  } catch (err) { panel.innerHTML = `<p class="small">No se ha podido cargar la flota: ${escH(err.message)}</p>`; }
+}
+
+async function cargarInformeAdmin() {
+  const e = ultimasEmpresas.find(x => x.id === empAbierta); if (!e) return;
+  const [desde, hasta] = rangoPeriodo(q('periodo').value);
+  try {
+    const { envios } = await llamarAdmin({ accion: 'informe', empresa_id: e.id, desde: desde && desde.toISOString(), hasta: hasta && hasta.toISOString() });
+    const etiqueta = q('periodo').selectedOptions[0].textContent + (desde ? ` · desde el ${desde.toLocaleDateString('es-ES')}` : '');
+    window.Dash.pintar(envios, { desde, etiqueta, empresa: e.nombre });
+    window.Dash.redimensionar();
+  } catch (err) { q('d-periodo').textContent = 'No se ha podido cargar el informe: ' + err.message; }
+}
+
+// El cuadro de mando es uno solo: en Administración se coloca dentro de la empresa abierta
+let sitioDash = null;
+function devolverDash() {
+  if (!sitioDash) { sitioDash = document.createComment('dash'); q('dash').before(sitioDash); }
+  if (q('dash').parentNode !== sitioDash.parentNode || q('dash').previousSibling !== sitioDash) sitioDash.after(q('dash'));
+  q('dash').hidden = q('pantalla-app').dataset.vista !== 'ahorro';
 }
 
 q('f-empresa').addEventListener('submit', async (e) => {
@@ -369,7 +435,7 @@ async function cargarAhorro() {
   enviosPeriodo = data;
   pintarAhorro(data);
 }
-q('periodo').onchange = cargarAhorro;
+q('periodo').onchange = () => (q('dash').closest('.emp-informes') ? cargarInformeAdmin() : cargarAhorro());
 
 function pintarAhorro(env) {
   const [desde] = rangoPeriodo(q('periodo').value);
@@ -453,7 +519,10 @@ async function cargarCorreos() {
   if (error) { q('correos-n').textContent = ''; q('correos').innerHTML = `<p class="empty">No se han podido cargar: ${escH(error.message)}</p>`; return; }
   const avisos = data.filter(c => c.estado !== 'ok' || c.n_sin_ubicar).length;
   q('correos-n').textContent = data.length ? `${data.length} último${data.length === 1 ? '' : 's'}${avisos ? ` · ${avisos} con aviso${avisos === 1 ? '' : 's'}` : ''}` : '';
-  q('correos').innerHTML = data.length ? data.map(c => {
+  q('correos').innerHTML = htmlCorreos(data);
+}
+function htmlCorreos(data) {
+  return data.length ? data.map(c => {
     const d = new Date(c.recibido);
     const estado = c.estado === 'ok'
       ? `${c.n_precios} precios${c.n_sin_ubicar ? ` · <span class="pill pend">${c.n_sin_ubicar} sin ubicar</span>` : ''}`

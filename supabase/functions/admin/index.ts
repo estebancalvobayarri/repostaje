@@ -1,4 +1,4 @@
-// Administración de la app: crear empresas e invitar a sus usuarios.
+// Administración de la app: crear empresas, invitar a sus usuarios y ver su flota e informes.
 // Usa la clave secreta del proyecto (solo existe en el servidor) y comprueba
 // en cada llamada que quien la hace está en la tabla de administradores.
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -71,6 +71,28 @@ Deno.serve(async (req) => {
           }),
         })),
       });
+    }
+
+    // Flota y emails de precios de una empresa (para verlos desde Administración)
+    if (accion === 'empresa') {
+      const empresa_id = String(body.empresa_id || '');
+      const [{ data: camiones, error: e1 }, { data: correos, error: e2 }] = await Promise.all([
+        sb.from('camiones').select('id, matricula, descripcion, capacidad_litros, consumo_l_100km, activo').eq('empresa_id', empresa_id).order('activo', { ascending: false }).order('matricula'),
+        sb.from('correos').select('recibido, remitente, proveedor, fecha_precios, n_precios, n_sin_ubicar, estado').eq('empresa_id', empresa_id).order('recibido', { ascending: false }).limit(10),
+      ]);
+      if (e1 || e2) throw e1 || e2;
+      return json({ camiones: camiones || [], correos: correos || [] });
+    }
+
+    // Repostajes enviados por una empresa en un periodo (informe de ahorro)
+    if (accion === 'informe') {
+      const empresa_id = String(body.empresa_id || '');
+      let consulta = sb.from('envios').select('*').eq('empresa_id', empresa_id).order('creado', { ascending: false }).limit(5000);
+      if (body.desde) consulta = consulta.gte('creado', String(body.desde));
+      if (body.hasta) consulta = consulta.lt('creado', String(body.hasta));
+      const { data, error } = await consulta;
+      if (error) throw error;
+      return json({ envios: data || [] });
     }
 
     if (accion === 'crear_empresa') {
