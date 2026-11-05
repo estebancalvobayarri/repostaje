@@ -250,13 +250,19 @@ async function pasada(token: string, soloListar: boolean) {
   const inicio = Date.now();
   const log: string[] = [];
   const resumen = { ok: 0, sin_empresa: 0, reintentar: 0, pendientes: 0, en_bandeja: 0 };
-  const password = Deno.env.get('IMAP_PASSWORD');
+  const bruta = Deno.env.get('IMAP_PASSWORD') || '';
+  const password = bruta.trim();   // al pegarla en el panel a veces se cuela un espacio o un salto de línea
   if (!password) throw new Error('Falta el secreto IMAP_PASSWORD en Supabase (Edge Functions → Secrets)');
+  if (password !== bruta) log.push('Aviso: la contraseña guardada tenía espacios o saltos de línea al principio o al final; se han quitado');
 
   const imap = new Imap();
   await imap.conectar(IMAP_HOST);
   try {
-    await imap.comando(['LOGIN ', cadena(IMAP_USER) as string, ' ', cadena(password)]);
+    try {
+      await imap.comando(['LOGIN ', cadena(IMAP_USER) as string, ' ', cadena(password)]);
+    } catch (e) {
+      throw new Error(`${String(e)}${log.length ? ' · ' + log.join(' · ') : ''}`);
+    }
     if (!imap.capacidades.size) await imap.comando(['CAPABILITY']);
     const existentes = carpetasDe(await imap.comando(['LIST "" "*"']));
     log.push(`Carpetas: ${existentes.map((c) => c.nombre).join(', ')}`);
