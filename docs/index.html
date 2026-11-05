@@ -358,6 +358,13 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .app[data-vista="admin"] .emp-panel[data-panel="usuarios"] { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
 }
 
+.exportar .rapido { display: flex; flex-wrap: wrap; gap: 6px; }
+.exportar .rapido button { font: 600 .85rem var(--f-body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.exportar .rapido button[aria-pressed=true] { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.exportar .fechas { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 220px)); gap: 12px; }
+.exportar input[type=date] { width: 100%; font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.exportar .btn { justify-self: start; }
+
 /* --- Elegir qué estaciones se ven (solo escritorio) --- */
 .b-sel { display: none; }
 .sel-est { display: none; }
@@ -543,6 +550,22 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
         <div class="msg" id="msg-empresa" hidden></div>
         <button class="btn" type="submit" id="b-empresa">Crear empresa</button>
       </form>
+      <button class="sec-t sec-mas" type="button" id="exp-toggle" aria-expanded="false" aria-controls="f-exportar">
+        <h2>Descargar rutas (CSV)</h2><span class="mas" aria-hidden="true"></span></button>
+      <form class="block exportar" id="f-exportar" hidden>
+        <p class="small" style="margin:0">Todas las rutas enviadas por WhatsApp de todas las empresas, con la empresa y el usuario que la envió. Como máximo, un año atrás.</p>
+        <div class="rapido" id="exp-rapido" role="group" aria-label="Periodos rápidos">
+          <button type="button" data-p="mes" aria-pressed="true">Este mes</button><button type="button" data-p="mes-ant" aria-pressed="false">Mes anterior</button>
+          <button type="button" data-p="3m" aria-pressed="false">3 meses</button><button type="button" data-p="6m" aria-pressed="false">6 meses</button>
+          <button type="button" data-p="anio" aria-pressed="false">Este año</button><button type="button" data-p="12m" aria-pressed="false">Último año</button>
+        </div>
+        <div class="fechas">
+          <div><label class="lbl" for="exp-desde">Desde</label><input type="date" id="exp-desde" required></div>
+          <div><label class="lbl" for="exp-hasta">Hasta (incluido)</label><input type="date" id="exp-hasta" required></div>
+        </div>
+        <div class="msg" id="msg-exportar" hidden></div>
+        <button class="btn" type="submit" id="b-exportar">Descargar CSV</button>
+      </form>
       <button class="sec-t" type="button" id="admin-toggle" aria-expanded="false" aria-controls="admin-lista">
         <span class="chev" aria-hidden="true"></span><h2>Empresas</h2><small class="small" id="admin-n"></small></button>
       <div id="admin-lista" hidden><p class="empty">Cargando…</p></div>
@@ -605,6 +628,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=14"></script>
+<script src="auth.js?v=15"></script>
 </body>
 </html>

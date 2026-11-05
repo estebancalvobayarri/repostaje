@@ -95,6 +95,25 @@ Deno.serve(async (req) => {
       return json({ envios: data || [] });
     }
 
+    // Todas las rutas enviadas por todas las empresas en un periodo (máximo un año atrás)
+    if (accion === 'exportar') {
+      const limite = new Date(); limite.setFullYear(limite.getFullYear() - 1); limite.setHours(0, 0, 0, 0);
+      const desde = new Date(String(body.desde || ''));
+      const hasta = body.hasta ? new Date(String(body.hasta)) : new Date();
+      if (isNaN(+desde) || isNaN(+hasta)) return json({ error: 'Las fechas no son válidas' }, 400);
+      if (desde < limite) return json({ error: 'Solo se pueden descargar rutas de hasta un año atrás' }, 400);
+      if (hasta <= desde) return json({ error: 'La fecha final tiene que ser posterior a la inicial' }, 400);
+      const [{ data: envios, error: e1 }, { data: empresas, error: e2 }, { data: lista, error: e3 }] = await Promise.all([
+        sb.from('envios').select('*').gte('creado', desde.toISOString()).lt('creado', hasta.toISOString()).order('creado').limit(20000),
+        sb.from('empresas').select('id, nombre'),
+        sb.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+      ]);
+      if (e1 || e2 || e3) throw e1 || e2 || e3;
+      const nombreEmpresa = new Map((empresas || []).map((e) => [e.id, e.nombre]));
+      const emailUsuario = new Map(lista.users.map((x) => [x.id, x.email]));
+      return json({ envios: (envios || []).map((e) => ({ ...e, empresa: nombreEmpresa.get(e.empresa_id) || '', enviado_por: emailUsuario.get(e.usuario_id) || '' })) });
+    }
+
     if (accion === 'crear_empresa') {
       const nombre = String(body.nombre || '').trim();
       const cif = String(body.cif || '').trim().toUpperCase() || null;

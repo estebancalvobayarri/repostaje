@@ -456,19 +456,64 @@ function pintarAhorro(env) {
   }).join('') : '<p class="empty">Todavía no hay repostajes en este periodo. Se guardan al pulsar "Enviar por WhatsApp" en la pestaña Ruta.</p>';
 }
 
-q('b-csv').onclick = () => {
-  const cab = ['fecha', 'matricula', 'origen', 'destino', 'km_ruta', 'estacion', 'tarjeta', 'precio_elegido', 'litros', 'referencia', 'precio_referencia', 'paradas_en_la_media', 'estacion_mas_cara', 'precio_mas_cara', 'ahorro_eur'];
+// CSV de repostajes enviados (separado por «;» y con coma decimal, para abrirlo en Excel)
+function csvEnvios(envios, general = false) {
+  const cab = [...(general ? ['empresa', 'enviado_por'] : []), 'fecha', 'matricula', 'origen', 'destino', 'km_ruta', 'estacion', 'tarjeta', 'precio_elegido', 'litros', 'referencia', 'precio_referencia', 'paradas_en_la_media', 'estacion_mas_cara', 'precio_mas_cara', 'ahorro_eur'];
   const celda = v => { const t = v == null ? '' : String(v); return /[;"\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
   const num = v => v == null ? '' : String(v).replace('.', ',');
-  const filas = enviosPeriodo.map(e => [new Date(e.creado).toLocaleString('es-ES'), e.matricula, e.origen, e.destino, num(e.km_ruta), e.estacion_nombre, e.tarjeta,
+  const filas = envios.map(e => [...(general ? [e.empresa, e.enviado_por] : []), new Date(e.creado).toLocaleString('es-ES'), e.matricula, e.origen, e.destino, num(e.km_ruta), e.estacion_nombre, e.tarjeta,
     num(e.precio_elegido), num(e.litros), e.referencia === 'media' ? 'media de la ruta' : 'parada más cara', num(e.precio_referencia ?? e.precio_cara), e.n_referencia ?? '', e.estacion_cara_nombre, num(e.precio_cara), num(e.ahorro_eur)].map(celda).join(';'));
-  const blob = new Blob(['﻿' + [cab.join(';'), ...filas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  return '\ufeff' + [cab.join(';'), ...filas].join('\r\n');
+}
+function descargar(nombre, texto) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `ahorro-${q('periodo').value}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.href = URL.createObjectURL(new Blob([texto], { type: 'text/csv;charset=utf-8' }));
+  a.download = nombre;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-};
+}
+q('b-csv').onclick = () => descargar(`ahorro-${q('periodo').value}-${new Date().toISOString().slice(0, 10)}.csv`, csvEnvios(enviosPeriodo));
+
+// ---------- administración: CSV con las rutas de todas las empresas ----------
+(() => {
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const hoy = new Date(), limite = new Date(hoy); limite.setFullYear(hoy.getFullYear() - 1);
+  const ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  q('exp-desde').min = q('exp-hasta').min = iso(limite);
+  q('exp-desde').max = q('exp-hasta').max = iso(hoy);
+  q('exp-desde').value = iso(ini); q('exp-hasta').value = iso(hoy);
+  const PRESETS = { mes: [ini, hoy], 'mes-ant': [new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1), new Date(hoy.getFullYear(), hoy.getMonth(), 0)],
+    '3m': [new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1), hoy], '6m': [new Date(hoy.getFullYear(), hoy.getMonth() - 5, 1), hoy],
+    anio: [new Date(hoy.getFullYear(), 0, 1), hoy], '12m': [limite, hoy] };
+  q('exp-rapido').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const [d, h] = PRESETS[b.dataset.p]; q('exp-desde').value = iso(d < limite ? limite : d); q('exp-hasta').value = iso(h);
+    q('exp-rapido').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
+  [q('exp-desde'), q('exp-hasta')].forEach(i => i.oninput = () => q('exp-rapido').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false')));
+  q('exp-toggle').onclick = () => {
+    const abrir = q('f-exportar').hidden;
+    q('f-exportar').hidden = !abrir; q('exp-toggle').setAttribute('aria-expanded', abrir);
+  };
+  q('f-exportar').addEventListener('submit', async (ev) => {
+    ev.preventDefault(); mensaje('msg-exportar', '');
+    const d = q('exp-desde').value, h = q('exp-hasta').value;
+    if (!d || !h) return mensaje('msg-exportar', 'Elige las dos fechas.');
+    if (d < q('exp-desde').min) return mensaje('msg-exportar', `Solo se pueden descargar rutas de hasta un año atrás (desde el ${new Date(q('exp-desde').min + 'T12:00').toLocaleDateString('es-ES')}).`);
+    if (h < d) return mensaje('msg-exportar', 'La fecha final tiene que ser igual o posterior a la inicial.');
+    const desde = new Date(d + 'T00:00'), hasta = new Date(h + 'T00:00'); hasta.setDate(hasta.getDate() + 1);
+    q('b-exportar').disabled = true; q('b-exportar').textContent = 'Preparando…';
+    try {
+      const { envios } = await llamarAdmin({ accion: 'exportar', desde: desde.toISOString(), hasta: hasta.toISOString() });
+      if (!envios.length) mensaje('msg-exportar', 'No hay rutas enviadas en ese periodo.', 'ok');
+      else {
+        descargar(`rutas-todas-las-empresas-${d}-a-${h}.csv`, csvEnvios(envios, true));
+        const empresas = new Set(envios.map(e => e.empresa)).size;
+        mensaje('msg-exportar', `Descargado: ${envios.length} ruta${envios.length === 1 ? '' : 's'} de ${empresas} empresa${empresas === 1 ? '' : 's'}.`, 'ok');
+      }
+    } catch (e) { mensaje('msg-exportar', e.message); }
+    q('b-exportar').disabled = false; q('b-exportar').textContent = 'Descargar CSV';
+  });
+})();
 
 // ---------- precios de la empresa (Supabase) ----------
 window.Precios = {
