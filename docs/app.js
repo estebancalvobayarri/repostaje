@@ -77,7 +77,7 @@ function buscador(campo) {
   const input = $(campo), lista = $('sugg-' + campo);
   let t, items = [], act = -1;
   const cerrar = () => { lista.hidden = true; act = -1; };
-  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); guardar('lugares', lugares); if (lugares.origen && lugares.destino) calcular(); };
+  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); if (lugares.origen && lugares.destino) calcular(); };
   input.addEventListener('input', () => {
     lugares[campo] = null; clearTimeout(t);
     const q = input.value.trim(); if (q.length < 3) return cerrar();
@@ -321,8 +321,10 @@ function pintarEnvio(x, alcanzables = []) {
     try {
       await window.Registro.guardar(datos);
       guardar('ultimoEnvio', { clave, t: Date.now() });
+      borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
       $('msg-envio').className = 'msg ok';
-      $('msg-envio').textContent = ahorro < 0 ? `Guardado en el informe de ahorro (coste extra de ${eur(-ahorro)}).` : `Guardado en el informe de ahorro (${eur(ahorro)}).`;
+      $('msg-envio').textContent = (ahorro < 0 ? `Guardado en el informe de ahorro (coste extra de ${eur(-ahorro)}).` : `Guardado en el informe de ahorro (${eur(ahorro)}).`)
+        + ` La ruta se quitará de la pantalla en ${MIN_BORRAR} minutos.`;
     } catch (e) {
       $('msg-envio').className = 'msg error';
       $('msg-envio').textContent = 'Se ha abierto WhatsApp, pero no se ha podido guardar en el informe: ' + e.message;
@@ -546,15 +548,30 @@ async function iniciar(camiones) {
   $('ruta').onsubmit = calcular;
   $('swap').onclick = () => { [lugares.origen, lugares.destino] = [lugares.destino, lugares.origen];
     $('origen').value = lugares.origen ? lugares.origen.label : ''; $('destino').value = lugares.destino ? lugares.destino.label : '';
-    guardar('lugares', lugares); if (lugares.origen && lugares.destino) calcular(); };
+    if (lugares.origen && lugares.destino) calcular(); };
 
-  // Abre con una ruta real del piloto para que se vea cómo funciona
-  const prev = leer('lugares');
-  lugares = prev && prev.origen && prev.destino ? prev : {
-    origen: { label: 'Riba-roja de Túria, Valencia', lat: 39.5444, lon: -0.5707 },
-    destino: { label: 'Cartagena, Murcia', lat: 37.6253, lon: -0.9972 } };
-  $('origen').value = lugares.origen.label; $('destino').value = lugares.destino.label;
-  calcular();
+  // Al entrar, la pantalla empieza sin origen ni destino
+  try { localStorage.removeItem('lugares'); } catch (e) {}
+  $('origen').value = ''; $('destino').value = '';
+  setInterval(() => { if (borrarRuta && Date.now() >= borrarRuta.t) { if (claveRuta() === borrarRuta.clave) limpiarRuta(); borrarRuta = null; } }, 15000);
+}
+
+// ---------- borrar la ruta de la pantalla 10 minutos después de enviarla ----------
+// (el envío queda guardado en la base de datos para el informe de ahorro)
+const MIN_BORRAR = 10;
+let borrarRuta = null;
+const claveRuta = () => ruta && lugares.origen && lugares.destino ? `${lugares.origen.label}|${lugares.destino.label}|${Math.round(ruta.km)}` : null;
+function limpiarRuta() {
+  ruta = null; elegida = null; lugares = { origen: null, destino: null }; litrosManual = null;
+  $('origen').value = ''; $('destino').value = '';
+  capaRuta.clearLayers();
+  $('resumen').hidden = true;
+  pintarEnvio(null);
+  $('stops').innerHTML = '<p class="empty">Elige origen y destino para ver qué estaciones de vuestras tarjetas pillan de camino.</p>';
+  $('stops-n').textContent = '';
+  $('litros').value = ''; $('litros-nota').textContent = ''; $('litros-lleno').hidden = true;
+  for (const m of marcadores.values()) { const el = m.getElement && m.getElement(); if (el) el.querySelector('.pin').classList.remove('on', 'dim'); }
+  avisoMas();
 }
 // Lo arranca auth.js cuando el usuario ha entrado
 window.Ruta = {
