@@ -194,6 +194,13 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .mas::before, .mas::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 2px; background: currentColor; border-radius: 1px; transform: translate(-50%, -50%); }
 .mas::after { transform: translate(-50%, -50%) rotate(90deg); }
 .sec-t:hover .mas { color: var(--ink); }
+/* «Nueva empresa» y «Descargar rutas»: acciones secundarias, alineadas a la derecha y en asfalto */
+#nueva-toggle, #exp-toggle { justify-content: flex-end; padding-block: 10px; }
+#nueva-toggle h2, #exp-toggle h2 { flex: none; color: var(--muted); font-size: .88rem; }
+#nueva-toggle:hover h2, #exp-toggle:hover h2 { color: var(--ink); }
+#nueva-toggle .mas, #exp-toggle .mas { width: 14px; height: 14px; }
+#nueva-toggle .mas::before, #nueva-toggle .mas::after, #exp-toggle .mas::before, #exp-toggle .mas::after { width: 12px; }
+#exp-toggle { border-top: 0; }
 [aria-expanded=true] > .mas { transform: rotate(45deg); }
 .emp { border-top: 1px solid var(--line); }
 .emp-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 12px 18px; padding-left: max(30px, env(safe-area-inset-left)); background: none; border: 0; color: var(--ink); cursor: pointer; text-align: left; }
