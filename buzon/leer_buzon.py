@@ -3,14 +3,14 @@ Fuelfy · lector del buzón de precios (fuelfy@fuelfy.app, Hostinger)
 
 Lo ejecuta GitHub Actions cada 5 minutos. Entra por IMAP en el buzón, y por cada
 email de la bandeja de entrada:
-  1. averigua de qué empresa es por la dirección a la que se envió
-     (precios-<alias>@fuelfy.app, que llega gracias al catch-all de Hostinger),
+  1. averigua de qué empresa es por la dirección desde la que la empresa lo reenvió
+     (cada empresa da de alta sus direcciones en la app),
   2. manda texto, HTML y PDFs adjuntos a la app (función recibir-precios),
   3. lo mueve a la carpeta «Procesados» (o «Sin empresa» si no es de ninguna).
 Si la app no responde, el email se queda en la bandeja y se reintenta en la siguiente pasada.
 
 Variables de entorno (secretos de GitHub): IMAP_PASSWORD, INGESTA_TOKEN.
-Opcionales: IMAP_HOST, IMAP_USER, API, DOMINIO.
+Opcionales: IMAP_HOST, IMAP_USER, API, DOMINIO (el propio, que se ignora como remitente).
 Solo usa la biblioteca estándar de Python.
 """
 import base64
@@ -30,8 +30,6 @@ IMAP_USER = os.environ.get('IMAP_USER', 'fuelfy@fuelfy.app')
 API = os.environ.get('API', 'https://sqtgnlfsydcecpxtumol.supabase.co/functions/v1/recibir-precios')
 DOMINIO = os.environ.get('DOMINIO', 'fuelfy.app')
 MAX_ADJUNTO = 8 * 1024 * 1024
-CABECERAS_DESTINO = ['Delivered-To', 'X-Original-To', 'Envelope-To', 'X-Envelope-To', 'X-Forwarded-To',
-                     'X-Forwarded-For', 'X-Rcpt-To', 'To', 'Cc', 'Received']
 
 
 def llamar(cuerpo, token):
@@ -50,16 +48,27 @@ def llamar(cuerpo, token):
         return 0, {'error': str(e)}
 
 
-def alias_del_email(msg, aliases):
-    """Busca en las cabeceras de destino una dirección precios-<alias>@dominio de una empresa conocida."""
-    patron = re.compile(r'precios-([a-z0-9_-]+)@' + re.escape(DOMINIO), re.I)
-    for cab in CABECERAS_DESTINO:
+# Cabeceras con la cuenta que reenvió el email, de más fiable a menos. El «De:» va después de las
+# que añaden los reenvíos automáticos, porque esos reenvíos a veces conservan el remitente original.
+CABECERAS_REMITENTE = ['Resent-From', 'Resent-Sender', 'X-Forwarded-For', 'X-Original-Sender', 'X-Original-From',
+                       'Sender', 'From', 'Return-Path']
+
+
+def remitentes_del_email(msg):
+    vistos = []
+    for cab in CABECERAS_REMITENTE:
         for valor in msg.get_all(cab, []) or []:
-            for m in patron.finditer(str(valor)):
-                a = m.group(1).lower()
-                if a in aliases:
-                    return a
-    return None
+            for _, direccion in getaddresses([str(valor)]):
+                d = direccion.strip().strip('<>').lower()
+                if '@' in d and not d.endswith('@' + DOMINIO) and d not in vistos:
+                    vistos.append(d)
+            # X-Forwarded-For viene como «cuenta-que-reenvía cuenta-destino», sin formato de lista
+            if cab == 'X-Forwarded-For':
+                for d in re.findall(r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', str(valor)):
+                    d = d.lower()
+                    if not d.endswith('@' + DOMINIO) and d not in vistos:
+                        vistos.append(d)
+    return vistos
 
 
 def contenido(msg):
@@ -124,11 +133,6 @@ def main():
         print('Faltan los secretos IMAP_PASSWORD o INGESTA_TOKEN: no se lee el buzón.')
         return
 
-    codigo, datos = llamar({'accion': 'alias'}, token)
-    if codigo != 200:
-        sys.exit(f'La app no responde ({codigo}): {datos}')
-    aliases = {a.lower() for a in datos.get('aliases', [])}
-
     imap = imaplib.IMAP4_SSL(IMAP_HOST, 993)
     imap.login(IMAP_USER, password)
     tiene_move = 'MOVE' in (imap.capabilities or ())
@@ -153,24 +157,25 @@ def main():
             continue
         msg = email.message_from_bytes(crudo, policy=email.policy.default)
         asunto = str(msg.get('Subject', ''))
-        alias = alias_del_email(msg, aliases)
-        if not alias:
-            print(f'  · Sin empresa: «{asunto[:80]}» → carpeta Sin empresa')
-            mover(imap, uid, sin_empresa, tiene_move)
-            resumen['sin_empresa'] += 1
-            continue
+        remitentes = remitentes_del_email(msg)
         texto, html, adjuntos = contenido(msg)
         try:
             fecha = parsedate_to_datetime(msg['Date']).isoformat() if msg['Date'] else None
         except (TypeError, ValueError):
             fecha = None
-        codigo, datos = llamar({'alias': alias, 'remitente': str(msg.get('From', '')), 'asunto': asunto, 'fecha': fecha,
-                                'texto': texto, 'html': html, 'adjuntos': adjuntos}, token)
+        codigo, datos = llamar({'remitentes': remitentes, 'remitente': str(msg.get('From', '')), 'asunto': asunto,
+                                'fecha': fecha, 'texto': texto, 'html': html, 'adjuntos': adjuntos}, token)
+        quien = remitentes[0] if remitentes else '?'
+        if codigo == 404 and datos.get('sin_empresa'):
+            print(f'  · Sin empresa ({", ".join(remitentes[:4]) or "sin remitente"}): «{asunto[:80]}» → carpeta Sin empresa')
+            mover(imap, uid, sin_empresa, tiene_move)
+            resumen['sin_empresa'] += 1
+            continue
         if codigo == 0 or codigo >= 500:
-            print(f'  · {alias}: «{asunto[:80]}» → la app no responde ({codigo}); se reintentará')
+            print(f'  · {quien}: «{asunto[:80]}» → la app no responde ({codigo}); se reintentará')
             resumen['reintentar'] += 1
             continue
-        print(f'  · {alias}: «{asunto[:80]}» → {codigo} {json.dumps(datos, ensure_ascii=False)[:300]}')
+        print(f'  · {quien}: «{asunto[:80]}» → {codigo} {json.dumps(datos, ensure_ascii=False)[:300]}')
         mover(imap, uid, procesados, tiene_move)
         resumen['ok'] += 1
 

@@ -1,9 +1,11 @@
-// Recibe los emails de precios (los envía el script de Gmail), lee los precios
+// Recibe los emails de precios (los envían el lector del buzón fuelfy@fuelfy.app y, mientras dure, el script de Gmail), lee los precios
 // con el lector de cada proveedor y los guarda en la empresa correspondiente.
 //
 // POST con cabecera x-ingesta-token. Cuerpo:
 //   { accion: 'alias' }                         -> { buzon, aliases: [...] }
-//   { alias, remitente, asunto, fecha, texto, html, adjuntos: [{ nombre, tipo, base64 }] }
+//   { alias?, remitentes?: [...], remitente, asunto, fecha, texto, html, adjuntos: [{ nombre, tipo, base64 }] }
+//   La empresa se reconoce por «remitentes» (buzón fuelfy@fuelfy.app: la primera dada de alta en empresa_remitentes)
+//   o por el alias (direcciones +alias del buzón de Gmail anterior, mientras se siga usando).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { getDocumentProxy } from 'npm:unpdf@0.12.1';
 
@@ -174,9 +176,20 @@ Deno.serve(async (req) => {
     return json({ buzon: await ajuste('buzon'), aliases: (data || []).map((e) => e.alias) });
   }
 
+  // De qué empresa es: por la dirección de destino (alias) o, si no, por la dirección desde la que se reenvió
   const alias = String(b.alias || '').toLowerCase();
-  const { data: empresa } = await sb.from('empresas').select('id, nombre').eq('alias', alias).maybeSingle();
-  if (!empresa) return json({ error: `No hay ninguna empresa con el alias "${alias}"` }, 404);
+  let empresa: { id: string; nombre: string } | null = null;
+  if (alias) ({ data: empresa } = await sb.from('empresas').select('id, nombre').eq('alias', alias).maybeSingle());
+  if (!empresa && Array.isArray(b.remitentes)) {
+    const lista = [...new Set(b.remitentes.map((r: unknown) => String(r).trim().toLowerCase()).filter((r: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r)))].slice(0, 20) as string[];
+    if (lista.length) {
+      const { data: filas } = await sb.from('empresa_remitentes').select('remitente, empresas(id, nombre)').in('remitente', lista);
+      const porRemitente = new Map((filas || []).map((f: any) => [f.remitente, f.empresas]));
+      const primero = lista.find((r) => porRemitente.has(r));   // se respeta el orden de preferencia del lector
+      if (primero) empresa = porRemitente.get(primero) as { id: string; nombre: string };
+    }
+  }
+  if (!empresa) return json({ error: 'No se reconoce de qué empresa es este email', sin_empresa: true }, 404);
 
   const remitente = String(b.remitente || '').slice(0, 300), asunto = String(b.asunto || '').slice(0, 300);
   const recibido = b.fecha ? new Date(b.fecha) : new Date();
