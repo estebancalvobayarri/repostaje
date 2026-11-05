@@ -26,6 +26,7 @@ const limpiar = (s: string) => s.replace(/\s{2,}/g, ' ').trim();
 const ENTIDADES: Record<string, string> = { nbsp: ' ', euro: '€', amp: '&', lt: '<', gt: '>', quot: '"', aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú', Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú', ntilde: 'ñ', Ntilde: 'Ñ', uuml: 'ü', ordm: 'º', ordf: 'ª' };
 function htmlATexto(html: string): string {
   return html
+    .replace(/\r\n?/g, '\n')
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(tr|p|div|li|h\d)>/gi, '\n')
@@ -182,7 +183,8 @@ Deno.serve(async (req) => {
 
   // Textos de donde leer: cuerpo, cuerpo HTML y cada PDF adjunto
   const fuentes: { origen: string; texto: string }[] = [];
-  if (b.texto) fuentes.push({ origen: 'cuerpo', texto: String(b.texto) });
+  // Los saltos de línea de Windows (\r\n) se igualan: algunos reenvíos los traen y descolocaban las tablas
+  if (b.texto) fuentes.push({ origen: 'cuerpo', texto: String(b.texto).replace(/\r\n?/g, '\n') });
   if (b.html) fuentes.push({ origen: 'html', texto: htmlATexto(String(b.html)) });
   const adjuntos = Array.isArray(b.adjuntos) ? b.adjuntos.slice(0, 10) : [];
   for (const a of adjuntos) {
