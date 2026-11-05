@@ -5,7 +5,7 @@
 
 const SUPABASE_URL = 'https://sqtgnlfsydcecpxtumol.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_jlUCcinmm04OR4euF_p8fw_ZBPV-c96';
-const WEB = 'https://fuelfy.app/';
+const WEB = 'https://fuelfy.app/app/';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const q = id => document.getElementById(id);
@@ -254,6 +254,7 @@ async function llamarAdmin(cuerpo) {
 async function cargarAdmin() {
   if (!esAdmin) return;
   try {
+    cargarSolicitudes();
     const { empresas } = await llamarAdmin({ accion: 'listar' });
     pintarAdmin(empresas);
   } catch (e) { q('admin-lista').innerHTML = `<p class="empty">No se han podido cargar las empresas: ${escH(e.message)}</p>`; }
@@ -652,6 +653,62 @@ q('b-csv').onclick = () => descargar(`ahorro-${q('periodo').value}-${new Date().
     } catch (e) { mensaje('msg-exportar', e.message); }
     q('b-exportar').disabled = false; q('b-exportar').textContent = 'Descargar CSV';
   });
+})();
+
+// ---------- solicitudes de prueba (llegan desde la portada) ----------
+var solicitudes = [], verAtendidas = false;
+async function cargarSolicitudes() {
+  if (!esAdmin) return;
+  try { ({ solicitudes } = await llamarAdmin({ accion: 'solicitudes' })); pintarSolicitudes(); }
+  catch (e) { q('sol-lista').innerHTML = `<p class="empty">No se han podido cargar: ${escH(e.message)}</p>`; }
+}
+function pintarSolicitudes() {
+  const pend = solicitudes.filter(s => !s.atendida), hechas = solicitudes.filter(s => s.atendida);
+  q('sol-n').textContent = pend.length ? `${pend.length} pendiente${pend.length === 1 ? '' : 's'}` : (solicitudes.length ? 'ninguna pendiente' : '');
+  q('sol-n').classList.toggle('hay', pend.length > 0);
+  const fila = s => {
+    const f = new Date(s.creado).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const datos = [`<a href="mailto:${escH(s.email)}">${escH(s.email)}</a>`];
+    if (s.telefono) datos.push(`<a href="tel:${escH(s.telefono.replace(/\s/g, ''))}">${escH(s.telefono)}</a>`);
+    if (s.camiones) datos.push(`${s.camiones} camion${s.camiones === 1 ? '' : 'es'}`);
+    if (s.tarjetas && s.tarjetas.length) datos.push(escH(s.tarjetas.join(', ')));
+    return `<div class="sol${s.atendida ? ' atendida' : ''}" data-id="${escH(s.id)}">
+      <div class="sol-cab"><span><b>${escH(s.empresa)}</b> · ${escH(s.nombre)}</span><small class="small">${f}</small></div>
+      <div class="datos">${datos.join('<span aria-hidden="true">·</span>')}</div>
+      ${s.mensaje ? `<p class="msj">${escH(s.mensaje)}</p>` : ''}
+      <div class="acc">
+        ${s.atendida ? '' : '<button class="mini" type="button" data-a="crear">Crear empresa</button>'}
+        <button class="mini" type="button" data-a="atendida">${s.atendida ? 'Volver a pendiente' : 'Marcar atendida'}</button>
+        <button class="mini" type="button" data-a="borrar">Borrar</button>
+      </div></div>`;
+  };
+  let h = pend.length ? pend.map(fila).join('') : '<p class="empty">No hay solicitudes pendientes.</p>';
+  if (hechas.length) h += `<div class="sol-ver"><button class="mini" type="button" id="sol-ver">${verAtendidas ? 'Ocultar' : 'Ver'} atendidas (${hechas.length})</button></div>` + (verAtendidas ? hechas.map(fila).join('') : '');
+  q('sol-lista').innerHTML = h;
+}
+(function () {
+  q('sol-toggle').onclick = () => {
+    const abrir = q('sol-lista').hidden;
+    q('sol-lista').hidden = !abrir; q('sol-toggle').setAttribute('aria-expanded', abrir);
+  };
+  q('sol-lista').addEventListener('click', async (ev) => {
+    if (ev.target.id === 'sol-ver') { verAtendidas = !verAtendidas; return pintarSolicitudes(); }
+    const b = ev.target.closest('button[data-a]'); if (!b) return;
+    const caja = b.closest('.sol'), id = caja.dataset.id, s = solicitudes.find(x => String(x.id) === id);
+    if (b.dataset.a === 'crear') {   // rellena «Nueva empresa» con el nombre de la solicitud
+      q('f-empresa').hidden = false; q('nueva-toggle').setAttribute('aria-expanded', 'true');
+      q('emp-nombre').value = s.empresa; q('emp-nombre').focus();
+      q('f-empresa').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (b.dataset.a === 'borrar' && b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = '¿Borrar? Pulsa otra vez'; return; }
+    b.disabled = true;
+    try {
+      ({ solicitudes } = await llamarAdmin(b.dataset.a === 'borrar' ? { accion: 'solicitud', id, borrar: true } : { accion: 'solicitud', id, atendida: !s.atendida }));
+      pintarSolicitudes();
+    } catch (e) { b.disabled = false; alertaSol(caja, e.message); }
+  });
+  function alertaSol(caja, texto) { let m = caja.querySelector('.msg'); if (!m) { m = document.createElement('div'); m.className = 'msg'; caja.append(m); } m.hidden = false; m.textContent = texto; }
 })();
 
 // ---------- precios de la empresa (Supabase) ----------

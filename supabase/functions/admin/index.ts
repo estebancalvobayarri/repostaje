@@ -3,7 +3,7 @@
 // en cada llamada que quien la hace está en la tabla de administradores.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const WEB = 'https://fuelfy.app/';
+const WEB = 'https://fuelfy.app/app/';
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -182,6 +182,28 @@ Deno.serve(async (req) => {
     }
 
     if (accion === 'facturacion') return json(await facturacion(String(body.empresa_id || '')));
+
+    // Solicitudes de prueba que llegan desde la portada
+    if (accion === 'solicitudes') {
+      const { data, error } = await sb.from('solicitudes').select('*').order('creado', { ascending: false }).limit(200);
+      if (error) throw error;
+      return json({ solicitudes: data || [] });
+    }
+    if (accion === 'solicitud') {
+      const id = String(body.id || '');
+      const cambio: Record<string, unknown> = {};
+      if ('atendida' in body) cambio.atendida = !!body.atendida;
+      if ('nota' in body) cambio.nota = body.nota ? String(body.nota).slice(0, 500) : null;
+      if (body.borrar) {
+        const { error } = await sb.from('solicitudes').delete().eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('solicitudes').update(cambio).eq('id', id);
+        if (error) throw error;
+      }
+      const { data } = await sb.from('solicitudes').select('*').order('creado', { ascending: false }).limit(200);
+      return json({ solicitudes: data || [] });
+    }
 
     // Fin de la prueba gratis (vacío = sin fecha: la empresa sigue en prueba)
     if (accion === 'prueba') {
