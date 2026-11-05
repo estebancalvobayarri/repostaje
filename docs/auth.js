@@ -66,8 +66,12 @@ async function verApp(session) {
   q('b-nuevo').hidden = data.rol !== 'gestor';
   q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
   await cargarCamiones();
-  cargarCorreos();
-  cargarRemitentes();
+  // Los precios de los proveedores (dirección de reenvío, remitentes y emails recibidos) solo son cosa del gestor
+  const gestor = data.rol === 'gestor';
+  document.querySelector('.precios-rec').hidden = !gestor;
+  q('correos-toggle').hidden = !gestor;
+  if (!gestor) q('correos').hidden = true;
+  if (gestor) { cargarCorreos(); cargarRemitentes(); }
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
