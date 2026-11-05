@@ -1,8 +1,11 @@
 # Genera los textos legales de Fuelfy en docs/legal/. Los datos que faltan van marcados.
 import os
-OUT = '/home/claude/repostaje-git/docs/legal'
+import pathlib
+OUT = str(pathlib.Path(__file__).resolve().parent.parent / 'docs' / 'legal')
 F = lambda k, t: f'<mark class="falta" data-dato="{k}">[{t}]</mark>'
-TIT, NIF, DOM, EMAIL = F('titular', 'NOMBRE Y APELLIDOS O RAZÓN SOCIAL'), F('nif', 'NIF'), F('domicilio', 'DOMICILIO'), F('email', 'EMAIL DE CONTACTO')
+# Datos del titular (5/11/2026)
+TIT, NIF, DOM = 'Esteban Calvo Bayarri', '24394566F', 'Calle Quart 120, 46008 Valencia (España)'
+EMAIL = '<a href="mailto:hola@fuelfy.app">hola@fuelfy.app</a>'
 FECHA = '5 de noviembre de 2026'
 VERSION = '1.0'
 LOGO = '<svg width="34" height="28" viewBox="0 0 120 100" aria-hidden="true"><defs><clipPath id="lg"><rect x="19" y="18" width="26" height="24" rx="6"/></clipPath></defs><rect x="10" y="8" width="44" height="80" rx="11" fill="#FFFFFF"/><rect x="19" y="18" width="26" height="24" rx="6" fill="#12263F"/><rect x="19" y="31" width="26" height="11" fill="#F2A900" clip-path="url(#lg)"/><path d="M54 30C76 30 84 42 80 56" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round"/><path d="M80 56C76 70 86 84 102 85" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0.5 9"/><circle cx="109" cy="85" r="7.5" fill="#F2A900"/></svg>'
