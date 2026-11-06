@@ -5,6 +5,8 @@
 //   1. averigua desde qué direcciones se reenvió (cada empresa da de alta las suyas en la app),
 //   2. manda texto, HTML y adjuntos a la función recibir-precios,
 //   3. lo mueve a la carpeta «Procesados» (o «Sin empresa» si no es de ninguna).
+// Los emails con los que un proveedor de correo pide confirmar el reenvío automático (Gmail, one.com…) no son de precios:
+// se guardan en la tabla confirmaciones_reenvio (la empresa los ve en la app) y van a la carpeta «Confirmaciones».
 // Si recibir-precios no responde, el email se queda en la bandeja y se reintenta en la siguiente pasada.
 //
 // POST con cabecera x-buzon-token (el token está en Vault como «leer_buzon_token»; su hash, en ajustes.buzon_token_sha256).
@@ -15,6 +17,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import PostalMime from 'npm:postal-mime@2';
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64';
+import { esConfirmacion, extraer } from './confirmaciones.ts';
 
 const IMAP_HOST = Deno.env.get('IMAP_HOST') || 'imap.hostinger.com';
 const IMAP_USER = Deno.env.get('IMAP_USER') || 'fuelfy@fuelfy.app';
@@ -229,6 +232,22 @@ async function contenido(crudo: Uint8Array | ArrayBuffer, acc: Contenido = { tex
   return { msg, acc };
 }
 
+// De qué empresa es una confirmación: por una dirección dada de alta que aparezca en el email o, si no, por su dominio
+const DOMINIOS_GENERICOS = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|aol|gmx|proton|protonmail|yandex|zoho|one|mail)\./i;
+async function empresaDeConfirmacion(direcciones: string[]): Promise<string | null> {
+  if (!direcciones.length) return null;
+  const { data: exactas } = await sb.from('empresa_remitentes').select('remitente, empresa_id').in('remitente', direcciones);
+  const exacta = direcciones.map((d) => exactas?.find((r) => r.remitente === d)).find(Boolean);
+  if (exacta) return exacta.empresa_id;
+  const dominios = [...new Set(direcciones.map((d) => d.split('@')[1]).filter((d) => d && !DOMINIOS_GENERICOS.test(d)))];
+  for (const dom of dominios) {
+    const { data } = await sb.from('empresa_remitentes').select('empresa_id').ilike('remitente', `%@${dom}`);
+    const ids = [...new Set((data || []).map((r) => r.empresa_id))];
+    if (ids.length === 1) return ids[0];
+  }
+  return null;
+}
+
 async function llamar(cuerpo: unknown, token: string): Promise<[number, Record<string, any>]> {
   try {
     const r = await fetch(API, {
@@ -249,7 +268,7 @@ async function llamar(cuerpo: unknown, token: string): Promise<[number, Record<s
 async function pasada(token: string, soloListar: boolean) {
   const inicio = Date.now();
   const log: string[] = [];
-  const resumen = { ok: 0, sin_empresa: 0, reintentar: 0, pendientes: 0, en_bandeja: 0 };
+  const resumen = { ok: 0, sin_empresa: 0, confirmaciones: 0, reintentar: 0, pendientes: 0, en_bandeja: 0 };
   const bruta = Deno.env.get('IMAP_PASSWORD') || '';
   const password = bruta.trim();   // al pegarla en el panel a veces se cuela un espacio o un salto de línea
   if (!password) throw new Error('Falta el secreto IMAP_PASSWORD en Supabase (Edge Functions → Secrets)');
@@ -276,10 +295,11 @@ async function pasada(token: string, soloListar: boolean) {
 
     const procesados = await carpeta(imap, existentes, 'Procesados');
     const sinEmpresa = await carpeta(imap, existentes, 'Sin empresa');
+    let confirmaciones = '';   // se crea la primera vez que hace falta
     await imap.comando(['SELECT INBOX']);   // CREATE no cambia la carpeta abierta, pero por si acaso
 
     for (const uid of uids) {
-      if (Date.now() - inicio > PRESUPUESTO_MS) { resumen.pendientes = uids.length - resumen.ok - resumen.sin_empresa - resumen.reintentar; break; }
+      if (Date.now() - inicio > PRESUPUESTO_MS) { resumen.pendientes = uids.length - resumen.ok - resumen.sin_empresa - resumen.confirmaciones - resumen.reintentar; break; }
       const partes = await imap.comando([`UID FETCH ${uid} (BODY.PEEK[])`]);
       const crudo = partes.find((p) => /FETCH/i.test(p.texto) && p.literales.length)?.literales[0];
       if (!crudo) continue;
@@ -292,9 +312,29 @@ async function pasada(token: string, soloListar: boolean) {
         let fecha: string | null = null;
         if (msg.date) { const d = new Date(msg.date); if (!isNaN(+d)) fecha = d.toISOString(); }
         const de = msg.from ? (msg.from.name ? `${msg.from.name} <${msg.from.address}>` : String(msg.from.address || '')) : '';
+        const texto = acc.textos.join('\n\n'), html = acc.htmls.join('\n');
+
+        // ¿Es un aviso para confirmar el reenvío automático?
+        const deDir = String(msg.from?.address || '').toLowerCase();
+        const nPdf = acc.adjuntos.filter((a) => /pdf/i.test(a.tipo) || /\.pdf$/i.test(a.nombre)).length;
+        if (esConfirmacion({ remitente: deDir, asunto, texto, html, nAdjuntosPdf: nPdf })) {
+          const c = extraer({ asunto, texto, html, dominioPropio: DOMINIO, remitente: deDir });
+          const otras = remitentes.filter((r) => r !== deDir && !c.direcciones.includes(r));
+          const empresa_id = await empresaDeConfirmacion([...c.direcciones, ...otras]);
+          const { error } = await sb.from('confirmaciones_reenvio').insert({
+            recibido: fecha || new Date().toISOString(), empresa_id, remitente: de.slice(0, 300), asunto: asunto.slice(0, 300),
+            direcciones: c.direcciones, enlaces: c.enlaces, codigo: c.codigo, texto: c.texto,
+          });
+          if (error) throw new Error(`No se ha podido guardar la confirmación: ${error.message}`);
+          if (!confirmaciones) confirmaciones = await carpeta(imap, existentes, 'Confirmaciones');
+          await mover(imap, uid, confirmaciones);
+          log.push(`· Confirmación de reenvío (${c.direcciones.slice(0, 3).join(', ') || deDir}): «${asunto.slice(0, 80)}» → ${empresa_id ? 'asignada a su empresa' : 'sin empresa'}; carpeta Confirmaciones`);
+          resumen.confirmaciones++;
+          continue;
+        }
         const [codigo, datos] = await llamar({
           remitentes, remitente: de, asunto, fecha,
-          texto: acc.textos.join('\n\n'), html: acc.htmls.join('\n'), adjuntos: acc.adjuntos,
+          texto, html, adjuntos: acc.adjuntos,
         }, token);
         const quien = remitentes[0] || '?';
         if (codigo === 404 && datos.sin_empresa) {

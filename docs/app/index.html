@@ -408,6 +408,29 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .sol .acc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
 .sol-ver { padding: 10px 18px; }
 
+/* --- Confirmaciones de reenvío automático (empresa y Administración) --- */
+#conf-n.hay, .tab-aviso { background: var(--amber, #F2A900); color: #12263F; font-weight: 800; border-radius: 999px; padding: 1px 9px; }
+.tab-aviso { display: inline-block; font-size: .72rem; line-height: 1.4; padding: 0 6px; margin-left: 6px; vertical-align: 1px; }
+.tab-aviso[hidden] { display: none; }
+.conf { border-bottom: 1px solid var(--line); padding: 14px 18px; display: grid; gap: 8px; min-width: 0; }
+.conf.resuelta { opacity: .62; }
+#conf-aviso .conf { border: 1px solid var(--accent-line); background: var(--accent-soft); border-radius: 8px; padding: 12px 14px; }
+#conf-aviso { display: grid; gap: 8px; margin: 4px 0 10px; }
+#conf-aviso[hidden] { display: none; }
+.conf .conf-cab { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; align-items: baseline; }
+.conf .conf-cab b { font-size: 1rem; }
+.conf .conf-de { font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
+.conf .conf-paso { font-size: .9rem; margin: 0; }
+.conf .conf-codigo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.conf .conf-codigo code { font: 800 1.15rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; }
+.conf .conf-enlaces { display: grid; gap: 6px; }
+.conf .conf-enlaces a.btn { justify-self: start; text-decoration: none; }
+.conf .conf-host { font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; }
+.conf details { font-size: .85rem; }
+.conf details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; margin: 6px 0 0; max-height: 260px; overflow-y: auto; }
+.conf .acc { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.conf .acc select { font: 500 .85rem var(--f-body); padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); max-width: 100%; }
+
 /* --- Facturación de cada empresa (Administración) --- */
 .fact-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .estado-fact { font: 700 .85rem var(--f-body); padding: 4px 10px; border-radius: 999px; border: 1px solid; }
@@ -532,7 +555,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
     </header>
     <nav class="tabs" role="tablist" aria-label="Secciones">
       <button class="tab" role="tab" id="t-ruta" aria-selected="true" aria-controls="vista-ruta">Ruta</button>
-      <button class="tab" role="tab" id="t-flota" aria-selected="false" aria-controls="vista-flota">Flota</button>
+      <button class="tab" role="tab" id="t-flota" aria-selected="false" aria-controls="vista-flota">Flota<span class="tab-aviso" id="t-flota-aviso" hidden title="Hay un reenvío pendiente de confirmar">1</span></button>
       <button class="tab" role="tab" id="t-ahorro" aria-selected="false" aria-controls="vista-ahorro">Ahorro</button>
       <button class="tab" role="tab" id="t-admin" aria-selected="false" aria-controls="vista-admin" hidden>Administración</button>
     </nav>
@@ -614,6 +637,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 
       <section class="block precios-rec">
         <div class="stops-h" style="padding:0"><h2>Precios de los proveedores</h2></div>
+        <div id="conf-aviso" class="conf-lista" hidden></div>
         <p class="small" style="margin:0">Reenvía (o pon un reenvío automático) los emails de precios de tus tarjetas a esta dirección. Los precios aparecen en el mapa en unos minutos.</p>
         <div class="reenvio"><code id="reenvio-dir">…</code><button class="mini" type="button" id="b-copiar-reenvio">Copiar</button></div>
         <div class="remitentes">
@@ -664,6 +688,9 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
       <button class="sec-t" type="button" id="sol-toggle" aria-expanded="false" aria-controls="sol-lista">
         <span class="chev" aria-hidden="true"></span><h2>Solicitudes de prueba</h2><small class="small" id="sol-n"></small></button>
       <div id="sol-lista" hidden><p class="empty">Cargando…</p></div>
+      <button class="sec-t" type="button" id="conf-toggle" aria-expanded="false" aria-controls="conf-lista">
+        <span class="chev" aria-hidden="true"></span><h2>Confirmaciones de reenvío</h2><small class="small" id="conf-n"></small></button>
+      <div id="conf-lista" class="conf-lista" hidden><p class="empty">Cargando…</p></div>
       <button class="sec-t" type="button" id="admin-toggle" aria-expanded="false" aria-controls="admin-lista">
         <span class="chev" aria-hidden="true"></span><h2>Empresas</h2><small class="small" id="admin-n"></small></button>
       <div id="admin-lista" hidden><p class="empty">Cargando…</p></div>
