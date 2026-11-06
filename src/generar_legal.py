@@ -6,7 +6,7 @@ F = lambda k, t: f'<mark class="falta" data-dato="{k}">[{t}]</mark>'
 # Datos del titular (5/11/2026)
 TIT, NIF, DOM = 'Esteban Calvo Bayarri', '24394566F', 'Calle Quart 120, 46008 Valencia (España)'
 EMAIL = '<a href="mailto:hola@fuelfy.app">hola@fuelfy.app</a>'
-FECHA = '5 de noviembre de 2026'
+FECHA = '6 de noviembre de 2026'
 VERSION = '1.0'
 LOGO = '<svg width="34" height="28" viewBox="0 0 120 100" aria-hidden="true"><defs><clipPath id="lg"><rect x="19" y="18" width="26" height="24" rx="6"/></clipPath></defs><rect x="10" y="8" width="44" height="80" rx="11" fill="#FFFFFF"/><rect x="19" y="18" width="26" height="24" rx="6" fill="#12263F"/><rect x="19" y="31" width="26" height="11" fill="#F2A900" clip-path="url(#lg)"/><path d="M54 30C76 30 84 42 80 56" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round"/><path d="M80 56C76 70 86 84 102 85" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0.5 9"/><circle cx="109" cy="85" r="7.5" fill="#F2A900"/></svg>'
 PAGINAS = [('aviso-legal.html', 'Aviso legal'), ('privacidad.html', 'Privacidad y cookies'), ('condiciones.html', 'Condiciones de uso y contratación')]
@@ -150,7 +150,7 @@ condiciones = f'''
 <div class="resumen">
 <p><b>En resumen:</b></p>
 <ul>
-  <li>Empiezas con una prueba gratis. Después pagas por camión y mes, con descuentos por tramos.</li>
+  <li>Empiezas con 14 días de prueba gratis. Después pagas por camión y mes, con descuentos por tramos.</li>
   <li>Se cobra a mes vencido el máximo de camiones que has tenido en servicio a la vez. Los camiones de baja no pagan.</li>
   <li>Te puedes dar de baja cuando quieras. Tus datos son tuyos: los puedes descargar y se borran tras la baja.</li>
   <li>Los precios vienen de tus proveedores y las rutas y ahorros son estimaciones: la decisión de dónde repostar es tuya.</li>
@@ -175,7 +175,7 @@ condiciones = f'''
 <p>El titular da de alta a la empresa y a su primer gestor. El gestor puede invitar a otros usuarios de su empresa y es responsable de quién tiene acceso. Cada usuario debe guardar su contraseña en secreto y avisar si sospecha de un uso indebido.</p>
 
 <h2>4. Periodo de prueba</h2>
-<p>El cliente puede usar Fuelfy gratis durante el periodo de prueba que acuerde con el titular. La fecha de fin se ve dentro de la aplicación. La prueba no obliga a contratar. El mes en que termina la prueba no se cobra; el cobro empieza el mes siguiente.</p>
+<p>El cliente puede usar Fuelfy gratis durante 14 días naturales desde el alta, salvo que acuerde por escrito con el titular un plazo distinto. La fecha de fin se ve dentro de la aplicación. La prueba no obliga a contratar. El mes en que termina la prueba no se cobra; el cobro empieza el mes siguiente.</p>
 
 <h2 id="precio">5. Precio</h2>
 <p>Después de la prueba, el precio es por camión y mes, escalonado por tramos: cada camión paga el precio de su tramo.</p>
