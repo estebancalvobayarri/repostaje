@@ -71,8 +71,7 @@ async function verApp(session) {
   document.querySelector('.precios-rec').hidden = !gestor;
   q('correos-toggle').hidden = !gestor;
   if (!gestor) q('correos').hidden = true;
-  if (gestor) { cargarCorreos(); cargarRemitentes(); cargarConfirmacionesEmpresa(); }
-  else { q('conf-aviso').hidden = true; q('t-flota-aviso').hidden = true; }
+  if (gestor) { cargarCorreos(); cargarRemitentes(); }
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
@@ -256,10 +255,8 @@ async function cargarAdmin() {
   if (!esAdmin) return;
   try {
     cargarSolicitudes();
-    cargarConfirmacionesAdmin();
     const { empresas } = await llamarAdmin({ accion: 'listar' });
     pintarAdmin(empresas);
-    if (confirmaciones.length) pintarConfirmacionesAdmin();   // para el desplegable de empresas
   } catch (e) { q('admin-lista').innerHTML = `<p class="empty">No se han podido cargar las empresas: ${escH(e.message)}</p>`; }
 }
 
@@ -822,104 +819,3 @@ q('b-copiar-reenvio').onclick = async () => {
   catch (e) { const r = document.createRange(); r.selectNodeContents(q('reenvio-dir')); getSelection().removeAllRanges(); getSelection().addRange(r); }
   setTimeout(() => { q('b-copiar-reenvio').textContent = 'Copiar'; }, 2000);
 };
-
-
-// ---------- confirmaciones de reenvío automático ----------
-// Cuando una empresa pone el reenvío automático a fuelfy@fuelfy.app, algunos proveedores de correo (Gmail, one.com…)
-// mandan a ese buzón un email para confirmarlo. El lector del buzón lo guarda y aquí se enseña el enlace o el código.
-const enlaceSeguro = u => /^https?:\/\//i.test(u || '');
-const hostDe = u => { try { return new URL(u).host; } catch (e) { return ''; } };
-function htmlConfirmacion(c, { admin = false, empresas = [] } = {}) {
-  const f = new Date(c.recibido).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const enlaces = (c.enlaces || []).filter(enlaceSeguro);
-  const titulo = admin ? `<b>${escH(c.empresa || 'Sin empresa asignada')}</b>` : '<b>Tu proveedor de correo pide confirmar el reenvío</b>';
-  const dirs = (c.direcciones || []).length ? ` · para ${escH(c.direcciones.slice(0, 3).join(', '))}` : '';
-  const paso = enlaces.length && c.codigo ? 'Abre el enlace o introduce el código en el panel de tu correo. Después márcalo como hecho.'
-    : enlaces.length ? 'Abre el enlace para confirmar el reenvío. Después márcalo como hecho.'
-    : c.codigo ? 'Introduce este código en el panel de tu correo, donde configuraste el reenvío. Después márcalo como hecho.'
-    : 'No hemos encontrado ni enlace ni código: mira el email completo más abajo.';
-  let acc;
-  if (admin) {
-    const opciones = ['<option value="">Sin empresa</option>', ...empresas.map(e => `<option value="${escH(e.id)}"${e.id === c.empresa_id ? ' selected' : ''}>${escH(e.nombre)}</option>`)].join('');
-    acc = `<button class="mini" type="button" data-c="resuelta">${c.resuelta ? 'Volver a pendiente' : 'Marcar hecha'}</button>
-      <select data-c="empresa" aria-label="Empresa de esta confirmación">${opciones}</select>
-      <button class="mini" type="button" data-c="borrar">Borrar</button>`;
-  } else {
-    acc = '<button class="mini" type="button" data-c="resuelta">Ya está confirmado</button>';
-  }
-  return `<div class="conf${c.resuelta ? ' resuelta' : ''}" data-id="${escH(c.id)}">
-    <div class="conf-cab"><span>${titulo}</span><small class="small">${f}</small></div>
-    <div class="conf-de">${escH(c.remitente || '')}${dirs}${c.asunto ? ` · «${escH(c.asunto)}»` : ''}</div>
-    <p class="conf-paso">${paso}</p>
-    ${c.codigo ? `<div class="conf-codigo"><code>${escH(c.codigo)}</code><button class="mini" type="button" data-c="copiar" data-v="${escH(c.codigo)}">Copiar código</button></div>` : ''}
-    ${enlaces.length ? `<div class="conf-enlaces">${enlaces.map((u, i) => `<div><a class="btn" href="${escH(u)}" target="_blank" rel="noopener noreferrer">${enlaces.length > 1 ? `Abrir enlace ${i + 1}` : 'Abrir enlace de confirmación'}</a> <span class="conf-host">${escH(hostDe(u))}</span></div>`).join('')}</div>` : ''}
-    ${c.texto ? `<details><summary>Ver el email</summary><pre>${escH(c.texto)}</pre></details>` : ''}
-    <div class="acc">${acc}</div>
-  </div>`;
-}
-async function copiarTexto(b) {
-  try { await navigator.clipboard.writeText(b.dataset.v); const t = b.textContent; b.textContent = 'Copiado'; setTimeout(() => { b.textContent = t; }, 2000); } catch (e) {}
-}
-
-// Gestor de la empresa: las pendientes, encima de «Precios de los proveedores», y un aviso en la pestaña Flota
-async function cargarConfirmacionesEmpresa() {
-  const { data, error } = await sb.from('confirmaciones_reenvio')
-    .select('id, recibido, remitente, asunto, direcciones, enlaces, codigo, texto, resuelta')
-    .eq('resuelta', false).order('recibido', { ascending: false }).limit(10);
-  const lista = error ? [] : data;
-  q('conf-aviso').innerHTML = lista.map(c => htmlConfirmacion(c)).join('');
-  q('conf-aviso').hidden = !lista.length;
-  q('t-flota-aviso').hidden = !lista.length;
-  q('t-flota-aviso').textContent = lista.length;
-}
-q('conf-aviso').addEventListener('click', async (ev) => {
-  const b = ev.target.closest('button[data-c]'); if (!b) return;
-  if (b.dataset.c === 'copiar') return copiarTexto(b);
-  b.disabled = true;
-  const { error } = await sb.from('confirmaciones_reenvio').update({ resuelta: true }).eq('id', b.closest('.conf').dataset.id);
-  if (error) { b.disabled = false; b.textContent = 'No se ha podido guardar'; return; }
-  cargarConfirmacionesEmpresa();
-});
-
-// Administración: todas, con la empresa (y la opción de asignarla si no se ha podido saber)
-var confirmaciones = [], verConfHechas = false;
-async function cargarConfirmacionesAdmin() {
-  if (!esAdmin) return;
-  try { ({ confirmaciones } = await llamarAdmin({ accion: 'confirmaciones' })); pintarConfirmacionesAdmin(); }
-  catch (e) { q('conf-lista').innerHTML = `<p class="empty">No se han podido cargar: ${escH(e.message)}</p>`; }
-}
-function pintarConfirmacionesAdmin() {
-  const pend = confirmaciones.filter(c => !c.resuelta), hechas = confirmaciones.filter(c => c.resuelta);
-  const sinEmp = pend.filter(c => !c.empresa_id).length;
-  q('conf-n').textContent = pend.length ? `${pend.length} pendiente${pend.length === 1 ? '' : 's'}${sinEmp ? ` · ${sinEmp} sin empresa` : ''}` : (confirmaciones.length ? 'ninguna pendiente' : '');
-  q('conf-n').classList.toggle('hay', pend.length > 0);
-  const empresas = [...ultimasEmpresas].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-  const fila = c => htmlConfirmacion(c, { admin: true, empresas });
-  let h = pend.length ? pend.map(fila).join('') : '<p class="empty">No hay confirmaciones pendientes. Aparecen aquí cuando el correo de una empresa pide confirmar el reenvío a fuelfy@fuelfy.app.</p>';
-  if (hechas.length) h += `<div class="sol-ver"><button class="mini" type="button" id="conf-ver">${verConfHechas ? 'Ocultar' : 'Ver'} hechas (${hechas.length})</button></div>` + (verConfHechas ? hechas.map(fila).join('') : '');
-  q('conf-lista').innerHTML = h;
-}
-(function () {
-  q('conf-toggle').onclick = () => {
-    const abrir = q('conf-lista').hidden;
-    q('conf-lista').hidden = !abrir; q('conf-toggle').setAttribute('aria-expanded', abrir);
-  };
-  const cambiar = async (caja, cuerpo) => {
-    try { ({ confirmaciones } = await llamarAdmin({ accion: 'confirmacion', id: caja.dataset.id, ...cuerpo })); pintarConfirmacionesAdmin(); }
-    catch (e) { let m = caja.querySelector('.msg'); if (!m) { m = document.createElement('div'); m.className = 'msg error'; caja.append(m); } m.hidden = false; m.textContent = e.message; }
-  };
-  q('conf-lista').addEventListener('click', async (ev) => {
-    if (ev.target.id === 'conf-ver') { verConfHechas = !verConfHechas; return pintarConfirmacionesAdmin(); }
-    const b = ev.target.closest('button[data-c]'); if (!b) return;
-    if (b.dataset.c === 'copiar') return copiarTexto(b);
-    const caja = b.closest('.conf'), c = confirmaciones.find(x => String(x.id) === caja.dataset.id);
-    if (b.dataset.c === 'borrar' && b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = '¿Borrar? Pulsa otra vez'; return; }
-    b.disabled = true;
-    await cambiar(caja, b.dataset.c === 'borrar' ? { borrar: true } : { resuelta: !c.resuelta });
-  });
-  q('conf-lista').addEventListener('change', (ev) => {
-    const sel = ev.target.closest('select[data-c="empresa"]'); if (!sel) return;
-    sel.disabled = true;
-    cambiar(sel.closest('.conf'), { empresa_id: sel.value || null });
-  });
-})();

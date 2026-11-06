@@ -205,30 +205,6 @@ Deno.serve(async (req) => {
       return json({ solicitudes: data || [] });
     }
 
-    // Emails con los que el proveedor de correo de una empresa pide confirmar el reenvío automático
-    const listarConfirmaciones = async () => {
-      const { data, error } = await sb.from('confirmaciones_reenvio')
-        .select('id, recibido, empresa_id, remitente, asunto, direcciones, enlaces, codigo, texto, resuelta, empresas(nombre)')
-        .order('recibido', { ascending: false }).limit(200);
-      if (error) throw error;
-      return (data || []).map((c: any) => ({ ...c, empresa: c.empresas?.nombre || null, empresas: undefined }));
-    };
-    if (accion === 'confirmaciones') return json({ confirmaciones: await listarConfirmaciones() });
-    if (accion === 'confirmacion') {
-      const id = Number(body.id);
-      if (body.borrar) {
-        const { error } = await sb.from('confirmaciones_reenvio').delete().eq('id', id);
-        if (error) throw error;
-      } else {
-        const cambio: Record<string, unknown> = {};
-        if ('resuelta' in body) cambio.resuelta = !!body.resuelta;
-        if ('empresa_id' in body) cambio.empresa_id = body.empresa_id ? String(body.empresa_id) : null;
-        const { error } = await sb.from('confirmaciones_reenvio').update(cambio).eq('id', id);
-        if (error) throw error;
-      }
-      return json({ confirmaciones: await listarConfirmaciones() });
-    }
-
     // Fin de la prueba gratis (vacío = sin fecha: la empresa sigue en prueba)
     if (accion === 'prueba') {
       const empresa_id = String(body.empresa_id || '');
