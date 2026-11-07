@@ -492,7 +492,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <label class="anual-check" for="c-fundadora">
               <input type="checkbox" id="c-fundadora" role="switch">
               <b>Flota fundadora</b>
-              <small>Las 30 primeras empresas: plan Pro a 20 € por camión al mes.</small>
+              <small>Las 30 primeras empresas: un 30 % menos sobre la cuota.</small>
             </label>
             <label class="anual-check" for="c-anual">
               <input type="checkbox" id="c-anual" role="switch">
@@ -585,7 +585,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3>Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: plan Pro a 20 € por camión, para siempre.</strong>Para las 30 primeras empresas (200 € por camión pagando el año), a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <p><strong>Flotas fundadoras: un 30 % menos, para siempre.</strong>Para las 30 primeras empresas, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
         <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
@@ -691,11 +691,11 @@ function calcular() {
   const n = Math.max(1, Math.round(v.camiones));
   let [nombre, c] = plan(n);
   const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
-  // Flotas fundadoras (30 primeras empresas): plan Pro a 20 € por camión, también con pago anual (200 € al año)
-  if (fundadora.checked) { nombre = 'Pro fundadora'; c = n * 20; }
-  const esPro = nombre === 'Pro' || fundadora.checked;
+  const esPro = nombre === 'Pro';
   anual.disabled = !esPro;
-  anualNota.textContent = !esPro ? 'Solo en el plan Pro, de 5 a 49 camiones.' : fundadora.checked ? 'Con precio de fundadora: 200 € por camión al año.' : 'Plan Pro: dos meses gratis, pagas 10 de 12.';
+  anualNota.textContent = esPro ? 'Plan Pro: dos meses gratis, pagas 10 de 12.' : 'Solo en el plan Pro, de 5 a 49 camiones.';
+  // Flotas fundadoras (30 primeras empresas): la cuota normal, con o sin pago anual, menos un 30 %
+  if (fundadora.checked) { c = c * 0.7; nombre += ' fundadora, −30 %'; }
   const conAnual = esPro && anual.checked;
   if (conAnual) { rAnual.textContent = 'Pagas ' + eur(c * 10, 0) + ' al año de una vez (' + eur(c * 10 / 12 / n, 2) + ' por camión al mes). Te ahorras ' + eur(c * 2, 0) + ' frente al pago mensual.'; c = c * 10 / 12; nombre += ', pago anual'; }
   rAnual.hidden = !conAnual;
