@@ -554,7 +554,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <li>Usuarios ilimitados</li>
             <li>Exportación de datos</li>
           </ul>
-          <p class="volumen">De 26 a 49 camiones, <b>un 10 % menos</b> por camión.</p>
+          <p class="volumen">A partir del camión 26, <b>cada camión de más cuesta un 10 % menos</b> (27 €).</p>
           <div class="pie-plan">
             <p class="minimo">Mínimo 5 camiones.</p>
             <a class="boton lleno" href="#prueba">Probar Pro 30 días gratis</a>
@@ -678,9 +678,9 @@ if ('IntersectionObserver' in window) {
 } else document.documentElement.classList.add('sin-js');
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
-// Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (de 26 a 49, −10 %), Flota desde 25 €
+// Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
 // Pago anual en Pro: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
-const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', n * 27] : ['Flota, desde', n * 25];
+const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', 25 * 30 + (n - 25) * 27] : ['Flota, desde', n * 25];
 const fundadora = document.getElementById('c-fundadora'), fundadoraNota = document.getElementById('c-fundadora-nota');
 const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
 const eur = (n, dec = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }) + ' €';
