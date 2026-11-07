@@ -184,6 +184,17 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .control input[type=range] { width: 100%; accent-color: var(--ambar); height: 44px; margin: 0; }
 .control input[type=number] { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(220,215,203,.4); background: rgba(246,244,239,.06); color: var(--papel); font: 800 1.1rem var(--f); text-align: right; font-variant-numeric: tabular-nums; }
 .campo small { display: block; margin-top: 8px; color: var(--niebla); font-size: .9rem; }
+.anual-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(220,215,203,.3); cursor: pointer; transition: border-color .15s, background .15s; }
+.anual-check:has(input:checked) { border-color: var(--ambar); background: rgba(242,169,0,.08); }
+.anual-check:has(input:disabled) { cursor: not-allowed; opacity: .6; }
+.anual-check input { appearance: none; -webkit-appearance: none; margin: 0; width: 48px; height: 28px; border-radius: 999px; background: rgba(246,244,239,.18); position: relative; cursor: inherit; transition: background .15s; grid-row: span 2; }
+.anual-check input::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--papel); transition: transform .15s; }
+.anual-check input:checked { background: var(--ambar); }
+.anual-check input:checked::after { transform: translateX(20px); background: var(--azul); }
+.anual-check input:focus-visible { outline: 3px solid var(--ambar); outline-offset: 3px; }
+.anual-check b { font-weight: 700; }
+.anual-check small { margin: 0; }
+.resultado .detalle-anual { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: rgba(242,169,0,.1); color: var(--papel); font-size: .92rem; }
 .resultado { border: 1px solid rgba(220,215,203,.3); border-radius: 22px; padding: clamp(24px, 3vw, 36px); position: sticky; top: 100px; }
 .resultado .eti { color: var(--niebla); }
 .resultado .grande { display: block; margin-top: 10px; font-weight: 800; font-size: clamp(3rem, 6vw, 4.6rem); line-height: 1; letter-spacing: -.04em; color: var(--ambar); font-variant-numeric: tabular-nums; }
@@ -476,6 +487,11 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
           <div class="campo"><label for="c-litros">Litros por repostaje</label><div class="control"><input type="range" id="c-litros-r" min="100" max="1200" step="50" value="500" aria-label="Litros por repostaje"><input type="number" id="c-litros" min="50" max="2000" step="10" value="500" inputmode="numeric"></div></div>
           <div class="campo"><label for="c-cts">Céntimos por litro que ganas al elegir la parada</label><div class="control"><input type="range" id="c-cts-r" min="0.5" max="10" step="0.5" value="3" aria-label="Céntimos por litro"><input type="number" id="c-cts" min="0" max="30" step="0.5" value="3" inputmode="decimal"></div>
             <small>Diferencia frente a la media de las estaciones de tus rutas. Entre estaciones de una misma tarjeta suele haber varios céntimos.</small></div>
+          <label class="anual-check" for="c-anual">
+            <input type="checkbox" id="c-anual" role="switch">
+            <b>Pago anual</b>
+            <small id="c-anual-nota">Plan Pro: dos meses gratis, pagas 10 de 12.</small>
+          </label>
         </form>
         <div class="resultado" aria-live="polite">
           <span class="eti">Ahorro estimado al mes</span>
@@ -486,6 +502,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <dt class="neto-fila">Te queda al mes</dt><dd class="neto-fila" id="r-neto">–</dd>
             <dt>Al año</dt><dd id="r-anio">–</dd>
           </dl>
+          <p class="detalle-anual" id="r-anual" hidden></p>
           <p class="nota">Ejemplo calculado con los datos que pones arriba. No es una promesa de ahorro.</p>
         </div>
       </div>
@@ -654,13 +671,23 @@ if ('IntersectionObserver' in window) {
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (de 26 a 49, −10 %), Flota desde 25 €
+// Pago anual en Pro: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
 const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', n * 27] : ['Flota, desde', n * 25];
+const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
 const eur = (n, dec = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }) + ' €';
 const ent = (n) => Math.round(n).toLocaleString('es-ES', { useGrouping: 'always' });
 const campos = ['camiones', 'repostajes', 'litros', 'cts'];
 function calcular() {
   const v = Object.fromEntries(campos.map(k => [k, Math.max(0, +document.getElementById('c-' + k).value || 0)]));
-  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100, [nombre, c] = plan(Math.max(1, Math.round(v.camiones)));
+  const n = Math.max(1, Math.round(v.camiones));
+  let [nombre, c] = plan(n);
+  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
+  const esPro = nombre === 'Pro';
+  anual.disabled = !esPro;
+  anualNota.textContent = esPro ? 'Plan Pro: dos meses gratis, pagas 10 de 12.' : 'Solo en el plan Pro, de 5 a 49 camiones.';
+  const conAnual = esPro && anual.checked;
+  if (conAnual) { rAnual.textContent = 'Pagas ' + eur(c * 10, 0) + ' al año de una vez (' + eur(c * 10 / 12 / n, 2) + ' por camión al mes). Te ahorras ' + eur(c * 2, 0) + ' frente al pago mensual.'; c = c * 10 / 12; nombre += ', pago anual'; }
+  rAnual.hidden = !conAnual;
   document.getElementById('r-ahorro').textContent = eur(ahorro);
   document.getElementById('r-litros').textContent = ent(litros) + ' l';
   document.getElementById('r-cuota').textContent = eur(c, 2);
@@ -673,6 +700,7 @@ for (const k of campos) {
   r.addEventListener('input', () => { n.value = r.value; calcular(); });
   n.addEventListener('input', () => { if (n.value !== '') r.value = n.value; calcular(); });
 }
+anual.addEventListener('change', calcular);
 calcular();
 
 // ---------- solicitud de prueba (misma tabla que la portada) ----------
