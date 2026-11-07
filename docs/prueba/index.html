@@ -184,7 +184,8 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .control input[type=range] { width: 100%; accent-color: var(--ambar); height: 44px; margin: 0; }
 .control input[type=number] { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(220,215,203,.4); background: rgba(246,244,239,.06); color: var(--papel); font: 800 1.1rem var(--f); text-align: right; font-variant-numeric: tabular-nums; }
 .campo small { display: block; margin-top: 8px; color: var(--niebla); font-size: .9rem; }
-.anual-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(220,215,203,.3); cursor: pointer; transition: border-color .15s, background .15s; }
+.opciones { display: grid; gap: 10px; }
+.anual-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(220,215,203,.3); cursor: pointer; transition: border-color .15s, background .15s; }
 .anual-check:has(input:checked) { border-color: var(--ambar); background: rgba(242,169,0,.08); }
 .anual-check:has(input:disabled) { cursor: not-allowed; opacity: .6; }
 .anual-check input { appearance: none; -webkit-appearance: none; margin: 0; width: 48px; height: 28px; border-radius: 999px; background: rgba(246,244,239,.18); position: relative; cursor: inherit; transition: background .15s; grid-row: span 2; }
@@ -487,11 +488,18 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
           <div class="campo"><label for="c-litros">Litros por repostaje</label><div class="control"><input type="range" id="c-litros-r" min="100" max="1200" step="50" value="500" aria-label="Litros por repostaje"><input type="number" id="c-litros" min="50" max="2000" step="10" value="500" inputmode="numeric"></div></div>
           <div class="campo"><label for="c-cts">Céntimos por litro que ganas al elegir la parada</label><div class="control"><input type="range" id="c-cts-r" min="0.5" max="10" step="0.5" value="3" aria-label="Céntimos por litro"><input type="number" id="c-cts" min="0" max="30" step="0.5" value="3" inputmode="decimal"></div>
             <small>Diferencia frente a la media de las estaciones de tus rutas. Entre estaciones de una misma tarjeta suele haber varios céntimos.</small></div>
-          <label class="anual-check" for="c-anual">
-            <input type="checkbox" id="c-anual" role="switch">
-            <b>Pago anual</b>
-            <small id="c-anual-nota">Plan Pro: dos meses gratis, pagas 10 de 12.</small>
-          </label>
+          <div class="opciones">
+            <label class="anual-check" for="c-fundadora">
+              <input type="checkbox" id="c-fundadora" role="switch">
+              <b>Flota fundadora</b>
+              <small>Las 30 primeras empresas: plan Pro a 20 € por camión al mes.</small>
+            </label>
+            <label class="anual-check" for="c-anual">
+              <input type="checkbox" id="c-anual" role="switch">
+              <b>Pago anual</b>
+              <small id="c-anual-nota">Plan Pro: dos meses gratis, pagas 10 de 12.</small>
+            </label>
+          </div>
         </form>
         <div class="resultado" aria-live="polite">
           <span class="eti">Ahorro estimado al mes</span>
@@ -577,7 +585,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3>Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: un 30 % menos, para siempre.</strong>Para los 30 primeros clientes, sobre el precio Pro, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <p><strong>Flotas fundadoras: plan Pro a 20 € por camión, para siempre.</strong>Para las 30 primeras empresas (200 € por camión pagando el año), a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
         <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
@@ -673,6 +681,7 @@ if ('IntersectionObserver' in window) {
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (de 26 a 49, −10 %), Flota desde 25 €
 // Pago anual en Pro: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
 const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', n * 27] : ['Flota, desde', n * 25];
+const fundadora = document.getElementById('c-fundadora');
 const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
 const eur = (n, dec = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }) + ' €';
 const ent = (n) => Math.round(n).toLocaleString('es-ES', { useGrouping: 'always' });
@@ -682,9 +691,11 @@ function calcular() {
   const n = Math.max(1, Math.round(v.camiones));
   let [nombre, c] = plan(n);
   const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
-  const esPro = nombre === 'Pro';
+  // Flotas fundadoras (30 primeras empresas): plan Pro a 20 € por camión, también con pago anual (200 € al año)
+  if (fundadora.checked) { nombre = 'Pro fundadora'; c = n * 20; }
+  const esPro = nombre === 'Pro' || fundadora.checked;
   anual.disabled = !esPro;
-  anualNota.textContent = esPro ? 'Plan Pro: dos meses gratis, pagas 10 de 12.' : 'Solo en el plan Pro, de 5 a 49 camiones.';
+  anualNota.textContent = !esPro ? 'Solo en el plan Pro, de 5 a 49 camiones.' : fundadora.checked ? 'Con precio de fundadora: 200 € por camión al año.' : 'Plan Pro: dos meses gratis, pagas 10 de 12.';
   const conAnual = esPro && anual.checked;
   if (conAnual) { rAnual.textContent = 'Pagas ' + eur(c * 10, 0) + ' al año de una vez (' + eur(c * 10 / 12 / n, 2) + ' por camión al mes). Te ahorras ' + eur(c * 2, 0) + ' frente al pago mensual.'; c = c * 10 / 12; nombre += ', pago anual'; }
   rAnual.hidden = !conAnual;
@@ -701,6 +712,7 @@ for (const k of campos) {
   n.addEventListener('input', () => { if (n.value !== '') r.value = n.value; calcular(); });
 }
 anual.addEventListener('change', calcular);
+fundadora.addEventListener('change', calcular);
 calcular();
 
 // ---------- solicitud de prueba (misma tabla que la portada) ----------
