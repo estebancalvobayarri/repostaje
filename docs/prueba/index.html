@@ -194,21 +194,47 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .resultado .nota { margin: 22px 0 0; font-size: .88rem; color: var(--niebla); }
 @media (max-width: 900px) { .calc { grid-template-columns: 1fr; } .resultado { position: static; } }
 
-/* precios */
-.precios-rejilla { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-.tabla { background: var(--blanco); border-radius: 22px; padding: 8px 28px; box-shadow: 0 1px 0 var(--niebla); }
-.tabla table { width: 100%; border-collapse: collapse; }
-.tabla th { padding: 18px 0 14px; text-align: left; font: 700 .8rem var(--f); letter-spacing: .12em; text-transform: uppercase; color: var(--asfalto); }
-.tabla th:last-child, .tabla td:last-child { text-align: right; }
-.tabla td { padding: 18px 0; border-top: 1px solid var(--niebla); font-size: 1.1rem; }
-.tabla td:last-child { font-weight: 800; font-size: 1.5rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.incluye { padding: 8px 0 0 clamp(0px, 3vw, 32px); }
-.incluye ul { margin: 18px 0 0; padding: 0; list-style: none; }
-.incluye li { position: relative; padding: 14px 0 14px 32px; border-top: 1px solid var(--niebla); }
-.incluye li::before { content: ""; position: absolute; left: 4px; top: 22px; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--azul); }
-.incluye .ejemplo-cuota { margin-top: 18px; padding: 18px 20px; border-radius: 16px; background: var(--ambar-suave); color: var(--azul); }
-.incluye .ejemplo-cuota b { font-variant-numeric: tabular-nums; }
-@media (max-width: 860px) { .precios-rejilla { grid-template-columns: 1fr; } .incluye { padding: 12px 0 0; } }
+/* precios: tres planes */
+.planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.plan { position: relative; display: flex; flex-direction: column; background: var(--blanco); border-radius: 24px; padding: clamp(26px, 3vw, 36px); box-shadow: 0 1px 0 var(--niebla); }
+.plan h3 { font-size: 1.5rem; }
+.plan .para { margin: 6px 0 0; color: var(--asfalto); font-size: .98rem; }
+.plan .precio { margin: 26px 0 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.plan .precio .desde { font-weight: 700; color: inherit; }
+.plan .precio span { white-space: nowrap; }
+.plan .precio b { font-weight: 800; font-size: clamp(2.6rem, 3.6vw, 3.2rem); line-height: 1; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.plan .precio span { font-weight: 600; color: var(--asfalto); }
+.plan .anual { margin: 10px 0 0; font-size: .95rem; color: var(--asfalto); }
+.plan .anual b { color: var(--azul); }
+.plan ul { margin: 24px 0 0; padding: 0; list-style: none; border-top: 3px dotted var(--niebla); }
+.plan li { position: relative; padding: 11px 0 11px 28px; border-bottom: 1px solid var(--niebla); font-size: .98rem; }
+.plan li::before { content: ""; position: absolute; left: 2px; top: 18px; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--azul); box-sizing: border-box; }
+.plan li.base { font-weight: 700; }
+.plan .minimo { margin: 18px 0 0; font-size: .9rem; color: var(--asfalto); }
+.plan .boton { align-self: stretch; }
+.plan .pie-plan { margin-top: auto; padding-top: 24px; display: grid; gap: 14px; }
+.plan.destacado { background: var(--azul); color: var(--papel); box-shadow: 0 30px 60px -36px rgba(18,38,63,.6); }
+.plan.destacado .para, .plan.destacado .precio span, .plan.destacado .anual, .plan.destacado .minimo { color: var(--niebla); }
+.plan.destacado .anual b { color: var(--papel); }
+.plan.destacado ul { border-top-color: rgba(242,169,0,.7); }
+.plan.destacado li { border-bottom-color: rgba(220,215,203,.18); }
+.plan.destacado li::before { border-color: var(--ambar); }
+.plan.destacado .boton { background: var(--ambar); border-color: var(--ambar); color: var(--azul); }
+.plan.destacado .boton:hover { background: #FFBC1F; border-color: #FFBC1F; }
+.plan .sello-plan { position: absolute; top: -13px; left: clamp(26px, 3vw, 36px); display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--ambar); color: var(--azul); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.plan .volumen { margin: 14px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(246,244,239,.08); border: 1px solid rgba(220,215,203,.25); font-size: .92rem; }
+@media (max-width: 1080px) { .planes { grid-template-columns: 1fr; max-width: 560px; margin-inline: auto; } .plan.destacado { order: -1; } }
+.condiciones { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--niebla); }
+.condiciones div { padding: 24px 24px 0 0; }
+.condiciones div + div { padding-left: 24px; border-left: 1px solid var(--niebla); }
+.condiciones h3 { font-size: 1.1rem; }
+.condiciones p { margin: 8px 0 0; color: var(--asfalto); font-size: .98rem; }
+@media (max-width: 900px) { .condiciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } .condiciones div:nth-child(3) { padding-left: 0; border-left: 0; } .condiciones div { padding-bottom: 20px; } }
+@media (max-width: 560px) { .condiciones { grid-template-columns: 1fr; } .condiciones div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--niebla); } }
+.fundadoras { margin-top: clamp(40px, 6vw, 56px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; padding: clamp(22px, 3vw, 32px) clamp(22px, 3vw, 36px); border-radius: 20px; background: var(--ambar-suave); }
+.fundadoras p { margin: 0; max-width: 46em; }
+.fundadoras strong { display: block; font-size: 1.25rem; font-weight: 800; letter-spacing: -.015em; margin-bottom: 4px; }
+.ejemplo-precio { margin: 20px 0 0; font-size: .95rem; color: var(--asfalto); }
 
 /* dudas */
 .dudas { border-top: 1px solid var(--niebla); }
@@ -305,13 +331,14 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <h1>Repostar,<br>simplificado<span class="punto">.</span></h1>
         <p class="entrada">Fuelfy lee los precios especiales que cada mañana te mandan tus tarjetas de carburante, los pone en el mapa y te dice en qué estación de la ruta le conviene parar a cada camión. Luego le envías la parada al conductor por WhatsApp.</p>
         <div class="acciones">
-          <a class="boton lleno grande" href="#prueba">Prueba 14 días gratis <span class="flecha" aria-hidden="true">→</span></a>
+          <a class="boton lleno grande" href="#prueba">Prueba 30 días gratis <span class="flecha" aria-hidden="true">→</span></a>
           <a class="boton vacio grande" href="#como-funciona">Ver cómo funciona</a>
         </div>
         <ul class="garantias">
+          <li>Sin tarjeta</li>
           <li>Sin instalar nada</li>
           <li>Sin permanencia</li>
-          <li>Desde 5 € por camión al mes</li>
+          <li>Desde 20 € por camión al mes</li>
         </ul>
       </div>
 
@@ -455,7 +482,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
           <span class="grande" id="r-ahorro">–</span>
           <dl>
             <dt>Litros repostados al mes</dt><dd id="r-litros">–</dd>
-            <dt>Cuota de Fuelfy (sin IVA)</dt><dd id="r-cuota">–</dd>
+            <dt id="r-plan">Cuota de Fuelfy (sin IVA)</dt><dd id="r-cuota">–</dd>
             <dt class="neto-fila">Te queda al mes</dt><dd class="neto-fila" id="r-neto">–</dd>
             <dt>Al año</dt><dd id="r-anio">–</dd>
           </dl>
@@ -469,33 +496,72 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
     <div class="envuelve">
       <div class="cabeza">
         <p class="eti">Precios</p>
-        <h2 id="t-precios">Cuantos más camiones, menos pagas por cada uno<span class="punto">.</span></h2>
-        <p>Empiezas con 14 días de prueba gratis. Después, un precio por camión en servicio y mes, escalonado por tramos: cada camión paga el precio de su tramo.</p>
+        <h2 id="t-precios">Una cuota que se paga sola con un par de repostajes<span class="punto">.</span></h2>
+        <p>Pagas por camión y mes, sin instalar nada en el vehículo y sin permanencia. Pruébalo 30 días gratis, sin tarjeta.</p>
       </div>
-      <div class="precios-rejilla">
-        <div class="tabla aparece">
-          <table>
-            <thead><tr><th scope="col">Camiones en servicio</th><th scope="col">Por camión y mes</th></tr></thead>
-            <tbody>
-              <tr><td>Del 1 al 10</td><td>5,00 €</td></tr>
-              <tr><td>Del 11 al 25</td><td>4,50 €</td></tr>
-              <tr><td>Del 26 al 50</td><td>4,00 €</td></tr>
-              <tr><td>Del 51 al 100</td><td>3,50 €</td></tr>
-              <tr><td>Más de 100</td><td>3,00 €</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="incluye aparece">
-          <h3>Lo que incluye y cómo se cobra</h3>
+      <div class="planes">
+        <article class="plan aparece">
+          <h3>Esencial</h3>
+          <p class="para">Autónomos y flotas de 2 a 5 camiones.</p>
+          <p class="precio"><b>20 €</b><span>/ camión y mes</span></p>
+          <p class="anual">Pagando el año: <b>200 € por camión</b></p>
           <ul>
-            <li><b>14 días de prueba gratis</b> antes de pagar nada.</li>
-            <li><b>Sin permanencia:</b> te das de baja cuando quieras.</li>
-            <li><b>Solo pagan los camiones en servicio</b>: los de baja no cuentan.</li>
-            <li><b>Todas las funciones</b> y todos los usuarios de tu empresa, sin extras.</li>
+            <li>Mapa de precios del gasóleo en ruta</li>
+            <li>La mejor parada para cada camión</li>
+            <li>Planificación con la ruta completa y el nivel del depósito</li>
+            <li>Avisos al conductor</li>
+            <li>Un usuario gestor</li>
           </ul>
-          <p class="ejemplo-cuota">Ejemplo con 20 camiones: 10 × 5 € + 10 × 4,50 € = <b>95 € al mes</b>. Precios sin IVA.</p>
-          <a href="../legal/condiciones.html#precio" style="font-weight: 700">Condiciones completas</a>
-        </div>
+          <div class="pie-plan">
+            <p class="minimo">Mínimo 2 camiones (40 € al mes).</p>
+            <a class="boton vacio" href="#prueba">Probar Esencial</a>
+          </div>
+        </article>
+        <article class="plan destacado aparece">
+          <span class="sello-plan">Recomendado</span>
+          <h3>Pro</h3>
+          <p class="para">Flotas de 5 a 50 camiones.</p>
+          <p class="precio"><b>30 €</b><span>/ camión y mes</span></p>
+          <p class="anual">Pagando el año: <b>300 € por camión</b></p>
+          <ul>
+            <li class="base">Todo lo de Esencial, y además:</li>
+            <li>Informe mensual de ahorro frente a repostar sin Fuelfy</li>
+            <li>Usuarios ilimitados</li>
+            <li>Exportación de datos</li>
+          </ul>
+          <p class="volumen">De 26 a 49 camiones, <b>un 10 % menos</b> por camión.</p>
+          <div class="pie-plan">
+            <p class="minimo">Mínimo 5 camiones.</p>
+            <a class="boton lleno" href="#prueba">Probar Pro 30 días gratis</a>
+          </div>
+        </article>
+        <article class="plan aparece">
+          <h3>Flota</h3>
+          <p class="para">Más de 50 camiones.</p>
+          <p class="precio"><span class="desde">desde</span><b>25 €</b><span>/ camión y mes</span></p>
+          <p class="anual">A medida, con <b>contrato anual</b></p>
+          <ul>
+            <li class="base">Todo lo de Pro, y además:</li>
+            <li>Varias cuentas: sedes o centros de coste</li>
+            <li>Administrador de cuenta</li>
+            <li>Soporte prioritario</li>
+          </ul>
+          <div class="pie-plan">
+            <p class="minimo">Desde 50 camiones.</p>
+            <a class="boton vacio" href="#prueba">Pedir presupuesto</a>
+          </div>
+        </article>
+      </div>
+      <p class="ejemplo-precio">Precios sin IVA. Ejemplo: 20 camiones en Pro son 600 € al mes; con un ahorro prudente de 4 céntimos por litro, esa flota ahorra unos 2.500 € al mes.</p>
+      <div class="condiciones">
+        <div class="aparece"><h3>30 días gratis</h3><p>Sin tarjeta. Tiempo de sobra para ver el ahorro en los repostajes de un mes completo.</p></div>
+        <div class="aparece"><h3>Sin permanencia</h3><p>Pagando mes a mes, te das de baja cuando quieras.</p></div>
+        <div class="aparece"><h3>Dos meses gratis</h3><p>Si pagas el año completo, pagas solo diez meses.</p></div>
+        <div class="aparece"><h3>Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
+      </div>
+      <div class="fundadoras aparece">
+        <p><strong>Flotas fundadoras: un 30 % menos, para siempre.</strong>Para los 30 primeros clientes, sobre el precio Pro, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
   </section>
@@ -509,7 +575,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
       <div class="preguntas">
         <details><summary>¿Tengo que cambiar de tarjeta o de proveedor?</summary><p>No. Fuelfy trabaja con los precios que ya te dan tus tarjetas. Solo tienes que reenviarle los emails que ya recibes.</p></details>
         <details><summary>¿Hay que instalar algo?</summary><p>No. Funciona en el navegador del ordenador y del móvil. Si quieres, en el móvil la puedes añadir a la pantalla de inicio.</p></details>
-        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 14 días y es gratis. Al terminar, si sigues, pagas por camión en servicio según la tabla de precios. Si no, no pagas nada.</p></details>
+        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 30 días, es gratis y no te pedimos tarjeta. Al terminar, si sigues, eliges plan y pagas por camión; si no, no pagas nada. Y si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></details>
         <details><summary>¿Cómo se cuentan los camiones?</summary><p>Cada mes se cobra el máximo de camiones que has tenido en servicio a la vez. Si das de baja un camión, deja de contar el mes siguiente. Se cobra a mes vencido.</p></details>
         <details><summary>¿Y el conductor? ¿Necesita usuario?</summary><p>No hace falta: recibe la parada por WhatsApp, con el enlace a Google Maps. Si quieres, también puede tener su propio usuario para consultar el mapa.</p></details>
         <details><summary>¿Qué pasa con mis datos y mis precios?</summary><p>Tus precios y tus rutas solo los ve tu empresa. Los datos se guardan en la Unión Europea y puedes descargarlos o pedir que se borren cuando quieras. Más detalle en la <a href="../legal/privacidad.html">política de privacidad</a>.</p></details>
@@ -526,7 +592,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <source srcset="../imagenes/web/gasolinera-noche.webp" type="image/webp">
             <img src="../imagenes/web/gasolinera-noche.jpg" alt="" width="709" height="471" loading="lazy">
           </picture>
-          <p class="eti">14 días gratis</p>
+          <p class="eti">30 días gratis · sin tarjeta</p>
           <h2 id="t-prueba">Pruébalo con tus propios precios<span class="punto">.</span></h2>
           <p>Déjanos tus datos y te escribimos para darte de alta. En cuanto reenvíes tus emails de precios, ya puedes planificar tus rutas.</p>
         </div>
@@ -587,17 +653,18 @@ if ('IntersectionObserver' in window) {
 } else document.documentElement.classList.add('sin-js');
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
-const TRAMOS = [[10, 5], [25, 4.5], [50, 4], [100, 3.5], [Infinity, 3]];
-const cuota = (n) => { let t = 0, d = 0; for (const [h, p] of TRAMOS) { const k = Math.max(0, Math.min(n, h) - d); t += k * p; d = h; if (n <= h) break; } return t; };
+// Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (de 26 a 49, −10 %), Flota desde 25 €
+const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', n * 27] : ['Flota, desde', n * 25];
 const eur = (n, dec = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }) + ' €';
 const ent = (n) => Math.round(n).toLocaleString('es-ES', { useGrouping: 'always' });
 const campos = ['camiones', 'repostajes', 'litros', 'cts'];
 function calcular() {
   const v = Object.fromEntries(campos.map(k => [k, Math.max(0, +document.getElementById('c-' + k).value || 0)]));
-  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100, c = cuota(Math.max(1, Math.round(v.camiones)));
+  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100, [nombre, c] = plan(Math.max(1, Math.round(v.camiones)));
   document.getElementById('r-ahorro').textContent = eur(ahorro);
   document.getElementById('r-litros').textContent = ent(litros) + ' l';
   document.getElementById('r-cuota').textContent = eur(c, 2);
+  document.getElementById('r-plan').textContent = 'Cuota plan ' + nombre + ' (sin IVA)';
   document.getElementById('r-neto').textContent = eur(ahorro - c);
   document.getElementById('r-anio').textContent = eur((ahorro - c) * 12);
 }
