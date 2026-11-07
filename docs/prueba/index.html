@@ -17,7 +17,7 @@
    la ruta de puntos del logotipo como hilo conductor y el ámbar reservado a la parada. */
 :root {
   --azul: #12263F; --noche: #0B1A2C; --ambar: #F2A900; --ambar-tinta: #8A5F00; --ambar-suave: #FDF3D6;
-  --papel: #F6F4EF; --blanco: #FFFFFF; --asfalto: #4A5563; --niebla: #DCD7CB;
+  --papel: #F6F4EF; --blanco: #FFFFFF; --asfalto: #4A5563; --niebla: #DCD7CB; --linea: #E7E3DA; --verde: #1D7A4C;
   --f: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
   --ancho: 1240px; --lado: clamp(20px, 4vw, 40px);
 }
@@ -65,8 +65,8 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 
 /* portada */
 .portada { padding: clamp(40px, 7vw, 88px) 0 clamp(72px, 9vw, 120px); }
-.portada .envuelve { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(40px, 5vw, 72px); align-items: end; }
-.portada h1 { margin-top: 26px; font-size: clamp(3.2rem, 6vw, 6.4rem); line-height: .92; letter-spacing: -.05em; }
+.portada .envuelve { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(40px, 5vw, 64px); align-items: center; }
+.portada h1 { margin-top: 26px; font-size: clamp(3rem, 5.4vw, 5.6rem); line-height: .92; letter-spacing: -.05em; }
 .portada .entrada { margin: 32px 0 0; max-width: 34em; font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.55; color: var(--asfalto); }
 .acciones { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; }
 .garantias { margin: 28px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: .92rem; font-weight: 600; color: var(--asfalto); }
@@ -74,31 +74,48 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .garantias li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--azul); }
 @media (max-width: 960px) { .portada .envuelve { grid-template-columns: 1fr; } .portada h1 { font-size: clamp(3.2rem, 13vw, 6.4rem); } }
 
-/* hoja de ruta (ejemplo) */
-.hoja { background: var(--blanco); border-radius: 22px; padding: 26px; box-shadow: 0 1px 0 var(--niebla), 0 30px 60px -36px rgba(18,38,63,.45); position: relative; }
-.hoja-cab { display: flex; justify-content: space-between; gap: 12px; }
-.trayecto { margin-top: 18px; display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: clamp(1.3rem, 2.2vw, 1.65rem); letter-spacing: -.02em; }
-.trayecto .linea { flex: 1; height: 0; border-top: 3px dotted var(--azul); min-width: 24px; }
-.datos { margin: 18px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.datos div { background: var(--papel); border-radius: 12px; padding: 10px 12px; }
-.datos dt { font-size: .75rem; font-weight: 700; color: var(--asfalto); text-transform: uppercase; letter-spacing: .08em; }
-.datos dd { margin: 2px 0 0; font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.paradas { margin: 20px 0 0; padding: 0; list-style: none; }
-.paradas li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--niebla); }
-.paradas li:last-child { border-bottom: 1px solid var(--niebla); }
-.paradas .anillo { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--asfalto); justify-self: center; }
-.paradas b { display: block; font-size: .98rem; }
-.paradas small { display: block; font-size: .82rem; color: var(--asfalto); }
-.paradas .precio { font-weight: 800; font-variant-numeric: tabular-nums; }
-.paradas li.mejor { background: var(--azul); color: var(--papel); border-radius: 14px; padding: 12px; margin: 0 -12px; border-color: transparent; }
-.paradas li.mejor + li { border-top-color: transparent; }
-.paradas li.mejor small { color: var(--niebla); }
-.paradas li.mejor .anillo { border: 0; width: 14px; height: 14px; background: var(--ambar); box-shadow: 0 0 0 6px rgba(242,169,0,.3); }
-.hoja-pie { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.hoja-pie p { margin: 0; font-size: .95rem; color: var(--asfalto); }
-.hoja-pie strong { color: var(--azul); }
-.whatsapp { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--ambar); color: var(--azul); font-weight: 800; font-size: .9rem; }
-.ejemplo { position: absolute; top: -12px; right: 22px; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; background: var(--papel); border: 1px solid var(--niebla); border-radius: 999px; padding: 3px 10px; color: var(--asfalto); }
+/* captura del planificador (la misma que la portada actual) */
+.ventana { background: var(--blanco); border: 1px solid var(--niebla); border-radius: 14px; overflow: hidden; box-shadow: 0 40px 80px -40px rgba(18,38,63,.35), 0 10px 24px -12px rgba(18,38,63,.12); font-size: 12px; line-height: 1.35; color: var(--azul); }
+.ventana .barra { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--papel); border-bottom: 1px solid var(--linea); }
+.ventana .barra i { width: 9px; height: 9px; border-radius: 50%; background: var(--niebla); }
+.ventana .barra span { margin-left: 10px; flex: 1; max-width: 220px; background: var(--blanco); border: 1px solid var(--linea); border-radius: 6px; padding: 2px 10px; color: var(--asfalto); font-size: 11px; }
+.ventana .cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); }
+.ventana .lado { border-right: 1px solid var(--linea); display: grid; align-content: start; }
+.ventana .pest { display: flex; gap: 2px; padding: 6px 10px 0; border-bottom: 1px solid var(--linea); }
+.ventana .pest b { font-weight: 600; color: var(--asfalto); padding: 5px 8px; border-bottom: 3px solid transparent; }
+.ventana .pest b.on { color: var(--azul); border-bottom-color: var(--ambar); }
+.ventana .bl { padding: 9px 12px; border-bottom: 1px solid var(--linea); display: grid; gap: 6px; }
+.ventana .lb { font-weight: 600; font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase; color: var(--asfalto); }
+.ventana .fila { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ventana .medidor { height: 6px; border-radius: 3px; background: var(--niebla); overflow: hidden; }
+.ventana .medidor i { display: block; width: 30%; height: 100%; background: var(--ambar); }
+.ventana .lugar { display: flex; align-items: center; gap: 7px; border: 1px solid var(--linea); border-radius: 5px; padding: 4px 7px; font-weight: 600; }
+.ventana .lugar::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--azul); flex: none; }
+.ventana .lugar.fin::before { background: var(--ambar); }
+.ventana .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.ventana .kpis b { display: block; font: 800 15px var(--f); }
+.ventana .kpis span { font-size: 9.5px; color: var(--asfalto); }
+.ventana .ph { padding: 8px 12px 4px; font: 700 10px var(--f); letter-spacing: .06em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.ventana .ph small { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--asfalto); }
+.ventana .parada { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 7px; align-items: center; padding: 6px 12px 6px 9px; border-top: 1px solid var(--linea); border-left: 3px solid transparent; }
+.ventana .parada .r { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--niebla); }
+.ventana .parada b { font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ventana .parada small { color: var(--asfalto); font-size: 10px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ventana .parada .p { font: 800 13px var(--f); font-variant-numeric: tabular-nums; }
+.ventana .parada.mejor { border-left-color: var(--verde); background: #FBFAF6; }
+.ventana .parada.mejor .r { border-color: var(--azul); background: radial-gradient(var(--azul) 0 35%, var(--blanco) 40%); }
+.ventana .envio { padding: 9px 12px 12px; display: grid; gap: 6px; border-top: 1px solid var(--linea); }
+.ventana .envio .ah { color: var(--verde); font-weight: 700; }
+.ventana .wa { background: #1A8F4C; color: #fff; border-radius: 6px; padding: 7px; text-align: center; font-weight: 700; }
+.ventana .mapa { position: relative; background: #EEF0EA; min-height: 100%; }
+.ventana .mapa svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ventana .sello { position: absolute; right: 8px; bottom: 8px; background: rgba(255,255,255,.9); border: 1px solid var(--linea); border-radius: 999px; padding: 2px 9px; font-size: 10px; color: var(--asfalto); }
+@media (max-width: 560px) {
+  .ventana .cuerpo { grid-template-columns: minmax(0, 1fr); }
+  .ventana .lado { border-right: 0; }
+  .ventana .mapa { order: -1; aspect-ratio: 300 / 380; border-bottom: 1px solid var(--linea); }
+  .ventana .ocultable { display: none; }
+}
 
 /* tarjetas que lee: tira */
 .tira { border-block: 1px solid var(--niebla); }
@@ -298,26 +315,58 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         </ul>
       </div>
 
-      <div class="hoja" aria-label="Ejemplo de ruta planificada con Fuelfy">
-        <span class="ejemplo">Ejemplo ilustrativo</span>
-        <div class="hoja-cab"><span class="eti">Hoja de ruta</span><span class="eti">4821 LKP · 900 l</span></div>
-        <div class="trayecto"><span>Valencia</span><span class="linea" aria-hidden="true"></span><span>Barcelona</span></div>
-        <dl class="datos">
-          <div><dt>Distancia</dt><dd>349 km</dd></div>
-          <div><dt>Tiempo</dt><dd>3 h 35</dd></div>
-          <div><dt>Depósito</dt><dd>30 %</dd></div>
-        </dl>
-        <ol class="paradas">
-          <li><span class="anillo" aria-hidden="true"></span><span><b>Estación A‑7 · Sagunto</b><small>Valcarce · km 28 · 0 km de desvío</small></span><span class="precio">1,425</span></li>
-          <li><span class="anillo" aria-hidden="true"></span><span><b>Área Castellón Norte</b><small>DST · km 72 · 1 km de desvío</small></span><span class="precio">1,412</span></li>
-          <li class="mejor"><span class="anillo" aria-hidden="true"></span><span><b>Estación A‑7 · Benicarló</b><small>Valcarce · km 138 · caben 670 l · recomendada</small></span><span class="precio">1,388</span></li>
-          <li><span class="anillo" aria-hidden="true"></span><span><b>Área L’Ampolla</b><small>DST · km 205 · 2 km de desvío</small></span><span class="precio">1,423</span></li>
-        </ol>
-        <div class="hoja-pie">
-          <p>Ahorro estimado: <strong>21,44 €</strong> frente a la media de las otras 3 paradas.</p>
-          <span class="whatsapp" aria-hidden="true">Enviar por WhatsApp</span>
+      <figure class="ventana" style="margin: 0" aria-label="Así se ve el planificador de Fuelfy: ruta de Valencia a Barcelona con cuatro paradas y la más barata recomendada">
+        <div class="barra" aria-hidden="true"><i></i><i></i><i></i><span>www.fuelfy.app/app</span></div>
+        <div class="cuerpo" aria-hidden="true">
+          <div class="lado">
+            <div class="pest"><b class="on">Ruta</b><b>Flota</b><b>Ahorro</b></div>
+            <div class="bl">
+              <span class="lb">Camión</span>
+              <div class="fila"><b>4821 LKP · 900 l</b><span>30 %</span></div>
+              <div class="medidor"><i></i></div>
+            </div>
+            <div class="bl ocultable">
+              <span class="lugar">Valencia</span>
+              <span class="lugar fin">Barcelona</span>
+            </div>
+            <div class="bl">
+              <div class="kpis"><div><b>349</b><span>km</span></div><div><b>3 h 35</b><span>tiempo</span></div><div><b>112 l</b><span>de ruta</span></div></div>
+            </div>
+            <div class="ph">Paradas en la ruta <small>4 a menos de 8 km</small></div>
+            <div class="parada"><span class="r"></span><div><b>Estación A‑7 · Sagunto</b><small>Valcarce · km 28 · 0 km de desvío</small></div><span class="p" style="color:#B8412C">1,425</span></div>
+            <div class="parada ocultable"><span class="r"></span><div><b>Área Castellón Norte</b><small>DST · km 72 · 1 km de desvío</small></div><span class="p" style="color:#A87400">1,412</span></div>
+            <div class="parada mejor"><span class="r"></span><div><b>Estación A‑7 · Benicarló</b><small>Valcarce · km 138 · caben 670 l</small></div><span class="p" style="color:#1D7A4C">1,388</span></div>
+            <div class="parada"><span class="r"></span><div><b>Área L’Ampolla</b><small>DST · km 205 · 2 km de desvío</small></div><span class="p" style="color:#B23F2E">1,423</span></div>
+            <div class="envio">
+              <span class="ah">Ahorro estimado: 21,44 € frente a la media de las otras 3 paradas.</span>
+              <span class="wa">Enviar por WhatsApp</span>
+            </div>
+          </div>
+          <div class="mapa">
+            <svg viewBox="0 0 300 380" preserveAspectRatio="xMidYMid slice">
+              <rect width="300" height="380" fill="#EEF0EA"/>
+              <path d="M150 380C128 340 118 300 124 262C130 226 150 198 168 170C188 140 204 120 224 100C246 78 268 58 300 44V380Z" fill="#DCE5EC"/>
+              <g fill="none" stroke="#D9D6CC" stroke-width="2.2" stroke-linecap="round">
+                <path d="M0 250C40 260 70 300 64 330"/><path d="M20 120C60 150 90 200 102 244"/><path d="M60 0C80 50 120 120 140 180"/><path d="M140 0C160 40 190 70 210 88"/><path d="M0 330C30 325 50 322 62 330"/>
+              </g>
+              <path d="M62 330C70 312 76 300 80 290C88 270 96 256 103 242C116 220 128 198 140 182C152 166 164 146 176 130C188 114 198 100 212 88C226 74 238 60 252 46" fill="none" stroke="#12263F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <g fill="#A9A69C"><circle cx="40" cy="262" r="4"/><circle cx="118" cy="122" r="4"/><circle cx="190" cy="60" r="4"/><circle cx="84" cy="200" r="4"/></g>
+              <g stroke="#fff" stroke-width="2"><circle cx="80" cy="290" r="6" fill="#B8412C"/><circle cx="103" cy="242" r="6" fill="#A87400"/><circle cx="176" cy="130" r="6" fill="#B23F2E"/></g>
+              <circle cx="140" cy="182" r="17" fill="#F2A900" opacity=".25"/>
+              <circle cx="140" cy="182" r="9" fill="#F2A900" stroke="#fff" stroke-width="2.5"/>
+              <g font-family="Manrope, sans-serif" font-weight="800" font-size="10" fill="#12263F">
+                <rect x="150" y="164" width="44" height="18" rx="9" fill="#12263F"/><text x="172" y="176.5" text-anchor="middle" fill="#fff">1,388</text>
+              </g>
+              <g font-family="Manrope, sans-serif" font-weight="700" font-size="9.5" fill="#4A5563">
+                <circle cx="62" cy="330" r="5" fill="#12263F" stroke="#fff" stroke-width="2"/><text x="72" y="346">Valencia</text>
+                <circle cx="252" cy="46" r="5" fill="#F2A900" stroke="#fff" stroke-width="2"/><text x="218" y="30">Barcelona</text>
+                <text x="56" y="236">Castellón</text><text x="166" y="128" text-anchor="end">L’Ampolla</text>
+              </g>
+            </svg>
+            <span class="sello">Ejemplo ilustrativo</span>
+          </div>
         </div>
-      </div>
+      </figure>
     </div>
   </section>
 
