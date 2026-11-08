@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fuelfy · Repostaje inteligente para flotas</title>
-<meta name="description" content="Fuelfy lee los precios especiales que te mandan tus tarjetas de carburante, te dice dónde repostar en cada ruta y le envía la parada a tu conductor por WhatsApp. Para flotas pequeñas y medianas.">
+<title>Fuelfy · Repostar inteligente, ahorro garantizado</title>
+<meta name="description" content="Fuelfy lee los precios especiales que te mandan tus tarjetas de carburante, te dice dónde repostar en cada ruta y le envía la parada a tu conductor por WhatsApp.">
 <link rel="canonical" href="https://www.fuelfy.app/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fuelfy">
 <meta property="og:locale" content="es_ES">
 <meta property="og:url" content="https://www.fuelfy.app/">
-<meta property="og:title" content="Fuelfy · Repostaje inteligente para flotas">
-<meta property="og:description" content="Tus precios de tarjeta, en el mapa y en cada ruta. 14 días gratis, sin permanencia.">
+<meta property="og:title" content="Fuelfy · Repostar inteligente, ahorro garantizado">
+<meta property="og:description" content="Tus precios de tarjeta, en el mapa y en cada ruta. 30 días gratis, sin tarjeta y sin permanencia.">
 <meta property="og:image" content="https://www.fuelfy.app/imagenes/web/flota-aerea.jpg">
 <meta property="og:image:width" content="709">
 <meta property="og:image:height" content="531">
 <meta property="og:image:alt" content="Camiones aparcados vistos desde arriba">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fuelfy","url":"https://www.fuelfy.app/","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"es","description":"Repostaje inteligente para flotas: lee los precios de tus tarjetas de carburante y te dice dónde repostar en cada ruta.","offers":{"@type":"Offer","price":"5.00","priceCurrency":"EUR","description":"Por camión y mes, sin IVA, con descuentos por tramos. 14 días de prueba gratis."}}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Fuelfy","url":"https://www.fuelfy.app/","applicationCategory":"BusinessApplication","operatingSystem":"Web","inLanguage":"es","description":"Repostaje inteligente para flotas: lee los precios de tus tarjetas de carburante y te dice dónde repostar en cada ruta.","offers":{"@type":"AggregateOffer","lowPrice":"20.00","highPrice":"30.00","priceCurrency":"EUR","description":"Por camión y mes, sin IVA. Planes Esencial, Pro y Flota. 30 días de prueba gratis, sin tarjeta."}}
 </script>
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#F6F4EF">
 <link rel="icon" href="iconos/icono-192.png">
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <script>
@@ -30,67 +30,71 @@
   else if (matchMedia('(display-mode: standalone)').matches) location.replace('app/');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
 <style>
-/* Portada en claro: blanco y papel de base, texto en tinta neutra, azul ruta solo en titulares
-   y detalles puntuales, ámbar gasóleo como acento (acciones, parada recomendada).
-   El motivo gráfico es el del logotipo: la manguera que se convierte en una ruta de puntos y acaba en la parada ámbar. */
+/* Dirección «Cuaderno de ruta»: papel de fondo, titulares enormes en azul ruta,
+   la ruta de puntos del logotipo como hilo conductor y el ámbar reservado a la parada. */
 :root {
-  --azul: #12263F; --noche: #0B1A2C; --ambar: #F2A900; --ambar-suave: #FDF3D6; --ambar-borde: #F0D78F; --ambar-tinta: #8A5F00;
-  --papel: #F6F4EF; --blanco: #FFFFFF; --asfalto: #4A5563; --niebla: #DCD7CB; --linea: #E7E3DA;
-  --tinta: #1E2733;
-  --verde: #1D7A4C; --medio: #A87400; --caro: #B8412C;
-  --f: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --ancho: 1160px;
-  color-scheme: light;
+  --azul: #12263F; --noche: #0B1A2C; --ambar: #F2A900; --ambar-tinta: #8A5F00; --ambar-suave: #FDF3D6;
+  --papel: #F6F4EF; --blanco: #FFFFFF; --asfalto: #4A5563; --niebla: #DCD7CB; --linea: #E7E3DA; --verde: #1D7A4C;
+  --f: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ancho: 1240px; --lado: clamp(20px, 4vw, 40px);
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
-body { margin: 0; background: var(--blanco); color: var(--tinta); font: 17px/1.55 var(--f); }
-img { max-width: 100%; height: auto; display: block; }
-a { color: inherit; }
-:focus-visible { outline: 3px solid var(--ambar); outline-offset: 3px; border-radius: 4px; }
-.envuelve { max-width: var(--ancho); margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
-h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -.02em; }
-h1, h2 { color: var(--azul); }
-h2 { font: 800 clamp(1.7rem, 3.4vw, 2.5rem)/1.12 var(--f); }
-h3 { font: 700 1.15rem/1.3 var(--f); }
-p { margin: 0; }
-.eti { font: 700 .78rem var(--f); letter-spacing: .12em; text-transform: uppercase; color: var(--asfalto); }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--papel); color: var(--azul); font: 500 1.0625rem/1.55 var(--f); }
+img { display: block; max-width: 100%; height: auto; }
+a { color: var(--azul); }
+:focus-visible { outline: 3px solid var(--ambar); outline-offset: 3px; border-radius: 6px; }
+.envuelve { max-width: var(--ancho); margin: 0 auto; padding-inline: var(--lado); }
+.eti { margin: 0; font: 700 .8rem/1.3 var(--f); letter-spacing: .14em; text-transform: uppercase; color: var(--asfalto); }
 .eti.acento { color: var(--ambar-tinta); }
-.boton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 1rem var(--f); text-decoration: none; border-radius: 10px; padding: 13px 20px; border: 2px solid transparent; cursor: pointer; transition: background .15s, border-color .15s; }
-.boton.ambar { background: var(--ambar); color: var(--azul); }
-.boton.ambar:hover { background: #FFBC1F; }
-.boton.borde { border-color: var(--niebla); color: var(--tinta); background: var(--blanco); }
-.boton.borde:hover { border-color: var(--azul); }
+h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -.035em; text-wrap: balance; }
+h2 { font-size: clamp(2.2rem, 4.6vw, 3.9rem); line-height: 1; }
+h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
+.punto { color: var(--ambar); }
+.suave { color: var(--asfalto); }
 
-/* ---------- cabecera ---------- */
-.cab { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.92); backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--linea); padding-top: env(safe-area-inset-top); }
-.cab .envuelve { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+/* botones */
+.boton { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 999px; font: 700 1rem var(--f); text-decoration: none; border: 2px solid var(--azul); cursor: pointer; transition: background .15s, color .15s, transform .15s; }
+.boton.lleno { background: var(--azul); color: var(--papel); }
+.boton.lleno:hover { background: var(--noche); }
+.boton.vacio { background: transparent; color: var(--azul); }
+.boton.vacio:hover { background: var(--blanco); }
+.boton.grande { min-height: 60px; padding: 0 32px; font-size: 1.08rem; }
+.boton .flecha { transition: transform .15s; }
+.boton:hover .flecha { transform: translateX(3px); }
+
+/* cabecera */
+.cab { position: sticky; top: 0; z-index: 30; background: rgba(246,244,239,.9); backdrop-filter: saturate(1.3) blur(12px); -webkit-backdrop-filter: saturate(1.3) blur(12px); padding-top: env(safe-area-inset-top); border-bottom: 1px solid transparent; transition: border-color .2s; }
+.cab.bajado { border-bottom-color: var(--niebla); }
+.cab .envuelve { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 76px; }
 .logo { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: var(--azul); }
-.logo svg { width: 38px; height: 32px; flex: none; }
-.wm { font: 800 1.7rem/.85 var(--f); letter-spacing: -.045em; }
+.logo svg { width: 40px; height: 34px; flex: none; }
+.wm { font: 800 1.75rem/.85 var(--f); letter-spacing: -.045em; }
 .wm i { font-style: normal; color: var(--ambar); }
 .wm .lig { margin-left: -.06em; }
-.menu { display: flex; align-items: center; gap: 22px; }
+.menu { display: flex; align-items: center; gap: 28px; }
 .menu a { text-decoration: none; font-weight: 600; font-size: .95rem; color: var(--asfalto); }
 .menu a:hover { color: var(--azul); }
-.menu .boton { padding: 9px 14px; font-size: .92rem; color: var(--azul); }
 .menu .entrar { color: var(--azul); font-weight: 700; }
-@media (max-width: 860px) { .menu .ancla { display: none; } .menu { gap: 12px; } }
+.menu .boton { min-height: 44px; padding: 0 20px; font-size: .95rem; color: var(--azul); }
+@media (max-width: 880px) { .menu .ancla { display: none; } .menu { gap: 16px; } }
+@media (max-width: 420px) { .menu .entrar { display: none; } }
 
-/* ---------- portada ---------- */
-.portada { background: linear-gradient(180deg, var(--papel) 0%, var(--blanco) 100%); padding-block: 56px 80px; overflow: hidden; }
-.portada .envuelve { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 52px; align-items: center; }
-.portada h1 { font: 800 clamp(2.3rem, 5vw, 3.7rem)/1.05 var(--f); letter-spacing: -.035em; }
-.portada h1 em { font-style: normal; background: linear-gradient(transparent 62%, var(--ambar-borde) 62%, var(--ambar-borde) 92%, transparent 92%); padding-inline: 2px; }
-.portada .entradilla { margin-top: 18px; font-size: 1.15rem; color: var(--asfalto); max-width: 34em; }
-.portada .acciones { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
-.portada .letra-pequena { margin-top: 14px; font-size: .88rem; color: var(--asfalto); }
-@media (max-width: 960px) { .portada .envuelve { grid-template-columns: minmax(0, 1fr); gap: 40px; } }
+/* portada */
+.portada { padding: clamp(40px, 7vw, 88px) 0 clamp(72px, 9vw, 120px); }
+.portada .envuelve { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(40px, 5vw, 64px); align-items: center; }
+.portada h1 { margin-top: 26px; font-size: clamp(3rem, 5.4vw, 5.6rem); line-height: .92; letter-spacing: -.05em; }
+.portada .entrada { margin: 32px 0 0; max-width: 34em; font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.55; color: var(--asfalto); }
+.acciones { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; }
+.garantias { margin: 28px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: .92rem; font-weight: 600; color: var(--asfalto); }
+.garantias li { display: inline-flex; align-items: center; gap: 8px; }
+.garantias li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--azul); }
+@media (max-width: 960px) { .portada .envuelve { grid-template-columns: 1fr; } .portada h1 { font-size: clamp(3.2rem, 13vw, 6.4rem); } }
 
-/* ventana de la app (recreación del planificador) */
+/* captura del planificador (la misma que la portada actual) */
 .ventana { background: var(--blanco); border: 1px solid var(--niebla); border-radius: 14px; overflow: hidden; box-shadow: 0 40px 80px -40px rgba(18,38,63,.35), 0 10px 24px -12px rgba(18,38,63,.12); font-size: 12px; line-height: 1.35; color: var(--azul); }
 .ventana .barra { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--papel); border-bottom: 1px solid var(--linea); }
 .ventana .barra i { width: 9px; height: 9px; border-radius: 50%; background: var(--niebla); }
@@ -133,135 +137,213 @@ p { margin: 0; }
   .ventana .ocultable { display: none; }
 }
 
-/* ---------- secciones ---------- */
-section.bloque { padding-block: 88px; }
-section.papel { background: var(--papel); }
-.cabeza { display: grid; gap: 12px; max-width: 46em; margin-bottom: 40px; }
-.cabeza p { color: var(--asfalto); font-size: 1.08rem; }
-.tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-@media (max-width: 860px) { .tres { grid-template-columns: minmax(0, 1fr); } }
-.caja { background: var(--blanco); border: 1px solid var(--linea); border-radius: 14px; padding: 24px; display: grid; gap: 10px; align-content: start; }
-.caja p { color: var(--asfalto); }
-.icono { width: 44px; height: 44px; border-radius: 11px; background: var(--ambar-suave); display: grid; place-items: center; color: var(--azul); }
-.icono svg { width: 24px; height: 24px; }
+/* tarjetas que lee: tira */
+.tira { border-block: 1px solid var(--niebla); }
+.tira .envuelve { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 36px; padding-block: 22px; }
+.tira .nombres { display: flex; flex-wrap: wrap; gap: 10px 36px; font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; }
+.tira .otra { font-weight: 600; font-size: .95rem; color: var(--asfalto); }
 
-.problema { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 48px; align-items: center; }
-.problema img { border-radius: 16px; aspect-ratio: 3 / 2; object-fit: cover; width: 100%; }
-.problema .texto { display: grid; gap: 16px; }
-.problema .texto p { color: var(--asfalto); font-size: 1.08rem; }
-.problema blockquote { margin: 0; padding: 14px 18px; border-left: 4px solid var(--ambar); background: var(--papel); border-radius: 0 10px 10px 0; font-weight: 600; }
-@media (max-width: 860px) { .problema { grid-template-columns: minmax(0, 1fr); } }
+/* bloques */
+.bloque { padding: clamp(80px, 10vw, 136px) 0; }
+.cabeza { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 56px; align-items: end; margin-bottom: clamp(44px, 6vw, 72px); }
+.cabeza .eti { grid-column: 1 / -1; }
+.cabeza p:not(.eti) { margin: 0; font-size: 1.15rem; color: var(--asfalto); max-width: 32em; }
+@media (max-width: 860px) { .cabeza { grid-template-columns: 1fr; } }
 
-/* pasos: es una secuencia real, por eso van numerados */
-.pasos { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; counter-reset: paso; }
-.pasos li { counter-increment: paso; background: var(--blanco); border: 1px solid var(--linea); border-radius: 14px; padding: 24px; display: grid; gap: 10px; align-content: start; position: relative; }
-.pasos li::before { content: counter(paso); width: 40px; height: 40px; border-radius: 50%; background: var(--azul); color: var(--ambar); display: grid; place-items: center; font: 800 1.15rem var(--f); }
-.pasos p { color: var(--asfalto); }
-.pasos code { font: 700 .92rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--ambar-suave); padding: 1px 6px; border-radius: 5px; color: var(--azul); }
-@media (max-width: 860px) { .pasos { grid-template-columns: minmax(0, 1fr); } }
+/* problema */
+.problema .envuelve { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(36px, 6vw, 96px); align-items: center; }
+.foto { position: relative; border-radius: 24px; overflow: hidden; background: var(--niebla); }
+.foto img { width: 100%; height: 100%; object-fit: cover; }
+.foto .chip { position: absolute; left: 16px; bottom: 16px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; background: rgba(246,244,239,.94); font-size: .85rem; font-weight: 700; }
+.foto .chip::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--ambar); box-shadow: 0 0 0 4px rgba(242,169,0,.3); }
+.problema .foto { aspect-ratio: 1 / 1.02; }
+.problema h2 { margin-top: 18px; }
+.problema p { margin: 24px 0 0; font-size: 1.15rem; color: var(--asfalto); max-width: 32em; }
+.problema .remate { margin-top: 32px; padding: 20px 24px; background: var(--blanco); border-radius: 16px; box-shadow: 0 1px 0 var(--niebla); font-weight: 500; font-size: 1.0625rem; line-height: 1.55; color: var(--azul); }
+@media (max-width: 860px) { .problema .envuelve { grid-template-columns: 1fr; } .problema .foto { aspect-ratio: 4 / 3; } }
 
-.banda-foto { margin-top: 40px; border-radius: 16px; overflow: hidden; position: relative; }
-.banda-foto img { width: 100%; aspect-ratio: 3 / 1; object-fit: cover; object-position: center 60%; }
-@media (max-width: 860px) { .banda-foto img { aspect-ratio: 16 / 9; } }
-
-/* testimonio */
-.testimonio { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 28px; align-items: start; max-width: 60em; }
-.testimonio .comillas { font: 800 5rem/0.8 var(--f); color: var(--ambar); }
-.testimonio blockquote { margin: 0; font: 700 clamp(1.3rem, 2.6vw, 1.75rem)/1.35 var(--f); color: var(--azul); letter-spacing: -.01em; text-wrap: pretty; }
-.testimonio figcaption { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; color: var(--asfalto); }
-.testimonio figcaption b { color: var(--tinta); }
-.testimonio .marca-ej { font-size: .75rem; font-weight: 700; border: 1px dashed var(--ambar-borde); background: var(--ambar-suave); color: var(--ambar-tinta); border-radius: 999px; padding: 3px 10px; }
-@media (max-width: 560px) { .testimonio { grid-template-columns: minmax(0, 1fr); gap: 4px; } .testimonio .comillas { font-size: 3.6rem; } }
-
-/* calculadora */
-.calc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
-@media (max-width: 860px) { .calc { grid-template-columns: minmax(0, 1fr); } }
-.calc form { background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 24px; display: grid; gap: 18px; }
-.campo { display: grid; gap: 6px; }
-.campo label { font-weight: 600; font-size: .95rem; }
-.campo .control { display: grid; grid-template-columns: minmax(0, 1fr) 6.5em; gap: 12px; align-items: center; }
-.campo input[type=range] { width: 100%; accent-color: var(--ambar); }
-.campo input[type=number] { width: 100%; font: 700 1rem var(--f); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--niebla); background: var(--blanco); color: var(--tinta); text-align: right; font-variant-numeric: tabular-nums; }
-.campo small { color: var(--asfalto); font-size: .82rem; }
-.resultado { background: var(--ambar-suave); border: 1px solid var(--ambar-borde); border-radius: 16px; padding: 26px; display: grid; gap: 16px; align-content: start; }
-.resultado .grande { font: 800 clamp(2.4rem, 5vw, 3.4rem)/1 var(--f); color: var(--verde); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.resultado dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; font-variant-numeric: tabular-nums; }
-.resultado dt { color: var(--asfalto); }
-.resultado dd { margin: 0; font-weight: 700; text-align: right; }
-.resultado dd.neto { color: var(--verde); }
-.resultado .nota { font-size: .82rem; color: var(--asfalto); }
-
-/* precios */
-.precios { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 20px; align-items: start; }
-@media (max-width: 860px) { .precios { grid-template-columns: minmax(0, 1fr); } }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { padding: 13px 16px; text-align: left; border-bottom: 1px solid var(--linea); }
-th { font: 700 .75rem var(--f); letter-spacing: .08em; text-transform: uppercase; color: var(--asfalto); background: var(--papel); }
-td.num { text-align: right; font-weight: 800; font-size: 1.1rem; color: var(--azul); }
-tr:last-child td { border-bottom: 0; }
-.tabla-precios { background: var(--blanco); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; }
-.incluye { display: grid; gap: 10px; }
-.incluye ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
-.incluye li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; color: var(--asfalto); }
-.incluye li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--ambar); margin-top: 7px; }
-.incluye li b { color: var(--tinta); }
-
-.tarjetas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.tarjetas span { font-weight: 700; background: var(--blanco); border: 1px solid var(--linea); border-radius: 999px; padding: 8px 16px; }
-.tarjetas span.otra { background: transparent; border-style: dashed; color: var(--asfalto); font-weight: 600; }
-
-/* preguntas */
-.dudas { display: grid; gap: 10px; max-width: 52em; }
-details { background: var(--blanco); border: 1px solid var(--linea); border-radius: 12px; padding: 0 20px; }
-summary { cursor: pointer; padding: 18px 0; font-weight: 700; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
-summary::-webkit-details-marker { display: none; }
-summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--ambar-tinta); }
-details[open] summary::after { content: "−"; }
-details p { padding-bottom: 18px; color: var(--asfalto); }
-
-/* solicitud */
-.solicitud { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 40px; align-items: start; }
-@media (max-width: 860px) { .solicitud { grid-template-columns: minmax(0, 1fr); } }
-.solicitud img { border-radius: 16px; aspect-ratio: 3 / 4; object-fit: cover; width: 100%; max-height: 520px; }
-.formulario { background: var(--blanco); border: 1px solid var(--linea); border-radius: 16px; padding: 26px; display: grid; gap: 16px; }
-.formulario .dos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
-@media (max-width: 560px) { .formulario .dos { grid-template-columns: minmax(0, 1fr); } }
-.formulario label { display: grid; gap: 6px; font-weight: 600; font-size: .92rem; }
-.formulario input[type=text], .formulario input[type=email], .formulario input[type=tel], .formulario input[type=number], .formulario textarea {
-  width: 100%; font: 500 1rem var(--f); padding: 11px 12px; border: 1px solid var(--niebla); border-radius: 8px; background: var(--blanco); color: var(--tinta); }
-.formulario textarea { min-height: 90px; resize: vertical; }
-.formulario fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
-.formulario legend { font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chips label { display: inline-flex; flex-direction: row; align-items: center; gap: 7px; border: 1px solid var(--niebla); border-radius: 999px; padding: 7px 13px; cursor: pointer; font-weight: 600; }
-.chips input { accent-color: var(--azul); }
-.formulario .acepto { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; font-weight: 500; color: var(--asfalto); }
-.formulario .acepto input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--azul); }
-.miel { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-.aviso { border-radius: 10px; padding: 12px 14px; font-weight: 600; }
-.aviso.ok { background: #E6F3EC; color: var(--verde); }
-.aviso.mal { background: #FBEAE6; color: #B8412C; }
-
-/* móvil: menos aire y fotos más bajas */
-@media (max-width: 860px) {
-  .portada { padding-block: 32px 56px; }
-  section.bloque { padding-block: 56px; }
-  .problema img { aspect-ratio: 16 / 10; }
-  .solicitud img { aspect-ratio: 16 / 10; }
+/* cómo funciona: ruta por kilómetros */
+.como { border-top: 1px solid var(--niebla); }
+.ruta { margin: 0; padding: 0; list-style: none; }
+.ruta li { display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1fr); gap: 0 clamp(24px, 4vw, 56px); }
+.ruta .hito { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ruta .km { font-weight: 800; font-size: .82rem; letter-spacing: .1em; color: var(--asfalto); white-space: nowrap; }
+.ruta .bola { width: 20px; height: 20px; border-radius: 50%; background: var(--azul); flex: none; }
+.ruta .tramo { flex: 1; width: 0; border-left: 3px dotted var(--azul); min-height: 48px; }
+.ruta li:last-child .bola { width: 24px; height: 24px; background: var(--ambar); box-shadow: 0 0 0 9px rgba(242,169,0,.25); }
+.ruta h3 { margin-top: 28px; font-size: clamp(1.6rem, 2.8vw, 2.3rem); letter-spacing: -.03em; }
+.ruta p { margin: 28px 0 56px; font-size: 1.1rem; color: var(--asfalto); max-width: 30em; }
+.ruta li:last-child p { margin-bottom: 0; }
+.ruta code { font: 700 .95em var(--f); color: var(--azul); background: var(--blanco); border: 1px solid var(--niebla); padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+@media (max-width: 760px) {
+  .ruta li { grid-template-columns: 64px minmax(0, 1fr); }
+  .ruta p { grid-column: 2; margin: 12px 0 44px; }
 }
+.extras { margin-top: clamp(56px, 8vw, 96px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--niebla); }
+.extras div { padding: 28px 28px 0 0; }
+.extras div + div { padding-left: 28px; border-left: 1px solid var(--niebla); }
+.extras h3 { font-size: 1.2rem; }
+.extras p { margin: 10px 0 0; color: var(--asfalto); }
+@media (max-width: 860px) { .extras { grid-template-columns: 1fr; } .extras div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--niebla); } .extras div { padding: 24px 0; } }
 
-/* pie */
-.pie { background: var(--papel); border-top: 1px solid var(--linea); color: var(--asfalto); padding-block: 40px calc(32px + env(safe-area-inset-bottom)); font-size: .92rem; }
-.pie .envuelve { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 20px 40px; align-items: center; }
-.pie a { color: var(--asfalto); text-underline-offset: 3px; }
-.pie a:hover { color: var(--azul); }
-.pie nav { display: flex; flex-wrap: wrap; gap: 8px 18px; }
-.pie .logo { color: var(--azul); }
+/* foto a sangre */
+.panorama { position: relative; margin: 0; border-radius: 28px; overflow: hidden; background: var(--noche); }
+.panorama img { width: 100%; height: clamp(300px, 38vw, 480px); object-fit: cover; }
+.panorama figcaption { position: absolute; inset: auto 0 0 0; padding: clamp(24px, 4vw, 48px); background: linear-gradient(transparent, rgba(11,26,44,.85)); color: var(--papel); }
+.panorama-bloque { padding-bottom: clamp(80px, 10vw, 136px); }
+.panorama figcaption p { margin: 0; max-width: 18em; font-weight: 800; font-size: clamp(1.7rem, 3.6vw, 3rem); line-height: 1.02; letter-spacing: -.035em; }
+
+/* ahorro: calculadora */
+.ahorro { background: var(--azul); color: var(--papel); }
+.ahorro .eti { color: var(--niebla); }
+.ahorro .cabeza p:not(.eti) { color: var(--niebla); }
+.calc { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(28px, 5vw, 64px); align-items: start; }
+.calc form { display: grid; gap: 30px; }
+.campo label { display: block; font-weight: 700; margin-bottom: 12px; }
+.control { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 16px; align-items: center; }
+.control input[type=range] { width: 100%; accent-color: var(--ambar); height: 44px; margin: 0; }
+.control input[type=number] { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid rgba(220,215,203,.4); background: rgba(246,244,239,.06); color: var(--papel); font: 800 1.1rem var(--f); text-align: right; font-variant-numeric: tabular-nums; }
+.campo small { display: block; margin-top: 8px; color: var(--niebla); font-size: .9rem; }
+.opciones { display: grid; gap: 10px; }
+.anual-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 14px; align-items: center; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(220,215,203,.3); cursor: pointer; transition: border-color .15s, background .15s; }
+.anual-check:has(input:checked) { border-color: var(--ambar); background: rgba(242,169,0,.08); }
+.anual-check:has(input:disabled) { cursor: not-allowed; opacity: .6; }
+.anual-check input { appearance: none; -webkit-appearance: none; margin: 0; width: 48px; height: 28px; border-radius: 999px; background: rgba(246,244,239,.18); position: relative; cursor: inherit; transition: background .15s; grid-row: span 2; }
+.anual-check input::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px; border-radius: 50%; background: var(--papel); transition: transform .15s; }
+.anual-check input:checked { background: var(--ambar); }
+.anual-check input:checked::after { transform: translateX(20px); background: var(--azul); }
+.anual-check input:focus-visible { outline: 3px solid var(--ambar); outline-offset: 3px; }
+.anual-check b { font-weight: 700; }
+.anual-check small { margin: 0; }
+.resultado .detalle-anual { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: rgba(242,169,0,.1); color: var(--papel); font-size: .92rem; }
+.resultado { border: 1px solid rgba(220,215,203,.3); border-radius: 22px; padding: clamp(24px, 3vw, 36px); position: sticky; top: 100px; }
+.resultado .eti { color: var(--niebla); }
+.resultado .grande { display: block; margin-top: 10px; font-weight: 800; font-size: clamp(3rem, 6vw, 4.6rem); line-height: 1; letter-spacing: -.04em; color: var(--ambar); font-variant-numeric: tabular-nums; }
+.resultado dl { margin: 26px 0 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 0; }
+.resultado dt { color: var(--niebla); }
+.resultado dd { margin: 0; padding-left: 16px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.resultado .neto-fila { padding-top: 14px; border-top: 2px dotted var(--ambar); font-weight: 800; color: var(--papel); }
+.resultado .nota { margin: 22px 0 0; font-size: .88rem; color: var(--niebla); }
+@media (max-width: 900px) { .calc { grid-template-columns: 1fr; } .resultado { position: static; } }
+
+/* precios: tres planes */
+.planes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.plan { position: relative; display: flex; flex-direction: column; background: var(--blanco); border-radius: 24px; padding: clamp(26px, 3vw, 36px); box-shadow: 0 1px 0 var(--niebla); }
+.plan h3 { font-size: 1.5rem; }
+.plan .para { margin: 6px 0 0; color: var(--asfalto); font-size: .98rem; }
+.plan .precio { margin: 26px 0 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.plan .precio .desde { font-weight: 700; color: inherit; }
+.plan .precio span { white-space: nowrap; }
+.plan .precio b { font-weight: 800; font-size: clamp(2.6rem, 3.6vw, 3.2rem); line-height: 1; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.plan .precio span { font-weight: 600; color: var(--asfalto); }
+.plan .anual { margin: 10px 0 0; font-size: .95rem; color: var(--asfalto); }
+.plan .anual b { color: var(--azul); }
+.plan ul { margin: 24px 0 0; padding: 0; list-style: none; border-top: 3px dotted var(--niebla); }
+.plan li { position: relative; padding: 11px 0 11px 28px; border-bottom: 1px solid var(--niebla); font-size: .98rem; }
+.plan li::before { content: ""; position: absolute; left: 2px; top: 18px; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--azul); box-sizing: border-box; }
+.plan li.base { font-weight: 700; }
+.plan .minimo { margin: 18px 0 0; font-size: .9rem; color: var(--asfalto); }
+.plan .boton { align-self: stretch; }
+.plan .pie-plan { margin-top: auto; padding-top: 24px; display: grid; gap: 14px; }
+.plan.destacado { background: var(--azul); color: var(--papel); box-shadow: 0 30px 60px -36px rgba(18,38,63,.6); }
+.plan.destacado .para, .plan.destacado .precio span, .plan.destacado .anual, .plan.destacado .minimo { color: var(--niebla); }
+.plan.destacado .anual b { color: var(--papel); }
+.plan.destacado ul { border-top-color: rgba(242,169,0,.7); }
+.plan.destacado li { border-bottom-color: rgba(220,215,203,.18); }
+.plan.destacado li::before { border-color: var(--ambar); }
+.plan.destacado .boton { background: var(--ambar); border-color: var(--ambar); color: var(--azul); }
+.plan.destacado .boton:hover { background: #FFBC1F; border-color: #FFBC1F; }
+.plan .sello-plan { position: absolute; top: -13px; left: clamp(26px, 3vw, 36px); display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--ambar); color: var(--azul); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.plan .volumen { margin: 14px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(246,244,239,.08); border: 1px solid rgba(220,215,203,.25); font-size: .92rem; }
+@media (max-width: 1080px) { .planes { grid-template-columns: 1fr; max-width: 560px; margin-inline: auto; } .plan.destacado { order: -1; } }
+.condiciones { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--niebla); }
+.condiciones div { padding: 24px 24px 0 0; }
+.condiciones div + div { padding-left: 24px; border-left: 1px solid var(--niebla); }
+.condiciones h3 { font-size: 1.1rem; }
+.condiciones p { margin: 8px 0 0; color: var(--asfalto); font-size: .98rem; }
+@media (max-width: 900px) { .condiciones { grid-template-columns: repeat(2, minmax(0, 1fr)); } .condiciones div:nth-child(3) { padding-left: 0; border-left: 0; } .condiciones div { padding-bottom: 20px; } }
+@media (max-width: 560px) { .condiciones { grid-template-columns: 1fr; } .condiciones div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--niebla); } }
+.fundadoras { margin-top: clamp(40px, 6vw, 56px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; padding: clamp(22px, 3vw, 32px) clamp(22px, 3vw, 36px); border-radius: 20px; background: var(--ambar-suave); }
+.fundadoras p { margin: 0; max-width: 46em; }
+.fundadoras strong { display: block; font-size: 1.25rem; font-weight: 800; letter-spacing: -.015em; margin-bottom: 4px; }
+.ejemplo-precio { margin: 20px 0 0; font-size: .95rem; color: var(--asfalto); }
+
+/* dudas */
+.dudas { border-top: 1px solid var(--niebla); }
+.dudas .envuelve { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 96px); }
+.dudas h2 { margin-top: 18px; }
+.preguntas details { border-top: 1px solid var(--niebla); }
+.preguntas details:last-child { border-bottom: 1px solid var(--niebla); }
+.preguntas summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 20px; min-height: 72px; padding: 16px 0; cursor: pointer; font-weight: 800; font-size: 1.2rem; letter-spacing: -.015em; }
+.preguntas summary::-webkit-details-marker { display: none; }
+.preguntas summary::after { content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--azul); transition: background .15s, border-color .15s, box-shadow .15s; }
+.preguntas details[open] summary::after { background: var(--ambar); border-color: var(--ambar); box-shadow: 0 0 0 5px rgba(242,169,0,.28); }
+.preguntas details p { margin: 0 0 24px; max-width: 36em; color: var(--asfalto); }
+@media (max-width: 860px) { .dudas .envuelve { grid-template-columns: 1fr; } }
+
+/* prueba */
+.prueba { padding-bottom: clamp(56px, 8vw, 96px); }
+.prueba-caja { background: var(--blanco); border-radius: 28px; overflow: hidden; display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); box-shadow: 0 1px 0 var(--niebla); }
+.prueba-lado { position: relative; background: var(--noche); color: var(--papel); padding: clamp(32px, 4vw, 52px); display: flex; flex-direction: column; justify-content: flex-end; min-height: 420px; }
+.prueba-lado img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; }
+.prueba-lado::after { content: ""; position: absolute; inset: 0; z-index: 0; background: linear-gradient(180deg, rgba(11,26,44,.15), rgba(11,26,44,.9)); }
+.prueba-lado > * { position: relative; z-index: 1; }
+.prueba-lado > picture { position: absolute; inset: 0; z-index: 0; }
+.prueba-lado .eti { color: var(--niebla); }
+.prueba-lado h2 { margin-top: 16px; font-size: clamp(2.4rem, 4.4vw, 3.8rem); }
+.prueba-lado p { margin: 18px 0 0; color: var(--niebla); max-width: 26em; }
+.formulario { padding: clamp(28px, 4vw, 52px); display: grid; gap: 18px; }
+.dos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.formulario label { display: grid; gap: 8px; font-weight: 700; font-size: .95rem; }
+.formulario input[type=text], .formulario input[type=email], .formulario input[type=tel], .formulario input[type=number], .formulario textarea { width: 100%; min-height: 52px; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--niebla); background: var(--papel); color: var(--azul); font: 600 1rem var(--f); transition: border-color .15s, background .15s; }
+.formulario textarea { min-height: 104px; resize: vertical; }
+.formulario input:focus, .formulario textarea:focus { outline: none; border-color: var(--azul); background: var(--blanco); }
+.formulario fieldset { margin: 0; padding: 0; border: 0; }
+.formulario legend { padding: 0; margin-bottom: 10px; font-weight: 700; font-size: .95rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips label { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 2px solid var(--niebla); cursor: pointer; font-weight: 700; }
+.chips input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chips label:has(input:checked) { background: var(--azul); border-color: var(--azul); color: var(--papel); }
+.chips label:has(input:focus-visible) { outline: 3px solid var(--ambar); outline-offset: 2px; }
+.acepto { grid-template-columns: 22px minmax(0, 1fr) !important; align-items: start; font-weight: 500 !important; color: var(--asfalto); }
+.acepto input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--azul); }
+.miel { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.aviso { padding: 14px 16px; border-radius: 14px; font-weight: 700; }
+.aviso.ok { background: #E3F1E6; color: #1E5A2C; }
+.aviso.mal { background: #FBE6E3; color: #8C2414; }
+.formulario .boton { justify-self: start; }
+.formulario .boton[disabled] { opacity: .6; cursor: progress; }
+.escribenos { margin: 0; font-size: .92rem; color: var(--asfalto); }
+@media (max-width: 900px) { .prueba-caja { grid-template-columns: 1fr; } .prueba-lado { min-height: 340px; } }
+@media (max-width: 560px) { .dos { grid-template-columns: 1fr; } }
+
+/* cierre y pie */
+.cierre { padding: clamp(40px, 6vw, 72px) var(--lado) clamp(64px, 8vw, 104px); text-align: center; }
+.cierre p { margin: 0 auto; max-width: 11em; font-weight: 800; font-size: clamp(3rem, 8vw, 7rem); line-height: .92; letter-spacing: -.05em; }
+.pie { border-top: 1px solid var(--niebla); }
+.pie .envuelve { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; padding-block: 28px 40px; font-size: .92rem; color: var(--asfalto); }
+.pie nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.pie nav a { color: var(--asfalto); text-decoration: none; font-weight: 600; }
+.pie nav a:hover { color: var(--azul); text-decoration: underline; }
+.pie .wm { font-size: 1.4rem; }
+.pie .credito { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pie .credito a { display: inline-flex; align-items: center; gap: 7px; color: var(--asfalto); text-decoration: none; font-weight: 600; border-radius: 4px; }
+.pie .credito a:hover { color: var(--azul); }
+.pie .credito img { height: .95em; width: auto; opacity: .85; transition: opacity .15s; }
+.pie .credito a:hover img { opacity: 1; }
+
+/* aparición suave al hacer scroll */
+@media (prefers-reduced-motion: no-preference) {
+  .aparece { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .aparece.visto { opacity: 1; transform: none; }
+  html.sin-js .aparece { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 </style>
 </head>
 <body>
 
-<header class="cab">
+<header class="cab" id="cab">
   <div class="envuelve">
     <a class="logo" href="#" aria-label="Fuelfy, inicio">
       <svg viewBox="0 0 120 100" aria-hidden="true"><defs><clipPath id="lg"><rect x="19" y="18" width="26" height="24" rx="6"/></clipPath></defs><rect x="10" y="8" width="44" height="80" rx="11" fill="#12263F"/><rect x="19" y="18" width="26" height="24" rx="6" fill="#FFFFFF"/><rect x="19" y="31" width="26" height="11" fill="#F2A900" clip-path="url(#lg)"/><path d="M54 30C76 30 84 42 80 56" fill="none" stroke="#12263F" stroke-width="6.5" stroke-linecap="round"/><path d="M80 56C76 70 86 84 102 85" fill="none" stroke="#12263F" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0.5 9"/><circle cx="109" cy="85" r="7.5" fill="#F2A900"/></svg>
@@ -273,23 +355,28 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
       <a class="ancla" href="#precios">Precios</a>
       <a class="ancla" href="#dudas">Dudas</a>
       <a class="entrar" href="app/">Entrar</a>
-      <a class="boton ambar" href="#prueba">Prueba gratis</a>
+      <a class="boton vacio" href="#prueba">Prueba gratis</a>
     </nav>
   </div>
 </header>
 
 <main>
-  <section class="portada" aria-labelledby="titular">
+  <section class="portada">
     <div class="envuelve">
       <div>
-        <p class="eti acento">Para flotas pequeñas y medianas</p>
-        <h1 id="titular" style="margin-top: 12px">Reposta donde <em>te sale más barato</em>, en cada ruta.</h1>
-        <p class="entradilla">Fuelfy lee los precios especiales que cada mañana te mandan tus tarjetas de carburante, los pone en el mapa y te dice en qué estación de la ruta le conviene parar a cada camión. Luego le envías la parada al conductor por WhatsApp.</p>
+        <p class="eti">Para flotas pequeñas y medianas</p>
+        <h1>Repostar inteligente,<br>ahorro garantizado<span class="punto">.</span></h1>
+        <p class="entrada">Fuelfy lee los precios especiales que cada mañana te mandan tus tarjetas de carburante, los pone en el mapa y te dice en qué estación de la ruta le conviene parar a cada camión. Luego le envías la parada al conductor por WhatsApp.</p>
         <div class="acciones">
-          <a class="boton ambar" href="#prueba">Prueba 14 días gratis</a>
-          <a class="boton borde" href="#como-funciona">Ver cómo funciona</a>
+          <a class="boton lleno grande" href="#prueba">Prueba 30 días gratis <span class="flecha" aria-hidden="true">→</span></a>
+          <a class="boton vacio grande" href="#como-funciona">Ver cómo funciona</a>
         </div>
-        <p class="letra-pequena">14 días gratis · Sin instalar nada · Sin permanencia · Desde 5 € por camión al mes</p>
+        <ul class="garantias">
+          <li>Sin tarjeta</li>
+          <li>Sin instalar nada</li>
+          <li>Sin permanencia</li>
+          <li>Desde 20 € por camión al mes</li>
+        </ul>
       </div>
 
       <figure class="ventana" style="margin: 0" aria-label="Así se ve el planificador de Fuelfy: ruta de Valencia a Barcelona con cuatro paradas y la más barata recomendada">
@@ -347,44 +434,76 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
     </div>
   </section>
 
-  <section class="bloque" aria-labelledby="t-problema">
-    <div class="envuelve problema">
-      <picture><source srcset="imagenes/web/gasolinera-noche.webp" type="image/webp"><img src="imagenes/web/gasolinera-noche.jpg" alt="Gasolinera de noche con los surtidores encendidos" width="709" height="471" loading="lazy"></picture>
-      <div class="texto">
-        <p class="eti">El problema</p>
+  <div class="tira">
+    <div class="envuelve">
+      <p class="eti">Tarjetas que ya lee</p>
+      <div class="nombres"><span>Valcarce</span><span>DST</span><span>Staroil</span><span>Andamur</span></div>
+      <span class="otra">¿Usas otra? La añadimos.</span>
+    </div>
+  </div>
+
+  <section class="bloque problema" aria-labelledby="t-problema">
+    <div class="envuelve">
+      <div class="foto aparece">
+        <picture>
+          <source srcset="imagenes/web/surtidor.webp" type="image/webp">
+          <img src="imagenes/web/surtidor.jpg" alt="Mangueras de un surtidor de combustible" width="1109" height="1134" loading="lazy">
+        </picture>
+      </div>
+      <div>
+        <p class="eti acento">El problema</p>
         <h2 id="t-problema">Tus precios de tarjeta llegan cada día. Nadie tiene tiempo de compararlos.</h2>
-        <p>Valcarce, DST, Staroil, Andamur… Cada tarjeta te manda sus precios especiales por email, en PDF o en tablas distintas, y cambian a diario. Con varias tarjetas y decenas de estaciones, decidir dónde repostar en cada ruta acaba siendo «donde pille» o «donde siempre».</p>
-        <blockquote>Unos céntimos por litro, en cada repostaje y en cada camión, son mucho dinero a final de mes.</blockquote>
+        <p>Cada tarjeta te manda sus precios especiales por email, en PDF o en tablas distintas, y cambian a diario. Con varias tarjetas y decenas de estaciones, decidir dónde repostar en cada ruta acaba siendo «donde pille» o «donde siempre».</p>
+        <p class="remate">Unos céntimos por litro, en cada repostaje y en cada camión, son mucho dinero a final de mes.</p>
       </div>
     </div>
   </section>
 
-  <section class="bloque" id="como-funciona" aria-labelledby="t-como" style="padding-top: 0">
+  <section class="bloque como" id="como-funciona" aria-labelledby="t-como">
     <div class="envuelve">
       <div class="cabeza">
         <p class="eti">Cómo funciona</p>
-        <h2 id="t-como">Empiezas en un rato y sin cambiar de tarjetas.</h2>
+        <h2 id="t-como">Del email de precios a la mejor parada, en tres pasos<span class="punto">.</span></h2>
         <p>Sigues trabajando con tus tarjetas y tus precios de siempre. Fuelfy solo los ordena y los pone a trabajar.</p>
       </div>
-      <ol class="pasos">
-        <li><h3>Reenvía tus emails de precios</h3><p>Pon un reenvío automático de los emails de tus tarjetas a <code>fuelfy@fuelfy.app</code>. Fuelfy los lee cada pocos minutos y los pone en el mapa, aunque vengan en PDF.</p></li>
-        <li><h3>Da de alta tus camiones</h3><p>Matrícula, capacidad del depósito y consumo. Con eso Fuelfy calcula hasta dónde llega cada camión y cuántos litros le caben al llegar a cada estación.</p></li>
-        <li><h3>Planifica y envía la parada</h3><p>Eliges camión, combustible que le queda, origen y destino. Fuelfy te ordena las estaciones de la ruta por lo que te cuestan de verdad, desvío incluido, y le mandas la elegida al conductor por WhatsApp.</p></li>
+      <ol class="ruta">
+        <li class="aparece">
+          <div class="hito"><span class="km">KM 0</span><span class="bola" aria-hidden="true"></span><span class="tramo" aria-hidden="true"></span></div>
+          <h3>Reenvía tus emails de precios</h3>
+          <p>Pon un reenvío automático de los emails de tus tarjetas a <code>fuelfy@fuelfy.app</code>. Fuelfy los lee cada pocos minutos y los pone en el mapa, aunque vengan en PDF.</p>
+        </li>
+        <li class="aparece">
+          <div class="hito"><span class="km">KM 1</span><span class="bola" aria-hidden="true"></span><span class="tramo" aria-hidden="true"></span></div>
+          <h3>Da de alta tus camiones</h3>
+          <p>Matrícula, capacidad del depósito y consumo. Con eso Fuelfy calcula hasta dónde llega cada camión y cuántos litros le caben al llegar a cada estación.</p>
+        </li>
+        <li class="aparece">
+          <div class="hito"><span class="km">KM 2</span><span class="bola" aria-hidden="true"></span></div>
+          <h3>Planifica y envía la parada</h3>
+          <p>Eliges camión, combustible que le queda, origen y destino. Fuelfy ordena las estaciones de la ruta por lo que te cuestan de verdad, desvío incluido, y le mandas la elegida al conductor por WhatsApp.</p>
+        </li>
       </ol>
-      <div class="tres" style="margin-top: 18px">
-        <div class="caja"><span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span><h3>Informe de ahorro</h3><p>Cada ruta enviada queda guardada: ahorro por mes, por camión y por tarjeta, con descarga en CSV.</p></div>
-        <div class="caja"><span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span><h3>Tus estaciones, a tu manera</h3><p>Desmarca las estaciones que no quieras usar y desaparecen del mapa y de las rutas de toda tu empresa.</p></div>
-        <div class="caja"><span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></span><h3>En el ordenador y en el móvil</h3><p>Funciona en el navegador, sin instalar nada. En el móvil puedes añadirla a la pantalla de inicio como una app más.</p></div>
+      <div class="extras">
+        <div class="aparece"><h3>Informe de ahorro</h3><p>Cada ruta enviada queda guardada: ahorro por mes, por camión y por tarjeta, con descarga en CSV.</p></div>
+        <div class="aparece"><h3>Tus estaciones, a tu manera</h3><p>Desmarca las que no quieras usar y desaparecen del mapa y de las rutas de toda tu empresa.</p></div>
+        <div class="aparece"><h3>En el ordenador y en el móvil</h3><p>Funciona en el navegador, sin instalar nada. En el móvil puedes añadirla a la pantalla de inicio.</p></div>
       </div>
-      <div class="banda-foto"><picture><source srcset="imagenes/web/centro-logistico.webp" type="image/webp"><img src="imagenes/web/centro-logistico.jpg" alt="Centro logístico con camiones en los muelles, visto desde arriba" width="709" height="472" loading="lazy"></picture></div>
     </div>
   </section>
 
-  <section class="bloque papel" id="ahorro" aria-labelledby="t-ahorro">
+  <div class="envuelve panorama-bloque"><figure class="panorama">
+    <picture>
+      <source srcset="imagenes/web/centro-logistico.webp" type="image/webp">
+      <img src="imagenes/web/centro-logistico.jpg" alt="Centro logístico con camiones en los muelles, visto desde arriba" width="709" height="472" loading="lazy">
+    </picture>
+    <figcaption><p>Ahorra desde la primera ruta sin invertir más tiempo.</p></figcaption>
+  </figure></div>
+
+  <section class="bloque ahorro" id="ahorro" aria-labelledby="t-ahorro">
     <div class="envuelve">
       <div class="cabeza">
         <p class="eti">Calcula tu ahorro</p>
-        <h2 id="t-ahorro">¿Cuánto te puede ahorrar elegir bien la parada?</h2>
+        <h2 id="t-ahorro">¿Cuánto te ahorra elegir bien la parada<span class="punto">?</span></h2>
         <p>Pon los datos de tu flota. Es una estimación: el ahorro real depende de tus precios y tus rutas, y el informe de Fuelfy te lo irá diciendo mes a mes.</p>
       </div>
       <div class="calc">
@@ -394,16 +513,29 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
           <div class="campo"><label for="c-litros">Litros por repostaje</label><div class="control"><input type="range" id="c-litros-r" min="100" max="1200" step="50" value="500" aria-label="Litros por repostaje"><input type="number" id="c-litros" min="50" max="2000" step="10" value="500" inputmode="numeric"></div></div>
           <div class="campo"><label for="c-cts">Céntimos por litro que ganas al elegir la parada</label><div class="control"><input type="range" id="c-cts-r" min="0.5" max="10" step="0.5" value="3" aria-label="Céntimos por litro"><input type="number" id="c-cts" min="0" max="30" step="0.5" value="3" inputmode="decimal"></div>
             <small>Diferencia frente a la media de las estaciones de tus rutas. Entre estaciones de una misma tarjeta suele haber varios céntimos.</small></div>
+          <div class="opciones">
+            <label class="anual-check" for="c-fundadora">
+              <input type="checkbox" id="c-fundadora" role="switch">
+              <b>Flota fundadora</b>
+              <small id="c-fundadora-nota">Las 15 primeras empresas en Pro con pago anual: un 25 % menos.</small>
+            </label>
+            <label class="anual-check" for="c-anual">
+              <input type="checkbox" id="c-anual" role="switch">
+              <b>Pago anual</b>
+              <small id="c-anual-nota">Plan Pro: dos meses gratis, pagas 10 de 12.</small>
+            </label>
+          </div>
         </form>
         <div class="resultado" aria-live="polite">
           <span class="eti">Ahorro estimado al mes</span>
           <span class="grande" id="r-ahorro">–</span>
           <dl>
             <dt>Litros repostados al mes</dt><dd id="r-litros">–</dd>
-            <dt>Cuota de Fuelfy (sin IVA)</dt><dd id="r-cuota">–</dd>
-            <dt>Te queda al mes</dt><dd class="neto" id="r-neto">–</dd>
-            <dt>Al año</dt><dd class="neto" id="r-anio">–</dd>
+            <dt id="r-plan">Cuota de Fuelfy (sin IVA)</dt><dd id="r-cuota">–</dd>
+            <dt class="neto-fila">Te queda al mes</dt><dd class="neto-fila" id="r-neto">–</dd>
+            <dt>Al año</dt><dd id="r-anio">–</dd>
           </dl>
+          <p class="detalle-anual" id="r-anual" hidden></p>
           <p class="nota">Ejemplo calculado con los datos que pones arriba. No es una promesa de ahorro.</p>
         </div>
       </div>
@@ -414,48 +546,86 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
     <div class="envuelve">
       <div class="cabeza">
         <p class="eti">Precios</p>
-        <h2 id="t-precios">Pagas por camión, y cuantos más tienes, menos pagas por cada uno.</h2>
-        <p>Empiezas con 14 días de prueba gratis. Después, un precio por camión en servicio y mes, escalonado por tramos: cada camión paga el precio de su tramo.</p>
+        <h2 id="t-precios">Una cuota que se paga sola con un par de repostajes<span class="punto">.</span></h2>
+        <p>Pagas por camión y mes, sin instalar nada en el vehículo y sin permanencia. Pruébalo 30 días gratis, sin tarjeta.</p>
       </div>
-      <div class="precios">
-        <div class="tabla-precios">
-          <table>
-            <thead><tr><th>Camiones en servicio</th><th style="text-align:right">Por camión y mes</th></tr></thead>
-            <tbody>
-              <tr><td>Del 1 al 10</td><td class="num">5,00 €</td></tr>
-              <tr><td>Del 11 al 25</td><td class="num">4,50 €</td></tr>
-              <tr><td>Del 26 al 50</td><td class="num">4,00 €</td></tr>
-              <tr><td>Del 51 al 100</td><td class="num">3,50 €</td></tr>
-              <tr><td>Más de 100</td><td class="num">3,00 €</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="incluye caja">
-          <h3>Lo que incluye y cómo se cobra</h3>
+      <div class="planes">
+        <article class="plan aparece">
+          <h3>Esencial</h3>
+          <p class="para">Autónomos y flotas de 2 a 5 camiones.</p>
+          <p class="precio"><b>20 €</b><span>/ camión y mes</span></p>
+          <p class="anual">Pagando el año: <b>200 € por camión</b></p>
           <ul>
-            <li><span><b>14 días de prueba gratis</b> antes de pagar nada.</span></li>
-            <li><span><b>Sin permanencia:</b> te das de baja cuando quieras.</span></li>
-            <li><span><b>Solo pagan los camiones en servicio</b>: los de baja no cuentan.</span></li>
-            <li><span><b>Todas las funciones</b> y todos los usuarios de tu empresa, sin extras.</span></li>
-            <li><span>Ejemplo con 20 camiones: 10 × 5 € + 10 × 4,50 € = <b>95 € al mes</b>. Precios sin IVA.</span></li>
+            <li>Mapa de precios del gasóleo en ruta</li>
+            <li>La mejor parada para cada camión</li>
+            <li>Planificación con la ruta completa y el nivel del depósito</li>
+            <li>Avisos al conductor</li>
+            <li>Un usuario gestor</li>
           </ul>
-          <a href="legal/condiciones.html#precio" style="font-weight: 600">Condiciones completas</a>
-        </div>
+          <div class="pie-plan">
+            <p class="minimo">Mínimo 2 camiones (40 € al mes).</p>
+            <a class="boton vacio" href="#prueba">Probar Esencial</a>
+          </div>
+        </article>
+        <article class="plan destacado aparece">
+          <span class="sello-plan">Recomendado</span>
+          <h3>Pro</h3>
+          <p class="para">Flotas de 5 a 50 camiones.</p>
+          <p class="precio"><b>30 €</b><span>/ camión y mes</span></p>
+          <p class="anual">Pagando el año: <b>300 € por camión</b></p>
+          <ul>
+            <li class="base">Todo lo de Esencial, y además:</li>
+            <li>Informe mensual de ahorro frente a repostar sin Fuelfy</li>
+            <li>Usuarios ilimitados</li>
+            <li>Exportación de datos</li>
+          </ul>
+          <p class="volumen">A partir del camión 26, <b>cada camión de más cuesta un 10 % menos</b> (27 €).</p>
+          <div class="pie-plan">
+            <p class="minimo">Mínimo 5 camiones.</p>
+            <a class="boton lleno" href="#prueba">Probar Pro 30 días gratis</a>
+          </div>
+        </article>
+        <article class="plan aparece">
+          <h3>Flota</h3>
+          <p class="para">Más de 50 camiones.</p>
+          <p class="precio"><span class="desde">desde</span><b>25 €</b><span>/ camión y mes</span></p>
+          <p class="anual">A medida, con <b>contrato anual</b></p>
+          <ul>
+            <li class="base">Todo lo de Pro, y además:</li>
+            <li>Varias cuentas: sedes o centros de coste</li>
+            <li>Administrador de cuenta</li>
+            <li>Soporte prioritario</li>
+          </ul>
+          <div class="pie-plan">
+            <p class="minimo">Desde 50 camiones.</p>
+            <a class="boton vacio" href="#prueba">Pedir presupuesto</a>
+          </div>
+        </article>
       </div>
-      <div style="margin-top: 40px">
-        <p class="eti">Tarjetas que ya lee</p>
-        <div class="tarjetas"><span>Valcarce</span><span>DST</span><span>Staroil</span><span>Andamur</span><span class="otra">¿Usas otra? La añadimos</span></div>
+      <p class="ejemplo-precio">Precios sin IVA. Ejemplo: 20 camiones en Pro son 600 € al mes; con un ahorro prudente de 4 céntimos por litro, esa flota ahorra unos 2.500 € al mes.</p>
+      <div class="condiciones">
+        <div class="aparece"><h3>30 días gratis</h3><p>Sin tarjeta. Tiempo de sobra para ver el ahorro en los repostajes de un mes completo.</p></div>
+        <div class="aparece"><h3>Sin permanencia</h3><p>Pagando mes a mes, te das de baja cuando quieras.</p></div>
+        <div class="aparece"><h3>Dos meses gratis</h3><p>Si pagas el año completo, pagas solo diez meses.</p></div>
+        <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
+      </div>
+      <div class="fundadoras aparece">
+        <p><strong>Flotas fundadoras: plan Pro con un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis), a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
   </section>
 
-  <section class="bloque" id="dudas" aria-labelledby="t-dudas" style="padding-top: 0">
+  <section class="bloque dudas" id="dudas" aria-labelledby="t-dudas">
     <div class="envuelve">
-      <div class="cabeza"><p class="eti">Dudas frecuentes</p><h2 id="t-dudas">Lo que suelen preguntarnos</h2></div>
-      <div class="dudas">
+      <div>
+        <p class="eti">Dudas frecuentes</p>
+        <h2 id="t-dudas">Lo que suelen preguntarnos<span class="punto">.</span></h2>
+      </div>
+      <div class="preguntas">
         <details><summary>¿Tengo que cambiar de tarjeta o de proveedor?</summary><p>No. Fuelfy trabaja con los precios que ya te dan tus tarjetas. Solo tienes que reenviarle los emails que ya recibes.</p></details>
         <details><summary>¿Hay que instalar algo?</summary><p>No. Funciona en el navegador del ordenador y del móvil. Si quieres, en el móvil la puedes añadir a la pantalla de inicio.</p></details>
-        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 14 días y es gratis. Al terminar, si sigues, pagas por camión en servicio según la tabla de precios. Si no, no pagas nada.</p></details>
+        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 30 días, es gratis y no te pedimos tarjeta. Al terminar, si sigues, eliges plan y pagas por camión; si no, no pagas nada. Y si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></details>
         <details><summary>¿Cómo se cuentan los camiones?</summary><p>Cada mes se cobra el máximo de camiones que has tenido en servicio a la vez. Si das de baja un camión, deja de contar el mes siguiente. Se cobra a mes vencido.</p></details>
         <details><summary>¿Y el conductor? ¿Necesita usuario?</summary><p>No hace falta: recibe la parada por WhatsApp, con el enlace a Google Maps. Si quieres, también puede tener su propio usuario para consultar el mapa.</p></details>
         <details><summary>¿Qué pasa con mis datos y mis precios?</summary><p>Tus precios y tus rutas solo los ve tu empresa. Los datos se guardan en la Unión Europea y puedes descargarlos o pedir que se borren cuando quieras. Más detalle en la <a href="legal/privacidad.html">política de privacidad</a>.</p></details>
@@ -464,12 +634,18 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
     </div>
   </section>
 
-  <section class="bloque papel" id="prueba" aria-labelledby="t-prueba">
-    <div class="envuelve solicitud">
-      <picture><source srcset="imagenes/web/surtidor.webp" type="image/webp"><img src="imagenes/web/surtidor.jpg" alt="Mangueras de un surtidor de combustible" width="1109" height="1134" loading="lazy"></picture>
-      <div style="display: grid; gap: 18px">
-        <div class="cabeza" style="margin: 0"><p class="eti acento">14 días gratis</p><h2 id="t-prueba">Pruébalo con tus propios precios.</h2>
-          <p>Déjanos tus datos y te escribimos para darte de alta. Tienes 14 días para probarlo gratis y, en cuanto reenvíes tus emails de precios, ya puedes planificar tus rutas.</p></div>
+  <section class="prueba" id="prueba" aria-labelledby="t-prueba">
+    <div class="envuelve">
+      <div class="prueba-caja">
+        <div class="prueba-lado">
+          <picture>
+            <source srcset="imagenes/web/gasolinera-noche.webp" type="image/webp">
+            <img src="imagenes/web/gasolinera-noche.jpg" alt="" width="709" height="471" loading="lazy">
+          </picture>
+          <p class="eti">30 días gratis · sin tarjeta</p>
+          <h2 id="t-prueba">Pruébalo con tus propios precios<span class="punto">.</span></h2>
+          <p>Déjanos tus datos y te escribimos para darte de alta. En cuanto reenvíes tus emails de precios, ya puedes planificar tus rutas.</p>
+        </div>
         <form class="formulario" id="f-prueba" novalidate>
           <div class="dos">
             <label>Tu nombre<input type="text" name="nombre" id="p-nombre" required maxlength="120" autocomplete="name"></label>
@@ -492,37 +668,75 @@ details p { padding-bottom: 18px; color: var(--asfalto); }
           <label>¿Algo más que quieras contarnos? (opcional)<textarea name="mensaje" id="p-mensaje" maxlength="2000"></textarea></label>
           <label class="miel" aria-hidden="true">No rellenes este campo<input type="text" name="web" id="p-web" tabindex="-1" autocomplete="off"></label>
           <label class="acepto"><input type="checkbox" id="p-acepto" required><span>He leído la <a href="legal/privacidad.html" target="_blank" rel="noopener">política de privacidad</a> y acepto que Fuelfy use estos datos para contactarme sobre la prueba.</span></label>
-          <div class="aviso" id="p-aviso" hidden></div>
-          <button class="boton ambar" type="submit" id="p-enviar" style="justify-self: start">Pedir mi prueba gratis</button>
-          <p style="font-size: .85rem; color: var(--asfalto)">¿Prefieres escribirnos? <b>hola@fuelfy.app</b></p>
+          <div class="aviso" id="p-aviso" role="status" hidden></div>
+          <button class="boton lleno grande" type="submit" id="p-enviar">Pedir mi prueba gratis</button>
+          <p class="escribenos">¿Prefieres escribirnos? <b>hola@fuelfy.app</b></p>
         </form>
       </div>
     </div>
+  </section>
+
+  <section class="cierre" aria-label="Lema">
+    <p>La próxima parada, la buena<span class="punto">.</span></p>
   </section>
 </main>
 
 <footer class="pie">
   <div class="envuelve">
     <a class="logo" href="#" aria-label="Fuelfy, inicio"><span class="wm">fuelf<span class="lig">y</span><i>.</i></span></a>
-    <nav aria-label="Información legal"><a href="legal/aviso-legal.html">Aviso legal</a><a href="legal/privacidad.html">Privacidad y cookies</a><a href="legal/condiciones.html">Condiciones</a><a href="app/">Entrar en la app</a></nav>
-    <span>hola@fuelfy.app · © 2026 Esteban Calvo Bayarri</span>
+    <nav aria-label="Información legal"><a href="legal/aviso-legal.html">Aviso legal</a><a href="legal/privacidad.html">Privacidad y cookies</a><a href="legal/condiciones.html">Condiciones</a><a href="app/" target="_blank" rel="noopener">Entrar en la app</a></nav>
+    <span class="credito">hola@fuelfy.app · © 2026 <a href="https://ecwebdesign.es" target="_blank" rel="noopener" aria-label="Diseño y web: EC (se abre en una pestaña nueva)">Diseño y web <img src="imagenes/web/ec.png" alt="" width="80" height="46"></a></span>
   </div>
 </footer>
 
 <script>
 'use strict';
-// ---------- calculadora de ahorro ----------
-const TRAMOS = [[10, 5], [25, 4.5], [50, 4], [100, 3.5], [Infinity, 3]];
-const cuota = (n) => { let t = 0, d = 0; for (const [h, p] of TRAMOS) { const k = Math.max(0, Math.min(n, h) - d); t += k * p; d = h; if (n <= h) break; } return t; };
+// ---------- cabecera con línea al bajar ----------
+const cab = document.getElementById('cab');
+const marcar = () => cab.classList.toggle('bajado', scrollY > 8);
+addEventListener('scroll', marcar, { passive: true }); marcar();
+
+// ---------- aparición al hacer scroll ----------
+if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.aparece').forEach(el => io.observe(el));
+} else document.documentElement.classList.add('sin-js');
+
+// ---------- calculadora de ahorro (misma lógica que la portada) ----------
+// Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
+// Pago anual en Pro: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
+const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', 25 * 30 + (n - 25) * 27] : ['Flota, desde', n * 25];
+const fundadora = document.getElementById('c-fundadora'), fundadoraNota = document.getElementById('c-fundadora-nota');
+const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
 const eur = (n, dec = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: dec, maximumFractionDigits: dec, useGrouping: 'always' }) + ' €';
 const ent = (n) => Math.round(n).toLocaleString('es-ES', { useGrouping: 'always' });
 const campos = ['camiones', 'repostajes', 'litros', 'cts'];
 function calcular() {
   const v = Object.fromEntries(campos.map(k => [k, Math.max(0, +document.getElementById('c-' + k).value || 0)]));
-  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100, c = cuota(Math.max(1, Math.round(v.camiones)));
+  const n = Math.max(1, Math.round(v.camiones));
+  let [nombre, c] = plan(n);
+  const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
+  // Pago anual (solo Pro): dos meses gratis.
+  // Flotas fundadoras (15 primeras empresas, solo Pro y siempre con pago anual): un 25 % menos
+  // sobre la cuota mensual, en lugar de los dos meses gratis (no se suman).
+  const esPro = nombre === 'Pro';
+  fundadora.disabled = !esPro;
+  const esFundadora = esPro && fundadora.checked;
+  if (esFundadora) anual.checked = true;
+  anual.disabled = !esPro || esFundadora;
+  fundadoraNota.textContent = esPro ? 'Las 15 primeras empresas en Pro con pago anual: un 25 % menos.' : 'Solo en el plan Pro, de 5 a 49 camiones.';
+  anualNota.textContent = !esPro ? 'Solo en el plan Pro, de 5 a 49 camiones.' : esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Plan Pro: dos meses gratis, pagas 10 de 12.';
+  const conAnual = esPro && anual.checked;
+  if (esFundadora) {
+    const mensual = c;
+    c = mensual * 0.75; nombre += ' fundadora, pago anual';
+    rAnual.textContent = 'Pagas ' + eur(c * 12, 0) + ' al año de una vez (' + eur(c / n, 2) + ' por camión al mes). Te ahorras ' + eur((mensual - c) * 12, 0) + ' al año frente al pago mensual.';
+  } else if (conAnual) { rAnual.textContent = 'Pagas ' + eur(c * 10, 0) + ' al año de una vez (' + eur(c * 10 / 12 / n, 2) + ' por camión al mes). Te ahorras ' + eur(c * 2, 0) + ' frente al pago mensual.'; c = c * 10 / 12; nombre += ', pago anual'; }
+  rAnual.hidden = !conAnual;
   document.getElementById('r-ahorro').textContent = eur(ahorro);
   document.getElementById('r-litros').textContent = ent(litros) + ' l';
   document.getElementById('r-cuota').textContent = eur(c, 2);
+  document.getElementById('r-plan').textContent = 'Cuota plan ' + nombre + ' (sin IVA)';
   document.getElementById('r-neto').textContent = eur(ahorro - c);
   document.getElementById('r-anio').textContent = eur((ahorro - c) * 12);
 }
@@ -531,9 +745,11 @@ for (const k of campos) {
   r.addEventListener('input', () => { n.value = r.value; calcular(); });
   n.addEventListener('input', () => { if (n.value !== '') r.value = n.value; calcular(); });
 }
+anual.addEventListener('change', calcular);
+fundadora.addEventListener('change', calcular);
 calcular();
 
-// ---------- solicitud de prueba ----------
+// ---------- solicitud de prueba (misma tabla que la portada) ----------
 const API = 'https://sqtgnlfsydcecpxtumol.supabase.co/rest/v1/solicitudes';
 const CLAVE = 'sb_publishable_jlUCcinmm04OR4euF_p8fw_ZBPV-c96';   // clave pública: solo permite enviar solicitudes
 const f = document.getElementById('f-prueba'), aviso = document.getElementById('p-aviso'), boton = document.getElementById('p-enviar');
