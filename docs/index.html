@@ -186,12 +186,10 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .extras > div + div { padding-left: 28px; border-left: 1px solid var(--niebla); }
 .extras h3 { font-size: 1.2rem; }
 .extras p { margin: 10px 0 0; color: var(--asfalto); }
-.captura { margin-top: auto; padding: 0; padding-top: 22px; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; text-align: left; font: inherit; color: inherit; }
+.captura { margin-top: 0; padding: 0; padding-top: 22px; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; text-align: left; font: inherit; color: inherit; }
 .captura img { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 0 0 1px rgba(18,38,63,.08), 0 18px 36px -22px rgba(18,38,63,.45); transition: transform .2s, box-shadow .2s; }
 .captura.sin-marco img { border-radius: 0; box-shadow: none; filter: drop-shadow(0 14px 18px rgba(18,38,63,.22)); }
 .captura:hover img { transform: translateY(-3px); }
-.captura span { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: .88rem; font-weight: 700; color: var(--asfalto); }
-.captura:hover span { color: var(--azul); }
 .visor { border: 0; padding: 0; background: transparent; max-width: min(1400px, 94vw); width: 100%; }
 .visor::backdrop { background: rgba(11,26,44,.82); backdrop-filter: blur(4px); }
 .visor img { width: 100%; height: auto; max-height: 86vh; object-fit: contain; border-radius: 12px; }
@@ -498,11 +496,11 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
       </ol>
       <div class="extras">
         <div class="aparece"><h3>Informe de ahorro</h3><p>Cada ruta enviada queda guardada: ahorro por mes, por camión y por tarjeta, con descarga en CSV.</p>
-          <button class="captura" type="button" data-visor><img src="imagenes/web/captura-informe.webp" alt="Pantalla de Ahorro de Fuelfy: ahorro estimado del periodo, gráficas por mes, por camión y por tarjeta, y desglose por camión" width="1600" height="975" loading="lazy"><span>Ampliar captura ↗</span></button></div>
+          <button class="captura" type="button" data-visor aria-label="Ampliar captura del informe de ahorro"><img src="imagenes/web/captura-informe.webp" alt="Pantalla de Ahorro de Fuelfy: ahorro estimado del periodo, gráficas por mes, por camión y por tarjeta, y desglose por camión" width="1600" height="975" loading="lazy"></button></div>
         <div class="aparece"><h3>Tus estaciones, a tu manera</h3><p>Desmarca las que no quieras usar y desaparecen del mapa y de las rutas de toda tu empresa.</p>
-          <button class="captura" type="button" data-visor><img src="imagenes/web/captura-estaciones.webp" alt="Panel de estaciones de Fuelfy sobre el mapa, con estaciones marcadas y desmarcadas por tarjeta" width="1600" height="975" loading="lazy"><span>Ampliar captura ↗</span></button></div>
+          <button class="captura" type="button" data-visor aria-label="Ampliar captura del panel de estaciones"><img src="imagenes/web/captura-estaciones.webp" alt="Panel de estaciones de Fuelfy sobre el mapa, con estaciones marcadas y desmarcadas por tarjeta" width="1600" height="975" loading="lazy"></button></div>
         <div class="aparece"><h3>En el ordenador y en el móvil</h3><p>Funciona en el navegador, sin instalar nada. En el móvil puedes añadirla a la pantalla de inicio.</p>
-          <button class="captura sin-marco" type="button" data-visor><img src="imagenes/web/captura-escritorio-movil.webp" alt="La misma ruta en Fuelfy en el ordenador y en el móvil" width="1600" height="739" loading="lazy"><span>Ampliar captura ↗</span></button></div>
+          <button class="captura sin-marco" type="button" data-visor aria-label="Ampliar captura: la misma ruta en el ordenador y en el móvil"><img src="imagenes/web/captura-escritorio-movil.webp" alt="La misma ruta en Fuelfy en el ordenador y en el móvil" width="1600" height="1312" loading="lazy"></button></div>
       </div>
     </div>
   </section>
