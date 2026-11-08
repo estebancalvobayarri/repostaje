@@ -531,7 +531,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <label class="anual-check" for="c-fundadora">
               <input type="checkbox" id="c-fundadora" role="switch">
               <b>Flota fundadora</b>
-              <small id="c-fundadora-nota">Las 15 primeras empresas en Pro con pago anual: un 25 % menos.</small>
+              <small id="c-fundadora-nota">Las 15 primeras empresas en Pro con pago anual o en Flota: un 25 % menos.</small>
             </label>
             <label class="anual-check" for="c-anual">
               <input type="checkbox" id="c-anual" role="switch">
@@ -624,7 +624,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: plan Pro con un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis), a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <p><strong>Flotas fundadoras: un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis) o el plan Flota, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
         <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
@@ -745,21 +745,21 @@ function calcular() {
   const n = Math.max(1, Math.round(v.camiones));
   let [nombre, c] = plan(n);
   const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
-  // Pago anual (solo Pro): dos meses gratis.
-  // Flotas fundadoras (15 primeras empresas, solo Pro y siempre con pago anual): un 25 % menos
+  // Pago anual (solo Pro): dos meses gratis. Flota siempre es contrato anual.
+  // Flotas fundadoras (15 primeras empresas, en Pro con pago anual o en Flota): un 25 % menos
   // sobre la cuota mensual, en lugar de los dos meses gratis (no se suman).
-  const esPro = nombre === 'Pro';
-  fundadora.disabled = !esPro;
-  const esFundadora = esPro && fundadora.checked;
-  if (esFundadora) anual.checked = true;
+  const esPro = nombre === 'Pro', esFlota = nombre.startsWith('Flota');
+  fundadora.disabled = !(esPro || esFlota);
+  const esFundadora = (esPro || esFlota) && fundadora.checked;
+  if (esFundadora && esPro) anual.checked = true;
   anual.disabled = !esPro || esFundadora;
-  fundadoraNota.textContent = esPro ? 'Las 15 primeras empresas en Pro con pago anual: un 25 % menos.' : 'Solo en el plan Pro, de 5 a 49 camiones.';
-  anualNota.textContent = !esPro ? 'Solo en el plan Pro, de 5 a 49 camiones.' : esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Plan Pro: dos meses gratis, pagas 10 de 12.';
-  const conAnual = esPro && anual.checked;
+  fundadoraNota.textContent = esPro || esFlota ? 'Las 15 primeras empresas en Pro con pago anual o en Flota: un 25 % menos.' : 'Solo en los planes Pro y Flota, desde 5 camiones.';
+  anualNota.textContent = esFlota ? 'El plan Flota siempre es un contrato anual.' : !esPro ? 'Solo en el plan Pro, de 5 a 49 camiones.' : esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Plan Pro: dos meses gratis, pagas 10 de 12.';
+  const conAnual = (esPro && anual.checked) || esFundadora;
   if (esFundadora) {
     const mensual = c;
-    c = mensual * 0.75; nombre += ' fundadora, pago anual';
-    rAnual.textContent = 'Pagas ' + eur(c * 12, 0) + ' al año de una vez (' + eur(c / n, 2) + ' por camión al mes). Te ahorras ' + eur((mensual - c) * 12, 0) + ' al año frente al pago mensual.';
+    c = mensual * 0.75; nombre = esFlota ? 'Flota fundadora, desde' : 'Pro fundadora, pago anual';
+    rAnual.textContent = (esFlota ? 'Contrato anual desde ' : 'Pagas ') + eur(c * 12, 0) + ' al año' + (esFlota ? '' : ' de una vez') + ' (' + eur(c / n, 2) + ' por camión al mes). Te ahorras ' + eur((mensual - c) * 12, 0) + ' al año frente al precio sin descuento.';
   } else if (conAnual) { rAnual.textContent = 'Pagas ' + eur(c * 10, 0) + ' al año de una vez (' + eur(c * 10 / 12 / n, 2) + ' por camión al mes). Te ahorras ' + eur(c * 2, 0) + ' frente al pago mensual.'; c = c * 10 / 12; nombre += ', pago anual'; }
   rAnual.hidden = !conAnual;
   document.getElementById('r-ahorro').textContent = eur(ahorro);
