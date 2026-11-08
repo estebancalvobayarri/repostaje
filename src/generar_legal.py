@@ -11,7 +11,7 @@ VERSION = '1.0'
 LOGO = '<svg width="34" height="28" viewBox="0 0 120 100" aria-hidden="true"><defs><clipPath id="lg"><rect x="19" y="18" width="26" height="24" rx="6"/></clipPath></defs><rect x="10" y="8" width="44" height="80" rx="11" fill="#FFFFFF"/><rect x="19" y="18" width="26" height="24" rx="6" fill="#12263F"/><rect x="19" y="31" width="26" height="11" fill="#F2A900" clip-path="url(#lg)"/><path d="M54 30C76 30 84 42 80 56" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round"/><path d="M80 56C76 70 86 84 102 85" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0.5 9"/><circle cx="109" cy="85" r="7.5" fill="#F2A900"/></svg>'
 PAGINAS = [('aviso-legal.html', 'Aviso legal'), ('privacidad.html', 'Privacidad y cookies'), ('condiciones.html', 'Condiciones de uso y contratación')]
 
-def pagina(archivo, titulo, cuerpo, descripcion):
+def pagina(archivo, titulo, cuerpo, descripcion, version=VERSION, fecha=FECHA):
     nav = ''.join(f'<li><a href="{a}"{" aria-current=\"page\"" if a == archivo else ""}>{t}</a></li>' for a, t in PAGINAS)
     return f'''<!doctype html>
 <html lang="es">
@@ -33,7 +33,7 @@ def pagina(archivo, titulo, cuerpo, descripcion):
 <nav class="textos" aria-label="Textos legales"><ul>{nav}</ul></nav>
 <main><article>
 <h1>{titulo}</h1>
-<p class="fecha">Versión {VERSION} · Última actualización: {FECHA}</p>
+<p class="fecha">Versión {version} · Última actualización: {fecha}</p>
 {cuerpo}
 </article></main>
 <footer>Fuelfy · Repostaje inteligente para flotas · {TIT}</footer>
@@ -150,9 +150,10 @@ condiciones = f'''
 <div class="resumen">
 <p><b>En resumen:</b></p>
 <ul>
-  <li>Empiezas con 14 días de prueba gratis. Después pagas por camión y mes, con descuentos por tramos.</li>
-  <li>Se cobra a mes vencido el máximo de camiones que has tenido en servicio a la vez. Los camiones de baja no pagan.</li>
-  <li>Te puedes dar de baja cuando quieras. Tus datos son tuyos: los puedes descargar y se borran tras la baja.</li>
+  <li>Empiezas con 30 días de prueba gratis, sin tarjeta. Después eliges plan: Esencial (20 €), Pro (30 €) o Flota (desde 25 €), por camión y mes, sin IVA.</li>
+  <li>Pagando mes a mes, se cobra a mes vencido el máximo de camiones que has tenido en servicio a la vez, y te puedes dar de baja cuando quieras. Pagando el año, tienes dos meses gratis.</li>
+  <li>Garantía de ahorro en el plan Pro: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</li>
+  <li>Tus datos son tuyos: los puedes descargar y se borran tras la baja.</li>
   <li>Los precios vienen de tus proveedores y las rutas y ahorros son estimaciones: la decisión de dónde repostar es tuya.</li>
 </ul>
 </div>
@@ -167,7 +168,7 @@ condiciones = f'''
   <li>Reenviar a una dirección propia los emails de precios de sus tarjetas de carburante, para que la aplicación los lea y los muestre en un mapa.</li>
   <li>Gestionar su flota de camiones y planificar dónde repostar en cada ruta según el combustible y los precios.</li>
   <li>Preparar el mensaje con la ruta y la parada para enviarlo al conductor por WhatsApp desde su propio dispositivo.</li>
-  <li>Consultar informes del ahorro estimado y descargarlos.</li>
+  <li>Consultar informes del ahorro estimado y descargarlos, según el plan contratado (apartado 5).</li>
 </ul>
 <p>El titular puede mejorar y cambiar las funciones de la aplicación. Si un cambio elimina una función importante, avisará con antelación razonable.</p>
 
@@ -175,36 +176,51 @@ condiciones = f'''
 <p>El titular da de alta a la empresa y a su primer gestor. El gestor puede invitar a otros usuarios de su empresa y es responsable de quién tiene acceso. Cada usuario debe guardar su contraseña en secreto y avisar si sospecha de un uso indebido.</p>
 
 <h2>4. Periodo de prueba</h2>
-<p>El cliente puede usar Fuelfy gratis durante 14 días naturales desde el alta, salvo que acuerde por escrito con el titular un plazo distinto. La fecha de fin se ve dentro de la aplicación. La prueba no obliga a contratar. El mes en que termina la prueba no se cobra; el cobro empieza el mes siguiente.</p>
+<p>El cliente puede usar Fuelfy gratis durante 30 días naturales desde el alta, con todas las funciones del plan Pro y sin dar ningún medio de pago, salvo que acuerde por escrito con el titular un plazo distinto. La fecha de fin se ve dentro de la aplicación. La prueba no obliga a contratar: al terminar, el cliente elige plan y forma de pago o deja de usar el servicio, sin coste. El mes en que termina la prueba no se cobra; el cobro empieza el mes siguiente.</p>
 
-<h2 id="precio">5. Precio</h2>
-<p>Después de la prueba, el precio es por camión y mes, escalonado por tramos: cada camión paga el precio de su tramo.</p>
-<div class="tabla"><table>
-<thead><tr><th>Camiones en servicio</th><th>Precio por camión y mes (sin IVA)</th></tr></thead>
+<h2 id="precio">5. Planes y precio</h2>
+<p>Después de la prueba, el precio es por camión y mes, según el plan que elija el cliente. A los importes se les suma el IVA que corresponda (hoy, el 21 %).</p>
+<div class="tabla"><table class="planes">
+<thead><tr><th></th><th>Esencial</th><th>Pro</th><th>Flota</th></tr></thead>
 <tbody>
-<tr><td>Del 1 al 10</td><td class="num">5,00 €</td></tr>
-<tr><td>Del 11 al 25</td><td class="num">4,50 €</td></tr>
-<tr><td>Del 26 al 50</td><td class="num">4,00 €</td></tr>
-<tr><td>Del 51 al 100</td><td class="num">3,50 €</td></tr>
-<tr><td>Más de 100</td><td class="num">3,00 €</td></tr>
+<tr><td>Pago mensual, por camión (sin IVA)</td><td>20,00 €</td><td>30,00 €</td><td>Desde 25,00 €, a medida</td></tr>
+<tr><td>Pago anual, por camión (sin IVA)</td><td>200,00 €</td><td>300,00 €</td><td>Contrato anual</td></tr>
+<tr><td>Pensado para</td><td>Autónomos y flotas de 2 a 5 camiones</td><td>Flotas de 5 a 50 camiones</td><td>Más de 50 camiones</td></tr>
+<tr><td>Mínimo que se factura</td><td>2 camiones</td><td>5 camiones</td><td>50 camiones</td></tr>
 </tbody></table></div>
-<p>Por ejemplo, con 20 camiones: 10 × 5,00 € + 10 × 4,50 € = 95,00 € al mes, más IVA. A los importes se les suma el IVA que corresponda (hoy, el 21 %).</p>
-<p>El titular puede cambiar los precios avisando al cliente con al menos 30 días de antelación. Si el cliente no está de acuerdo, puede darse de baja antes de que el cambio se aplique.</p>
+<ul>
+  <li><b>Esencial:</b> mapa de precios en ruta, recomendación de la mejor parada para cada camión, planificación del repostaje con la ruta completa y el nivel del depósito, y avisos al conductor. Un usuario gestor.</li>
+  <li><b>Pro:</b> todo lo de Esencial, más el informe mensual de ahorro, usuarios ilimitados y exportación de datos.</li>
+  <li><b>Flota:</b> todo lo de Pro, más varias cuentas (sedes o centros de coste), administrador de cuenta y soporte prioritario. Su precio y condiciones se fijan en un presupuesto o contrato particular, que prevalece sobre estas condiciones en lo que las contradiga.</li>
+</ul>
+<h3>Descuento por volumen (plan Pro)</h3>
+<p>En el plan Pro, los primeros 25 camiones pagan el precio completo y, del camión 26 al 49, cada camión paga un 10 % menos (27,00 € al mes, o 270,00 € al año). A partir de 50 camiones se aplica el plan Flota.</p>
+<p>Por ejemplo, con 30 camiones en Pro pagando mes a mes: 25 × 30,00 € + 5 × 27,00 € = 885,00 € al mes, más IVA.</p>
+<h3>Pago anual</h3>
+<p>Pagando el año por adelantado, el cliente paga 10 meses y tiene 2 gratis. El pago anual se hace al empezar cada año de servicio por el número de camiones que el cliente indique. Si durante ese año pone en servicio más camiones de los pagados, los camiones de más se facturan a mes vencido al precio mensual de su plan, como en el apartado 6.</p>
+<h3 id="fundadoras">Oferta «Flotas fundadoras»</h3>
+<p>Las 15 primeras empresas que contraten el plan Pro con pago anual tienen un 25 % de descuento sobre el precio Pro (con el descuento por volumen, si corresponde), en lugar de los dos meses gratis del pago anual; los dos descuentos no se suman. A cambio, la empresa acepta una breve entrevista mensual sobre su uso de Fuelfy y que el titular publique su caso. El descuento se mantiene mientras la empresa renueve su suscripción anual sin interrupción.</p>
+<h3>Cambios de precio</h3>
+<p>El titular puede cambiar los precios avisando al cliente con al menos 30 días de antelación. Si el cliente no está de acuerdo, puede darse de baja antes de que el cambio se aplique. A quien haya pagado el año, el cambio no le afecta hasta su siguiente renovación.</p>
 
 <h2>6. Cómo se cuenta y se cobra</h2>
 <ul>
   <li>Cuenta cada camión marcado «en servicio» en la pestaña Flota. Los camiones de baja no pagan.</li>
-  <li>Se cobra <b>a mes vencido</b> el <b>máximo de camiones que el cliente ha tenido en servicio a la vez durante el mes</b>. Un camión dado de alta a mitad de mes cuenta ese mes entero; uno dado de baja deja de contar el mes siguiente.</li>
-  <li>El titular emitirá cada mes una factura con el detalle de camiones, tramos e IVA. El pago se hará por domiciliación bancaria, transferencia o tarjeta, según se acuerde, en los 15 días siguientes a la factura.</li>
+  <li><b>Pago mensual:</b> se cobra <b>a mes vencido</b> el <b>máximo de camiones que el cliente ha tenido en servicio a la vez durante el mes</b>, con el mínimo de su plan. Un camión dado de alta a mitad de mes cuenta ese mes entero; uno dado de baja deja de contar el mes siguiente.</li>
+  <li><b>Pago anual:</b> se cobra por adelantado al empezar cada año de servicio, como se explica en el apartado 5.</li>
+  <li>El titular emitirá una factura por cada cobro con el detalle de plan, camiones, descuentos e IVA. El pago se hará por domiciliación bancaria, transferencia o tarjeta, según se acuerde, en los 15 días siguientes a la factura.</li>
 </ul>
+
+<h3 id="garantia">Garantía de ahorro</h3>
+<p>Si en los tres primeros meses de pago del plan Pro (incluida la oferta «Flotas fundadoras») el informe de ahorro de la aplicación no muestra un ahorro estimado de al menos 3 veces lo que el cliente ha pagado por esos tres meses, el titular le devuelve lo pagado por el servicio. Si pagó el año, se le devuelve el pago anual completo. Para pedirlo, el cliente debe escribir a {EMAIL} en los 30 días siguientes al final del tercer mes; la devolución se hace en los 30 días siguientes y la suscripción termina. El cálculo es el del informe de la aplicación (apartado 10), que solo cuenta las rutas enviadas desde Fuelfy.</p>
 
 <h2>7. Impago</h2>
 <p>Si una factura no se paga a su vencimiento, el titular lo avisará al cliente. Si pasados 7 días sigue sin pagarse, podrá limitar la cuenta a modo consulta: se podrán ver el mapa, la flota y los informes, pero no enviar nuevas rutas. Los datos no se borran por un impago, y el servicio se restablece en cuanto se paga.</p>
 
 <h2>8. Duración y baja</h2>
 <ul>
-  <li>El servicio es mensual y se renueva solo cada mes.</li>
-  <li>El cliente puede darse de baja en cualquier momento escribiendo a {EMAIL}. La baja tiene efecto al final del mes en curso, que se factura con normalidad; no hay permanencia ni penalización.</li>
+  <li>Con pago mensual, el servicio se renueva solo cada mes. El cliente puede darse de baja en cualquier momento escribiendo a {EMAIL}. La baja tiene efecto al final del mes en curso, que se factura con normalidad; no hay permanencia ni penalización.</li>
+  <li>Con pago anual, el servicio se renueva solo cada año, salvo que el cliente avise antes de la fecha de renovación. Si se da de baja antes de terminar el año, el servicio sigue activo hasta el final del periodo pagado y no se devuelve la parte no usada, salvo lo previsto en la garantía de ahorro.</li>
   <li>El titular puede dar por terminado el servicio avisando con 30 días de antelación, o de inmediato si el cliente incumple gravemente estas condiciones.</li>
   <li>Antes de la baja, el cliente puede descargar sus rutas en CSV. Pasados 30 días desde la baja, sus datos se borran, salvo lo que la ley obligue a conservar (por ejemplo, las facturas).</li>
 </ul>
@@ -264,10 +280,12 @@ condiciones = f'''
 '''
 
 os.makedirs(OUT, exist_ok=True)
-for archivo, titulo, cuerpo, desc in [
-    ('aviso-legal.html', 'Aviso legal', aviso, 'Datos del titular de Fuelfy y condiciones de uso de la web.'),
-    ('privacidad.html', 'Privacidad y cookies', privacidad, 'Qué datos trata Fuelfy, para qué, con quién se comparten y cómo ejercer tus derechos.'),
-    ('condiciones.html', 'Condiciones de uso y contratación', condiciones, 'Precio, cobro, prueba, baja y responsabilidades del servicio Fuelfy para empresas de transporte.'),
+# Las condiciones llevan su propia versión: cambian los planes y precios (8/11/2026)
+VERSION_COND, FECHA_COND = '2.0', '8 de noviembre de 2026'
+for archivo, titulo, cuerpo, desc, ver, fec in [
+    ('aviso-legal.html', 'Aviso legal', aviso, 'Datos del titular de Fuelfy y condiciones de uso de la web.', VERSION, FECHA),
+    ('privacidad.html', 'Privacidad y cookies', privacidad, 'Qué datos trata Fuelfy, para qué, con quién se comparten y cómo ejercer tus derechos.', VERSION, FECHA),
+    ('condiciones.html', 'Condiciones de uso y contratación', condiciones, 'Planes, precio, cobro, prueba, baja y responsabilidades del servicio Fuelfy para empresas de transporte.', VERSION_COND, FECHA_COND),
 ]:
-    open(os.path.join(OUT, archivo), 'w').write(pagina(archivo, titulo, cuerpo, desc))
+    open(os.path.join(OUT, archivo), 'w').write(pagina(archivo, titulo, cuerpo, desc, ver, fec))
 print('ok')

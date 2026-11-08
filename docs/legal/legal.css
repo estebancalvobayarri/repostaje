@@ -41,3 +41,7 @@ th { font: 700 .75rem var(--f); letter-spacing: .06em; text-transform: uppercase
 td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 mark.falta { background: #FFE08A; color: var(--ink); padding: 0 4px; border-radius: 3px; font-weight: 700; }
 footer { max-width: 920px; margin: 0 auto; padding: 0 18px 32px; color: var(--muted); font-size: .85rem; }
+/* tabla de planes: en el móvil se desplaza de lado en lugar de apretar el texto */
+.tabla table.planes { min-width: 600px; }
+.tabla table.planes td:first-child { min-width: 150px; }
+.tabla table.planes th, .tabla table.planes td { text-align: left; }
