@@ -182,10 +182,21 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
   .ruta p { grid-column: 2; margin: 12px 0 44px; }
 }
 .extras { margin-top: clamp(56px, 8vw, 96px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--niebla); }
-.extras div { padding: 28px 28px 0 0; }
-.extras div + div { padding-left: 28px; border-left: 1px solid var(--niebla); }
+.extras > div { padding: 28px 28px 0 0; display: flex; flex-direction: column; }
+.extras > div + div { padding-left: 28px; border-left: 1px solid var(--niebla); }
 .extras h3 { font-size: 1.2rem; }
 .extras p { margin: 10px 0 0; color: var(--asfalto); }
+.captura { margin-top: auto; padding: 0; padding-top: 22px; border: 0; background: none; cursor: zoom-in; display: block; width: 100%; text-align: left; font: inherit; color: inherit; }
+.captura img { width: 100%; height: auto; border-radius: 12px; box-shadow: 0 0 0 1px rgba(18,38,63,.08), 0 18px 36px -22px rgba(18,38,63,.45); transition: transform .2s, box-shadow .2s; }
+.captura.sin-marco img { border-radius: 0; box-shadow: none; filter: drop-shadow(0 14px 18px rgba(18,38,63,.22)); }
+.captura:hover img { transform: translateY(-3px); }
+.captura span { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font-size: .88rem; font-weight: 700; color: var(--asfalto); }
+.captura:hover span { color: var(--azul); }
+.visor { border: 0; padding: 0; background: transparent; max-width: min(1400px, 94vw); width: 100%; }
+.visor::backdrop { background: rgba(11,26,44,.82); backdrop-filter: blur(4px); }
+.visor img { width: 100%; height: auto; max-height: 86vh; object-fit: contain; border-radius: 12px; }
+.visor p { margin: 12px 0 0; color: var(--papel); text-align: center; font-weight: 600; }
+.visor-cerrar { position: fixed; top: 16px; right: 16px; width: 48px; height: 48px; border-radius: 50%; border: 0; background: var(--papel); color: var(--azul); font: 800 1.5rem/1 var(--f); cursor: pointer; }
 @media (max-width: 860px) { .extras { grid-template-columns: 1fr; } .extras div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--niebla); } .extras div { padding: 24px 0; } }
 
 /* foto a sangre */
@@ -486,9 +497,12 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         </li>
       </ol>
       <div class="extras">
-        <div class="aparece"><h3>Informe de ahorro</h3><p>Cada ruta enviada queda guardada: ahorro por mes, por camión y por tarjeta, con descarga en CSV.</p></div>
-        <div class="aparece"><h3>Tus estaciones, a tu manera</h3><p>Desmarca las que no quieras usar y desaparecen del mapa y de las rutas de toda tu empresa.</p></div>
-        <div class="aparece"><h3>En el ordenador y en el móvil</h3><p>Funciona en el navegador, sin instalar nada. En el móvil puedes añadirla a la pantalla de inicio.</p></div>
+        <div class="aparece"><h3>Informe de ahorro</h3><p>Cada ruta enviada queda guardada: ahorro por mes, por camión y por tarjeta, con descarga en CSV.</p>
+          <button class="captura" type="button" data-visor><img src="imagenes/web/captura-informe.webp" alt="Pantalla de Ahorro de Fuelfy: ahorro estimado del periodo, gráficas por mes, por camión y por tarjeta, y desglose por camión" width="1600" height="975" loading="lazy"><span>Ampliar captura ↗</span></button></div>
+        <div class="aparece"><h3>Tus estaciones, a tu manera</h3><p>Desmarca las que no quieras usar y desaparecen del mapa y de las rutas de toda tu empresa.</p>
+          <button class="captura" type="button" data-visor><img src="imagenes/web/captura-estaciones.webp" alt="Panel de estaciones de Fuelfy sobre el mapa, con estaciones marcadas y desmarcadas por tarjeta" width="1600" height="975" loading="lazy"><span>Ampliar captura ↗</span></button></div>
+        <div class="aparece"><h3>En el ordenador y en el móvil</h3><p>Funciona en el navegador, sin instalar nada. En el móvil puedes añadirla a la pantalla de inicio.</p>
+          <button class="captura sin-marco" type="button" data-visor><img src="imagenes/web/captura-escritorio-movil.webp" alt="La misma ruta en Fuelfy en el ordenador y en el móvil" width="1600" height="739" loading="lazy"><span>Ampliar captura ↗</span></button></div>
       </div>
     </div>
   </section>
@@ -683,6 +697,12 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
   </section>
 </main>
 
+<dialog class="visor" id="visor" aria-label="Captura ampliada">
+  <button class="visor-cerrar" type="button" aria-label="Cerrar">×</button>
+  <img src="" alt="">
+  <p>Ejemplo ilustrativo con datos de muestra</p>
+</dialog>
+
 <footer class="pie">
   <div class="envuelve">
     <a class="logo" href="#" aria-label="Fuelfy, inicio"><span class="wm">fuelf<span class="lig">y</span><i>.</i></span></a>
@@ -703,6 +723,15 @@ if ('IntersectionObserver' in window) {
   const io = new IntersectionObserver((es) => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' });
   document.querySelectorAll('.aparece').forEach(el => io.observe(el));
 } else document.documentElement.classList.add('sin-js');
+
+// ---------- capturas ampliables ----------
+const visor = document.getElementById('visor');
+document.querySelectorAll('[data-visor]').forEach(b => b.addEventListener('click', () => {
+  const i = b.querySelector('img'), v = visor.querySelector('img');
+  v.src = i.currentSrc || i.src; v.alt = i.alt;
+  visor.showModal ? visor.showModal() : window.open(i.src, '_blank');
+}));
+visor.addEventListener('click', (e) => { if (e.target === visor || e.target.closest('.visor-cerrar')) visor.close(); });
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
