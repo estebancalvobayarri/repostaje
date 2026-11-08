@@ -79,7 +79,9 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .menu a { text-decoration: none; font-weight: 600; font-size: .95rem; color: var(--asfalto); }
 .menu a:hover { color: var(--azul); }
 .menu .entrar { color: var(--azul); font-weight: 700; }
-.menu .boton { min-height: 44px; padding: 0 20px; font-size: .95rem; color: var(--azul); }
+.menu .boton { min-height: 44px; padding: 0 20px; font-size: .95rem; }
+.menu .boton.lleno { background: #12263F; border-color: #12263F; color: #F6F4EF; }
+.menu .boton.lleno:hover { background: var(--noche); border-color: var(--noche); }
 @media (max-width: 880px) { .menu .ancla { display: none; } .menu { gap: 16px; } }
 @media (max-width: 420px) { .menu .entrar { display: none; } }
 
@@ -355,7 +357,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
       <a class="ancla" href="#precios">Precios</a>
       <a class="ancla" href="#dudas">Dudas</a>
       <a class="entrar" href="app/">Entrar</a>
-      <a class="boton vacio" href="#prueba">Prueba gratis</a>
+      <a class="boton lleno" href="#prueba">Prueba gratis</a>
     </nav>
   </div>
 </header>
