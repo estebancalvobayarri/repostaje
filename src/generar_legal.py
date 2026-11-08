@@ -150,7 +150,7 @@ condiciones = f'''
 <div class="resumen">
 <p><b>En resumen:</b></p>
 <ul>
-  <li>Empiezas con 14 días de prueba gratis, sin tarjeta. Después eliges plan: Esencial (20 €), Pro (30 €) o Flota (desde 25 €), por camión y mes, sin IVA.</li>
+  <li>Empiezas con 14 días de prueba gratis, sin tarjeta. Después eliges plan: Esencial (20 €), Pro (30 €) o Flota (25 €, con descuentos desde el camión 75), por camión y mes, sin IVA.</li>
   <li>Pagando mes a mes, se cobra a mes vencido el máximo de camiones que has tenido en servicio a la vez, y te puedes dar de baja cuando quieras. Pagando el año, tienes dos meses gratis.</li>
   <li>Garantía de ahorro en el plan Pro: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</li>
   <li>Tus datos son tuyos: los puedes descargar y se borran tras la baja.</li>
@@ -183,23 +183,27 @@ condiciones = f'''
 <div class="tabla"><table class="planes">
 <thead><tr><th></th><th>Esencial</th><th>Pro</th><th>Flota</th></tr></thead>
 <tbody>
-<tr><td>Pago mensual, por camión (sin IVA)</td><td>20,00 €</td><td>30,00 €</td><td>Desde 25,00 €, a medida</td></tr>
-<tr><td>Pago anual, por camión (sin IVA)</td><td>200,00 €</td><td>300,00 €</td><td>Contrato anual</td></tr>
-<tr><td>Pensado para</td><td>Autónomos y flotas de 2 a 5 camiones</td><td>Flotas de 5 a 50 camiones</td><td>Más de 50 camiones</td></tr>
+<tr><td>Pago mensual, por camión (sin IVA)</td><td>20,00 €</td><td>30,00 €</td><td>25,00 €</td></tr>
+<tr><td>Pago anual, por camión (sin IVA)</td><td>200,00 €</td><td>300,00 €</td><td>250,00 €</td></tr>
+<tr><td>Pensado para</td><td>Autónomos y flotas de 2 a 5 camiones</td><td>Flotas de 5 a 49 camiones</td><td>Flotas de 50 camiones o más</td></tr>
 <tr><td>Mínimo que se factura</td><td>2 camiones</td><td>5 camiones</td><td>50 camiones</td></tr>
 </tbody></table></div>
+<p>Los precios de Pro y Flota de la tabla son los de sus primeros camiones; los siguientes tienen descuento por volumen (ver más abajo).</p>
 <ul>
   <li><b>Esencial:</b> mapa de precios en ruta, recomendación de la mejor parada para cada camión, planificación del repostaje con la ruta completa y el nivel del depósito, y avisos al conductor. Un usuario gestor.</li>
   <li><b>Pro:</b> todo lo de Esencial, más el informe mensual de ahorro, usuarios ilimitados y exportación de datos.</li>
-  <li><b>Flota:</b> todo lo de Pro, más varias cuentas (sedes o centros de coste), administrador de cuenta y soporte prioritario. Su precio y condiciones se fijan en un presupuesto o contrato particular, que prevalece sobre estas condiciones en lo que las contradiga.</li>
+  <li><b>Flota:</b> todo lo de Pro, más varias cuentas (sedes o centros de coste), administrador de cuenta y soporte prioritario. Si el titular y el cliente firman un presupuesto o contrato particular, este prevalece sobre estas condiciones en lo que las contradiga.</li>
 </ul>
 <h3>Descuento por volumen (plan Pro)</h3>
 <p>En el plan Pro, los primeros 25 camiones pagan el precio completo y, del camión 26 al 49, cada camión paga un 10 % menos (27,00 € al mes, o 270,00 € al año). A partir de 50 camiones se aplica el plan Flota.</p>
 <p>Por ejemplo, con 30 camiones en Pro pagando mes a mes: 25 × 30,00 € + 5 × 27,00 € = 885,00 € al mes, más IVA.</p>
+<h3>Descuento por volumen (plan Flota)</h3>
+<p>En el plan Flota, los primeros 74 camiones pagan el precio completo; del camión 75 al 99, cada camión paga un 20 % menos (20,00 € al mes, o 200,00 € al año), y desde el camión 100, un 30 % menos (17,50 € al mes, o 175,00 € al año).</p>
+<p>Por ejemplo, con 100 camiones en Flota pagando mes a mes: 74 × 25,00 € + 25 × 20,00 € + 1 × 17,50 € = 2.367,50 € al mes, más IVA.</p>
 <h3>Pago anual</h3>
 <p>Pagando el año por adelantado, el cliente paga 10 meses y tiene 2 gratis. El pago anual se hace al empezar cada año de servicio por el número de camiones que el cliente indique. Si durante ese año pone en servicio más camiones de los pagados, los camiones de más se facturan a mes vencido al precio mensual de su plan, como en el apartado 6.</p>
 <h3 id="fundadoras">Oferta «Flotas fundadoras»</h3>
-<p>Las 15 primeras empresas que contraten el plan Pro con pago anual o el plan Flota tienen un 25 % de descuento: en Pro, sobre el precio Pro (con el descuento por volumen, si corresponde) y en lugar de los dos meses gratis del pago anual, sin que los dos descuentos se sumen; en Flota, sobre el precio acordado en su presupuesto o contrato. Las 15 plazas son en total, entre los dos planes. A cambio, la empresa acepta una breve entrevista mensual sobre su uso de Fuelfy y que el titular publique su caso. El descuento se mantiene mientras la empresa renueve su suscripción o contrato anual sin interrupción.</p>
+<p>Las 15 primeras empresas que contraten el plan Pro o el plan Flota con pago anual tienen un 25 % de descuento sobre el precio de su plan (con el descuento por volumen, si corresponde), en lugar de los dos meses gratis del pago anual; los dos descuentos no se suman. Las 15 plazas son en total, entre los dos planes. A cambio, la empresa acepta una breve entrevista mensual sobre su uso de Fuelfy y que el titular publique su caso. El descuento se mantiene mientras la empresa renueve su suscripción anual sin interrupción.</p>
 <h3>Cambios de precio</h3>
 <p>El titular puede cambiar los precios avisando al cliente con al menos 30 días de antelación. Si el cliente no está de acuerdo, puede darse de baja antes de que el cambio se aplique. A quien haya pagado el año, el cambio no le afecta hasta su siguiente renovación.</p>
 

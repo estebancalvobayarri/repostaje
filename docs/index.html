@@ -266,6 +266,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .plan.destacado .boton:hover { background: #FFBC1F; border-color: #FFBC1F; }
 .plan .sello-plan { position: absolute; top: -13px; left: clamp(26px, 3vw, 36px); display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px; background: var(--ambar); color: var(--azul); font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .plan .volumen { margin: 14px 0 0; padding: 10px 14px; border-radius: 12px; background: rgba(246,244,239,.08); border: 1px solid rgba(220,215,203,.25); font-size: .92rem; }
+.plan .volumen.flota-vol { background: var(--papel); border-color: var(--niebla); }
 @media (max-width: 1080px) { .planes { grid-template-columns: 1fr; max-width: 560px; margin-inline: auto; } .plan.destacado { order: -1; } }
 .condiciones { margin-top: clamp(40px, 6vw, 64px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--niebla); }
 .condiciones div { padding: 24px 24px 0 0; }
@@ -584,7 +585,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <article class="plan destacado aparece">
           <span class="sello-plan">Recomendado</span>
           <h3>Pro</h3>
-          <p class="para">Flotas de 5 a 50 camiones.</p>
+          <p class="para">Flotas de 5 a 49 camiones.</p>
           <p class="precio"><b>30 €</b><span>/ camión y mes</span></p>
           <p class="anual">Pagando el año: <b>300 € por camión</b></p>
           <ul>
@@ -601,17 +602,18 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         </article>
         <article class="plan aparece">
           <h3>Flota</h3>
-          <p class="para">Más de 50 camiones.</p>
+          <p class="para">Flotas de 50 camiones o más.</p>
           <p class="precio"><span class="desde">desde</span><b>25 €</b><span>/ camión y mes</span></p>
-          <p class="anual">A medida, con <b>contrato anual</b></p>
+          <p class="anual">Pagando el año: <b>desde 250 € por camión</b></p>
           <ul>
             <li class="base">Todo lo de Pro, y además:</li>
             <li>Varias cuentas: sedes o centros de coste</li>
             <li>Administrador de cuenta</li>
             <li>Soporte prioritario</li>
           </ul>
+          <p class="volumen flota-vol">Del camión 75 al 99, <b>un 20 % menos</b> (20 €); desde el 100, <b>un 30 % menos</b> (17,50 €).</p>
           <div class="pie-plan">
-            <p class="minimo">Desde 50 camiones.</p>
+            <p class="minimo">Mínimo 50 camiones.</p>
             <a class="boton vacio" href="#prueba">Pedir presupuesto</a>
           </div>
         </article>
@@ -624,7 +626,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis) o el plan Flota, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <p><strong>Flotas fundadoras: un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis) o Flota con pago anual, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
         <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
