@@ -420,6 +420,15 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 .prueba-f { display: grid; gap: 8px; }
 .rapido-prueba { display: flex; gap: 6px; flex-wrap: wrap; }
 .kpis-fact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sus-f { display: grid; gap: 10px; }
+.sus-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 14px; }
+.sus-grid label { display: grid; gap: 4px; font: 600 .8rem var(--f-body); color: var(--muted); }
+.sus-grid label.ancho { grid-column: 1 / -1; }
+.sus-grid label[hidden] { display: none; }
+.sus-grid input, .sus-grid select { font: 500 .95rem var(--f-body); padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); min-width: 0; }
+.sus-grid label.fila-check { display: flex; align-items: center; gap: 8px; color: var(--ink); align-self: end; min-height: 40px; }
+.sus-grid label.fila-check input { width: 18px; height: 18px; padding: 0; }
+a.mini { display: inline-flex; align-items: center; text-decoration: none; }
 .kpis-fact > div { background: var(--soft); border-radius: 8px; padding: 8px 10px; display: grid; gap: 2px; min-width: 0; }
 .kpis-fact b { font: 800 1.35rem var(--f-display); font-variant-numeric: tabular-nums; }
 .kpis-fact span { font-size: .75rem; color: var(--muted); }
@@ -727,6 +736,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
 <script src="app.js?v=16"></script>
-<script src="auth.js?v=21"></script>
+<script src="auth.js?v=22"></script>
 </body>
 </html>
