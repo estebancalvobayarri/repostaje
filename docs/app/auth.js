@@ -674,6 +674,26 @@ window.Registro = {
   },
 };
 
+// ---------- rutas guardadas sin enviar (para mandarlas más adelante) ----------
+window.RutasGuardadas = {
+  async listar() {
+    if (!perfil) return [];
+    const { data, error } = await sb.from('rutas_guardadas').select('*').order('creado', { ascending: false }).limit(500);
+    if (error) throw new Error(error.message);
+    return data;
+  },
+  async guardar(fila) {
+    if (!perfil) throw new Error('tu usuario no pertenece a ninguna empresa');
+    const { data, error } = await sb.from('rutas_guardadas').insert({ ...fila, empresa_id: perfil.empresa_id }).select().single();
+    if (error) throw new Error(error.message);
+    return data;
+  },
+  async borrar(id) {
+    const { error } = await sb.from('rutas_guardadas').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+};
+
 const eurA = n => (+n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 let enviosPeriodo = [];

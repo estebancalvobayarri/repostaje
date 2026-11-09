@@ -13,7 +13,11 @@ const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFr
 const ent = n => Math.round(n).toLocaleString('es-ES');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-let elegida = null; // parada elegida por el gestor para enviar al conductor
+let elegida = null; // parada elegida por el gestor para enviar al conductor (SIN = sin parada)
+const SIN = 'sin';
+let preferida = null;   // parada que hay que volver a elegir al abrir una ruta guardada
+let abierta = null;     // id de la ruta guardada abierta en el mapa: al enviarla o guardarla otra vez se quita de la lista
+const CONSULTA = 'La cuenta está en modo consulta por una factura vencida: no se pueden enviar rutas hasta que se pague.';
 let D, map, capaRuta, marcadores = new Map(), ruta = null, lugares = { origen: null, destino: null };
 const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -77,7 +81,7 @@ function buscador(campo) {
   const input = $(campo), lista = $('sugg-' + campo);
   let t, items = [], act = -1;
   const cerrar = () => { lista.hidden = true; act = -1; };
-  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); if (lugares.origen && lugares.destino) calcular(); };
+  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); abierta = null; if (lugares.origen && lugares.destino) calcular(); };
   input.addEventListener('input', () => {
     lugares[campo] = null; clearTimeout(t);
     const q = input.value.trim(); if (q.length < 3) return cerrar();
@@ -200,13 +204,22 @@ function evaluar() {
   const lista = candidatas();
   const ok = lista.filter(x => x.alcanzable);
   const mejor = ok[0];
-  if (!lista.some(x => x.e.id === elegida && x.alcanzable)) elegida = mejor ? mejor.e.id : null;
+  if (preferida) {
+    if (preferida === SIN || lista.some(x => x.e.id === preferida && x.alcanzable)) elegida = preferida;
+    preferida = null;
+  }
+  if (elegida !== SIN && !lista.some(x => x.e.id === elegida && x.alcanzable)) elegida = mejor ? mejor.e.id : SIN;
   $('stops-n').textContent = lista.length ? `${lista.length} a menos de ${$('radio').value} km` : '';
-  if (!lista.length) {
-    $('stops').innerHTML = `<p class="empty">Ninguna estación de vuestras tarjetas a menos de ${$('radio').value} km de esta ruta. Amplía la distancia o revisa el depósito antes de salir.</p>`;
-  } else {
+  // Primera opción de la lista: mandar la ruta sin parada de repostaje
+  const sinSel = elegida === SIN;
+  const filaSin = `<div class="stop sin${sinSel ? ' elegida' : ''}" tabindex="0" role="radio" aria-checked="${sinSel}" data-id="${SIN}" data-ok="1">
+        <span class="radio" aria-hidden="true"></span><div class="km" aria-hidden="true">—</div>
+        <div style="min-width:0"><div class="nm">Sin parada en esta ruta</div><div class="sub">Se manda solo la ruta, sin repostar</div></div><div class="pr"></div></div>`;
+  {
     const scrollPrevio = $('stops').scrollTop;
-    $('stops').innerHTML = lista.sort((a, b) => a.k - b.k).map(x => {
+    $('stops').innerHTML = filaSin + (!lista.length
+      ? `<p class="empty">Ninguna estación de vuestras tarjetas a menos de ${$('radio').value} km de esta ruta. Amplía la distancia o revisa el depósito antes de salir.</p>`
+      : lista.sort((a, b) => a.k - b.k).map(x => {
       const dif = mejor && x !== mejor && x.alcanzable ? (x.efectivo - mejor.efectivo) * x.litros : 0;
       const des = `${x.real ? '' : '≈'}${x.desvio < 0.5 ? '0' : ent(x.desvio)} km de desvío${x.min != null ? ` · +${Math.round(x.min)} min` : ''}`;
       const sel = x.e.id === elegida;
@@ -218,18 +231,19 @@ function evaluar() {
         <div class="pr"><b style="color:${colorPrecio(x.e.p)}">${fmt(x.e.p)}</b>
           <small>${x === mejor ? '<span class="tagb">Mejor</span>' : x.alcanzable ? '+' + eur(dif) : '—'}</small></div>
       </div>`;
-    }).join('');
-    [...$('stops').children].forEach(el => {
+    }).join(''));
+    [...$('stops').querySelectorAll('.stop')].forEach(el => {
       const abrir = () => {
         if (el.dataset.ok === '1') { elegida = el.dataset.id; evaluar(); }
-        const m = marcadores.get(el.dataset.id); map.setView(m.getLatLng(), Math.max(map.getZoom(), 12)); m.openPopup();
+        const m = marcadores.get(el.dataset.id); if (!m) return;
+        map.setView(m.getLatLng(), Math.max(map.getZoom(), 12)); m.openPopup();
       };
       el.onclick = abrir; el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrir(); } };
     });
     $('stops').scrollTop = scrollPrevio;   // al elegir otra parada la lista no salta arriba
   }
   avisoMas();
-  pintarEnvio(lista.find(x => x.e.id === elegida), ok);
+  pintarEnvio(elegida === SIN ? SIN : lista.find(x => x.e.id === elegida), ok);
   const ids = new Set(lista.map(x => x.e.id));
   for (const [id, m] of marcadores) {
     const el = m.getElement && m.getElement(); if (!el) continue;
@@ -269,6 +283,22 @@ function mensajeRuta(x, litros) {
   ].filter(v => v !== null).join('\n');
 }
 
+function mensajeSinParada() {
+  const c = camionActual(), o = lugares.origen, d = lugares.destino;
+  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&travelmode=driving`;
+  const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
+  return [
+    `*Ruta:* ${o.label} → ${d.label}`,
+    `${ent(ruta.km)} km · ${h} h ${m} min`,
+    c.id ? `*Camión:* ${c.m}` : null,
+    '',
+    'Sin parada de repostaje en esta ruta.',
+    '',
+    'Ruta en Google Maps:',
+    maps,
+  ].filter(v => v !== null).join('\n');
+}
+
 // Referencia del ahorro: media de precios de las otras paradas de la ruta a las que llega
 // (solo estaciones habilitadas por la empresa, porque las quitadas ya no entran en la lista)
 let envioActual = null;
@@ -276,6 +306,9 @@ let litrosManual = null;   // null = llenar el depósito
 function pintarEnvio(x, alcanzables = []) {
   const box = $('envio');
   if (!x) { box.hidden = true; envioActual = null; return; }
+  const secLitros = $('sec-litros');
+  $('caja-litros').hidden = x === SIN; if (secLitros) secLitros.hidden = x === SIN;
+  if (x === SIN) { pintarSinParada(); return; }
   const otras = alcanzables.filter(y => y.e.id !== x.e.id);
   const media = otras.length ? otras.reduce((t, y) => t + y.e.p, 0) / otras.length : null;
   const cara = otras.reduce((m, y) => (!m || y.e.p > m.e.p ? y : m), null);
@@ -307,6 +340,7 @@ function pintarEnvio(x, alcanzables = []) {
   $('envio-ahorro').textContent = !otras.length
     ? 'Es la única parada de la ruta: no hay ahorro que comparar.'
     : ahorro < 0 ? `Coste extra estimado: ${eur(-ahorro)} ${frente}` : `Ahorro estimado: ${eur(ahorro)} ${frente}`;
+  $('b-guardar-ruta').onclick = () => guardarSinEnviar(texto, { ...envioActual }, x, litros);
   $('b-wa').onclick = async (ev) => {
     if (window.Cuenta?.consulta) {
       ev.preventDefault();
@@ -327,6 +361,7 @@ function pintarEnvio(x, alcanzables = []) {
     }
     try {
       await window.Registro.guardar(datos);
+      await quitarAbierta();
       guardar('ultimoEnvio', { clave, t: Date.now() });
       borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
       $('msg-envio').className = 'msg ok';
@@ -339,12 +374,152 @@ function pintarEnvio(x, alcanzables = []) {
     $('msg-envio').hidden = false;
     setTimeout(() => { $('msg-envio').hidden = true; }, 6000);
   };
-  $('b-copiar').onclick = async () => {
-    try { await navigator.clipboard.writeText(texto); $('msg-envio').className = 'msg ok'; $('msg-envio').textContent = 'Mensaje copiado. Pégalo en el chat del conductor.'; }
-    catch (e) { $('msg-envio').className = 'msg error'; $('msg-envio').textContent = 'No se ha podido copiar automáticamente.'; }
-    $('msg-envio').hidden = false;
-    setTimeout(() => { $('msg-envio').hidden = true; }, 4000);
+  $('b-copiar').onclick = () => copiar(texto);
+}
+function avisoEnvio(texto, ok = true, ms = 6000) {
+  $('msg-envio').className = 'msg ' + (ok ? 'ok' : 'error'); $('msg-envio').textContent = texto;
+  $('msg-envio').hidden = false; clearTimeout(avisoEnvio.t); avisoEnvio.t = setTimeout(() => { $('msg-envio').hidden = true; }, ms);
+}
+async function copiar(texto) {
+  try { await navigator.clipboard.writeText(texto); avisoEnvio('Mensaje copiado. Pégalo en el chat del conductor.', true, 4000); }
+  catch (e) { avisoEnvio('No se ha podido copiar automáticamente.', false, 4000); }
+}
+
+// Sin parada: se manda solo la ruta y no cuenta en el informe de ahorro
+function pintarSinParada() {
+  envioActual = null;
+  const c = camionActual(), necesita = ruta.km * c.con / 100, llega = litrosQueLleva() - necesita >= c.cap * RESERVA;
+  $('envio').hidden = false;
+  $('envio-txt').innerHTML = 'Sin parada: se manda solo la ruta. Pulsa una estación de la lista para añadir una parada.'
+    + (llega ? '' : ' <b>Ojo: con el combustible que lleva no llega con reserva.</b>');
+  $('envio-ahorro').classList.remove('extra');
+  $('envio-ahorro').textContent = 'Sin parada no hay repostaje, así que no cuenta en el informe de ahorro.';
+  const texto = mensajeSinParada();
+  $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
+  $('b-wa').onclick = async (ev) => {
+    if (window.Cuenta?.consulta) { ev.preventDefault(); avisoEnvio(CONSULTA, false); return; }
+    await quitarAbierta();
+    borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
+    avisoEnvio(`Ruta enviada sin parada. Se quitará de la pantalla en ${MIN_BORRAR} minutos.`);
   };
+  $('b-guardar-ruta').onclick = () => guardarSinEnviar(texto, null, null, null);
+  $('b-copiar').onclick = () => copiar(texto);
+}
+
+// ---------- rutas guardadas sin enviar ----------
+// El gestor prepara rutas para más adelante («Guardar sin enviar») y las manda luego desde «Ver rutas guardadas».
+let rutasG = [], ultimaGuardada = null;
+const fechaCorta = f => { const [y, m, d] = String(f).split('-'); return `${d}/${m}/${y}`; };
+async function quitarAbierta() {
+  if (!abierta) return;
+  const id = abierta; abierta = null;
+  try { await window.RutasGuardadas.borrar(id); } catch (e) { /* se queda en la lista; se puede borrar a mano */ }
+  cargarGuardadas();
+}
+async function guardarSinEnviar(texto, datosEnvio, x, litros) {
+  if (window.Cuenta?.consulta) { avisoEnvio(CONSULTA, false); return; }
+  const c = camionActual();
+  const clave = [c.id, lugares.origen.label, lugares.destino.label, x ? x.e.id : SIN, litros].join('|');
+  if (ultimaGuardada === clave) { avisoEnvio('Esta ruta ya está guardada. La tienes en «Ver rutas guardadas».'); return; }
+  const fila = {
+    fecha_precios: D.fecha, camion_id: c.id, matricula: c.id ? c.m : null,
+    origen: lugares.origen.label, destino: lugares.destino.label,
+    km_ruta: Math.round(ruta.km * 10) / 10, min_ruta: Math.round(ruta.min),
+    estacion_id: x ? x.e.id : null, estacion_nombre: x ? x.e.n : null, tarjeta: x ? x.e.t : null,
+    precio: x ? x.e.p : null, litros: x ? litros : null,
+    mensaje: texto, envio: datosEnvio,
+    plan: { origen: lugares.origen, destino: lugares.destino, nivel: +$('nivel').value, litros: litrosManual, radio: +$('radio').value },
+  };
+  $('b-guardar-ruta').disabled = true;
+  try {
+    await window.RutasGuardadas.guardar(fila);
+    const anterior = abierta; abierta = null;   // si era una ruta guardada abierta, la nueva versión la sustituye
+    if (anterior) { try { await window.RutasGuardadas.borrar(anterior); } catch (e) {} }
+    ultimaGuardada = clave;
+    await cargarGuardadas();
+    avisoEnvio('Ruta guardada sin enviar. La tienes en «Ver rutas guardadas» para mandarla cuando quieras.');
+  } catch (e) { avisoEnvio('No se ha podido guardar la ruta: ' + e.message, false); }
+  $('b-guardar-ruta').disabled = false;
+}
+async function cargarGuardadas() {
+  try { rutasG = await window.RutasGuardadas.listar(); } catch (e) { /* se queda la lista anterior */ }
+  $('guardadas-n').textContent = rutasG.length;
+  if (!$('guardadas').hidden) pintarGuardadas();
+}
+function avisoGuardadas(texto, ok = true) {
+  const m = $('msg-guardadas'); m.className = 'msg ' + (ok ? 'ok' : 'error'); m.textContent = texto; m.hidden = false;
+  clearTimeout(avisoGuardadas.t); avisoGuardadas.t = setTimeout(() => { m.hidden = true; }, 7000);
+}
+function pintarGuardadas() {
+  const caja = $('guardadas-lista');
+  if (!rutasG.length) { caja.innerHTML = '<p class="small">No hay rutas guardadas. Usa «Guardar sin enviar» al preparar una ruta.</p>'; return; }
+  const ico = $('b-wa').querySelector('svg').outerHTML;
+  caja.innerHTML = rutasG.map(g => {
+    const cuando = new Date(g.creado).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const t = g.min_ruta != null ? ` · ${Math.floor(g.min_ruta / 60)} h ${String(Math.round(g.min_ruta % 60)).padStart(2, '0')}` : '';
+    const parada = g.estacion_id
+      ? `Parada: <b>${esc(g.estacion_nombre)}</b> (${esc(g.tarjeta || '')}, ${fmt(+g.precio)} €/l, ${ent(+g.litros)} l)`
+      : 'Sin parada';
+    const viejos = g.estacion_id && D.fecha && g.fecha_precios && g.fecha_precios < D.fecha;
+    return `<div class="rg" data-id="${esc(g.id)}">
+      <div class="rg-ruta">${esc(g.origen)} → ${esc(g.destino)}</div>
+      <div class="small">${g.matricula ? esc(g.matricula) + ' · ' : ''}${g.km_ruta != null ? ent(+g.km_ruta) + ' km' : ''}${t} · guardada el ${cuando}</div>
+      <div class="small">${parada}</div>
+      ${viejos ? `<div class="small aviso">Precios del ${fechaCorta(g.fecha_precios)}: ya hay precios más nuevos. Ábrela en el mapa para recalcularla.</div>` : ''}
+      <div class="row2">
+        <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(g.mensaje)}" target="_blank" rel="noopener" data-enviar>${ico}Enviar ahora</a>
+        <button class="mini" type="button" data-abrir>Abrir en el mapa</button>
+        <button class="mini" type="button" data-borrar>Borrar</button>
+      </div></div>`;
+  }).join('');
+}
+async function enviarGuardada(g) {
+  // WhatsApp se abre con el enlace; a la vez se apunta en el informe (si lleva parada) y se quita de la lista
+  try {
+    if (g.envio) await window.Registro.guardar(g.envio);
+    await window.RutasGuardadas.borrar(g.id);
+    if (abierta === g.id) abierta = null;
+    avisoGuardadas(g.envio ? 'Ruta enviada y apuntada en el informe de ahorro.' : 'Ruta enviada (sin parada).');
+  } catch (e) { avisoGuardadas('Se ha abierto WhatsApp, pero no se ha podido apuntar el envío: ' + e.message, false); }
+  cargarGuardadas();
+}
+function abrirGuardada(g) {
+  const p = g.plan || {};
+  cerrarGuardadas();
+  const i = CAMIONES.findIndex(c => c.id === g.camion_id);
+  if (i >= 0) $('camion').value = i;
+  if (p.nivel != null) $('nivel').value = p.nivel;
+  pintarCamion();
+  if (p.radio) { $('radio').value = p.radio; $('radio-n').value = p.radio; }
+  lugares = { origen: p.origen, destino: p.destino };
+  $('origen').value = p.origen.label; $('destino').value = p.destino.label;
+  litrosManual = p.litros ?? null;
+  preferida = g.estacion_id || SIN;
+  abierta = g.id; ultimaGuardada = null;
+  calcular();
+}
+function abrirGuardadas() { $('guardadas').hidden = false; pintarGuardadas(); cargarGuardadas(); $('guardadas-x').focus(); }
+function cerrarGuardadas() { $('guardadas').hidden = true; $('b-guardadas').focus(); }
+function montarGuardadas() {
+  $('b-guardadas').onclick = abrirGuardadas;
+  $('guardadas-x').onclick = cerrarGuardadas;
+  $('guardadas').addEventListener('click', ev => { if (ev.target === $('guardadas')) cerrarGuardadas(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && !$('guardadas').hidden) cerrarGuardadas(); });
+  $('guardadas-lista').addEventListener('click', ev => {
+    const fila = ev.target.closest('.rg'); if (!fila) return;
+    const g = rutasG.find(r => r.id === fila.dataset.id); if (!g) return;
+    if (ev.target.closest('[data-enviar]')) {
+      if (window.Cuenta?.consulta) { ev.preventDefault(); avisoGuardadas(CONSULTA, false); return; }
+      enviarGuardada(g);
+    } else if (ev.target.closest('[data-abrir]')) abrirGuardada(g);
+    else if (ev.target.closest('[data-borrar]')) {
+      const b = ev.target.closest('[data-borrar]');
+      if (b.dataset.confirmar !== '1') { b.dataset.confirmar = '1'; b.textContent = '¿Borrar? Pulsa otra vez'; return; }
+      window.RutasGuardadas.borrar(g.id).then(() => { if (abierta === g.id) abierta = null; avisoGuardadas('Ruta borrada.'); cargarGuardadas(); })
+        .catch(e => avisoGuardadas('No se ha podido borrar: ' + e.message, false));
+    }
+  });
+  cargarGuardadas();
 }
 
 // ---------- popups ----------
@@ -557,6 +732,8 @@ async function iniciar(camiones) {
     $('origen').value = lugares.origen ? lugares.origen.label : ''; $('destino').value = lugares.destino ? lugares.destino.label : '';
     if (lugares.origen && lugares.destino) calcular(); };
 
+  montarGuardadas();
+
   // Al entrar, la pantalla empieza sin origen ni destino
   try { localStorage.removeItem('lugares'); } catch (e) {}
   $('origen').value = ''; $('destino').value = '';
@@ -569,7 +746,7 @@ const MIN_BORRAR = 10;
 let borrarRuta = null;
 const claveRuta = () => ruta && lugares.origen && lugares.destino ? `${lugares.origen.label}|${lugares.destino.label}|${Math.round(ruta.km)}` : null;
 function limpiarRuta() {
-  ruta = null; elegida = null; lugares = { origen: null, destino: null }; litrosManual = null;
+  ruta = null; elegida = null; preferida = null; abierta = null; lugares = { origen: null, destino: null }; litrosManual = null;
   $('origen').value = ''; $('destino').value = '';
   capaRuta.clearLayers();
   $('resumen').hidden = true;
