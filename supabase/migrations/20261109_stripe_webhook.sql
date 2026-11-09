@@ -67,3 +67,7 @@ create policy "registrar envios de mi empresa" on public.envios for insert to au
     and usuario_id = (select auth.uid())
     and not (select privado.en_consulta(privado.mi_empresa()))
   );
+
+-- (migración estado_cuenta_invoker) estado_cuenta() no necesita privilegios propios:
+-- las facturas ya se leen con la política de stripe_facturas
+alter function public.estado_cuenta() security invoker;
