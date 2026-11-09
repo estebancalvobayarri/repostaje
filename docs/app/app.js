@@ -14,9 +14,14 @@ const ent = n => Math.round(n).toLocaleString('es-ES');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 let elegida = null; // parada elegida por el gestor para enviar al conductor
-let D, map, capaRuta, marcadores = new Map(), ruta = null, lugares = { origen: null, destino: null };
+let D, map, capaRuta, marcadores = new Map(), ruta = null, lugares = { origen: null, destino: null, destino2: null };
 const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const leer = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
+// Puntos de la ruta en orden: origen, destino y, si se ha añadido, segundo destino
+const conDestino2 = () => !$('place-destino2').hidden;
+const puntosElegidos = () => [lugares.origen, lugares.destino, ...(conDestino2() && lugares.destino2 ? [lugares.destino2] : [])];
+const listos = () => lugares.origen && lugares.destino && (!conDestino2() || lugares.destino2);
+const nombreRuta = (pts) => pts.map(p => p.label).join(' → ');
 
 // ---------- colores por precio ----------
 let pMin = 0, pTop = 1;
@@ -77,7 +82,7 @@ function buscador(campo) {
   const input = $(campo), lista = $('sugg-' + campo);
   let t, items = [], act = -1;
   const cerrar = () => { lista.hidden = true; act = -1; };
-  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); if (lugares.origen && lugares.destino) calcular(); };
+  const elegir = (it) => { lugares[campo] = it; input.value = it.label; cerrar(); if (listos()) calcular(); };
   input.addEventListener('input', () => {
     lugares[campo] = null; clearTimeout(t);
     const q = input.value.trim(); if (q.length < 3) return cerrar();
@@ -120,14 +125,19 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
 
 async function calcular(e) {
   e && e.preventDefault();
-  const { origen, destino } = lugares;
-  if (!origen || !destino) { $('stops').innerHTML = '<p class="empty">Elige origen y destino de la lista de sugerencias.</p>'; return; }
+  if (!lugares.origen || !lugares.destino || (conDestino2() && !lugares.destino2 && $('destino2').value.trim())) {
+    $('stops').innerHTML = `<p class="empty">Elige ${conDestino2() ? 'origen y destinos' : 'origen y destino'} de la lista de sugerencias.</p>`; return;
+  }
+  const puntos = puntosElegidos();
   $('calc').disabled = true; $('calc').textContent = 'Calculando…';
   try {
-    const r = await osrm([origen, destino]);
+    const r = await osrm(puntos);
     const coords = r.geometry.coordinates.map(([lo, la]) => [la, lo]);
     const acum = [0]; for (let i = 1; i < coords.length; i++) acum.push(acum[i - 1] + km(coords[i - 1], coords[i]));
-    ruta = { coords, acum, km: r.distance / 1000, min: r.duration / 60, desvios: new Map() };
+    // Km de la línea en los que acaba cada tramo (menos el último), para saber en qué tramo cae cada estación
+    let hecho = 0;
+    const cortes = r.legs.slice(0, -1).map(l => (hecho += l.distance) / r.distance * acum.at(-1));
+    ruta = { coords, acum, km: r.distance / 1000, min: r.duration / 60, desvios: new Map(), puntos, cortes };
     elegida = null;
     evaluar();
     dibujarRuta();
@@ -140,10 +150,16 @@ async function calcular(e) {
 function dibujarRuta() {
   capaRuta.clearLayers();
   const linea = L.polyline(ruta.coords, { color: css('--route'), weight: 5, opacity: .85 }).addTo(capaRuta);
-  [['origen', false], ['destino', true]].forEach(([k, lleno]) => L.circleMarker([lugares[k].lat, lugares[k].lon], {
-    radius: 7, color: css('--route'), weight: 3, fillColor: lleno ? css('--route') : css('--panel'), fillOpacity: 1 }).bindTooltip(lugares[k].label).addTo(capaRuta));
+  // Origen hueco, destino final relleno y, si hay segundo destino, el intermedio en ámbar
+  ruta.puntos.forEach((p, i, a) => L.circleMarker([p.lat, p.lon], {
+    radius: 7, color: css('--route'), weight: 3, fillOpacity: 1,
+    fillColor: i === 0 ? css('--panel') : i === a.length - 1 ? css('--route') : css('--accent') }).bindTooltip(p.label).addTo(capaRuta));
   map.fitBounds(linea.getBounds(), { paddingTopLeft: [30, 30 + altoFlot()], paddingBottomRight: [30, 30] });
 }
+
+// Puntos de la ruta con la parada metida en el tramo donde cae (km k de la ruta)
+const tramoDe = (k) => ruta.cortes.filter(c => k > c).length;
+function conParada(k, parada) { const p = ruta.puntos.slice(); p.splice(tramoDe(k) + 1, 0, parada); return p; }
 
 // Desvío real: ruta pasando por la estación menos ruta directa
 async function desviosReales() {
@@ -151,7 +167,7 @@ async function desviosReales() {
   for (const c of cand) {
     if (ruta.desvios.has(c.e.id)) continue;
     try {
-      const r = await osrm([lugares.origen, { lat: c.e.lat, lon: c.e.lon }, lugares.destino]);
+      const r = await osrm(conParada(c.k, { lat: c.e.lat, lon: c.e.lon }));
       ruta.desvios.set(c.e.id, { km: Math.max(0, r.distance / 1000 - ruta.km), min: Math.max(0, r.duration / 60 - ruta.min) });
       evaluar();
     } catch (e) { /* se queda con la estimación */ }
@@ -251,16 +267,18 @@ function avisoMas() {
 
 // ---------- enviar la ruta al conductor ----------
 function mensajeRuta(x, litros) {
-  const c = camionActual(), o = lugares.origen, d = lugares.destino;
-  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${x.e.lat},${x.e.lon}&travelmode=driving`;
+  const c = camionActual(), pts = conParada(x.k, { lat: x.e.lat, lon: x.e.lon });
+  const o = pts[0], d = pts.at(-1), por = pts.slice(1, -1).map(p => `${p.lat},${p.lon}`).join('|');
+  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${encodeURIComponent(por)}&travelmode=driving`;
   const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
+  const tramo = ruta.puntos.length > 2 ? ` (tramo ${ruta.puntos[tramoDe(x.k)].label} → ${ruta.puntos[tramoDe(x.k) + 1].label})` : '';
   return [
-    `*Ruta:* ${o.label} → ${d.label}`,
+    `*Ruta:* ${nombreRuta(ruta.puntos)}`,
     `${ent(ruta.km)} km · ${h} h ${m} min`,
     c.id ? `*Camión:* ${c.m}` : null,
     '',
     `*Repostar en:* ${x.e.n}`,
-    `Tarjeta ${x.e.t} · km ${ent(x.k)} de la ruta`,
+    `Tarjeta ${x.e.t} · km ${ent(x.k)} de la ruta${tramo}`,
     `Precio: ${fmt(x.e.p)} €/l sin IVA · echar ${ent(litros)} l`,
     x.e.dir ? `Dirección: ${x.e.dir}, ${x.e.mun}` : null,
     '',
@@ -292,7 +310,7 @@ function pintarEnvio(x, alcanzables = []) {
       : `Al llegar caben unos ${ent(caben)} l.`;
   envioActual = {
     fecha_precios: D.fecha, camion_id: c.id, matricula: c.id ? c.m : null,
-    origen: lugares.origen.label, destino: lugares.destino.label, km_ruta: Math.round(ruta.km * 10) / 10,
+    origen: ruta.puntos[0].label, destino: nombreRuta(ruta.puntos.slice(1)), km_ruta: Math.round(ruta.km * 10) / 10,
     estacion_id: x.e.id, estacion_nombre: x.e.n, tarjeta: x.e.t, precio_elegido: x.e.p, litros,
     estacion_cara_nombre: cara ? cara.e.n : null, precio_cara: cara ? cara.e.p : x.e.p,
     precio_referencia: media != null ? Math.round(media * 10000) / 10000 : x.e.p, n_referencia: otras.length, referencia: 'media',
@@ -544,15 +562,23 @@ async function iniciar(camiones) {
   $('radio-n').oninput = () => { if ($('radio-n').value !== '') ponerRadio($('radio-n').value, 'casilla'); };
   $('radio-n').onchange = () => ponerRadio($('radio-n').value);
   const r0 = leer('radio'); if (r0) ponerRadio(r0);
-  buscador('origen'); buscador('destino');
+  buscador('origen'); buscador('destino'); buscador('destino2');
   $('ruta').onsubmit = calcular;
-  $('swap').onclick = () => { [lugares.origen, lugares.destino] = [lugares.destino, lugares.origen];
-    $('origen').value = lugares.origen ? lugares.origen.label : ''; $('destino').value = lugares.destino ? lugares.destino.label : '';
-    if (lugares.origen && lugares.destino) calcular(); };
+  // Invertir el sentido: con segundo destino, el orden pasa a ser segundo destino → destino → origen
+  $('swap').onclick = () => {
+    const k = conDestino2() ? ['origen', 'destino', 'destino2'] : ['origen', 'destino'];
+    const v = k.map(n => [lugares[n], $(n).value]).reverse();
+    k.forEach((n, i) => { [lugares[n]] = v[i]; $(n).value = v[i][0] ? v[i][0].label : v[i][1]; });
+    if (listos()) calcular(); };
+  // Segundo destino: el + abre el hueco y la × lo quita
+  $('b-destino2').onclick = () => { mostrarDestino2(true); $('destino2').focus(); };
+  $('b-quitar-destino2').onclick = () => {
+    const habia = lugares.destino2; mostrarDestino2(false);
+    if (habia && listos()) calcular(); else $('b-destino2').focus(); };
 
   // Al entrar, la pantalla empieza sin origen ni destino
   try { localStorage.removeItem('lugares'); } catch (e) {}
-  $('origen').value = ''; $('destino').value = '';
+  $('origen').value = ''; $('destino').value = ''; mostrarDestino2(false);
   setInterval(() => { if (borrarRuta && Date.now() >= borrarRuta.t) { if (claveRuta() === borrarRuta.clave) limpiarRuta(); borrarRuta = null; } }, 15000);
 }
 
@@ -560,10 +586,16 @@ async function iniciar(camiones) {
 // (el envío queda guardado en la base de datos para el informe de ahorro)
 const MIN_BORRAR = 10;
 let borrarRuta = null;
-const claveRuta = () => ruta && lugares.origen && lugares.destino ? `${lugares.origen.label}|${lugares.destino.label}|${Math.round(ruta.km)}` : null;
+const claveRuta = () => ruta ? `${ruta.puntos.map(p => p.label).join('|')}|${Math.round(ruta.km)}` : null;
+function mostrarDestino2(si) {
+  $('place-destino2').hidden = !si; $('b-destino2').hidden = si;
+  $('b-destino2').setAttribute('aria-expanded', si);
+  $('destino').closest('.place').classList.toggle('via', si);
+  if (!si) { lugares.destino2 = null; $('destino2').value = ''; $('sugg-destino2').hidden = true; }
+}
 function limpiarRuta() {
-  ruta = null; elegida = null; lugares = { origen: null, destino: null }; litrosManual = null;
-  $('origen').value = ''; $('destino').value = '';
+  ruta = null; elegida = null; lugares = { origen: null, destino: null, destino2: null }; litrosManual = null;
+  $('origen').value = ''; $('destino').value = ''; mostrarDestino2(false);
   capaRuta.clearLayers();
   $('resumen').hidden = true;
   pintarEnvio(null);

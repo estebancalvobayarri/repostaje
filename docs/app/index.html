@@ -66,6 +66,13 @@ input[type=text]:focus, input[type=email]:focus, select:focus { outline: 2px sol
 .place { position: relative; }
 .place .dot { position: absolute; left: 10px; top: 33px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--route); background: var(--panel); }
 .place.dest .dot { background: var(--route); }
+.place.via .dot { background: var(--accent); }   /* destino intermedio cuando hay un segundo destino */
+.place .quitar-dest { position: absolute; right: 4px; top: 25px; width: 28px; height: 28px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: 600 1.15rem/1 var(--f-body); cursor: pointer; }
+.place .quitar-dest:hover, .place .quitar-dest:focus-visible { background: var(--soft); color: var(--ink); }
+#place-destino2 input { padding-right: 36px; }
+.mas-dest { justify-self: start; margin-top: -6px; padding: 4px 8px 4px 4px; border: 0; border-radius: 4px; background: transparent; color: var(--ink); font: 600 .88rem var(--f-body); cursor: pointer; }
+.mas-dest span { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 4px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-weight: 800; line-height: 1; }
+.mas-dest:hover, .mas-dest:focus-visible { background: var(--soft); }
 .place input { padding-left: 28px; }
 .sugg { position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .sugg li { padding: 7px 10px; cursor: pointer; }
@@ -561,13 +568,17 @@ a.mini { display: inline-flex; align-items: center; text-decoration: none; }
         <input type="text" id="origen" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-origen" role="listbox" hidden></ul></div>
       <div class="place dest"><label class="lbl" for="destino">Destino</label><span class="dot"></span>
         <input type="text" id="destino" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-destino" role="listbox" hidden></ul></div>
+      <div class="place dest" id="place-destino2" hidden><label class="lbl" for="destino2">Segundo destino</label><span class="dot"></span>
+        <input type="text" id="destino2" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-destino2" role="listbox" hidden></ul>
+        <button type="button" class="quitar-dest" id="b-quitar-destino2" title="Quitar el segundo destino" aria-label="Quitar el segundo destino">×</button></div>
+      <button type="button" class="mas-dest" id="b-destino2" aria-controls="place-destino2" aria-expanded="false"><span aria-hidden="true">+</span> Añadir destino</button>
       <div><label class="lbl" for="radio-n">Mostrar estaciones a menos de</label>
         <div class="lvl"><input type="range" id="radio" min="1" max="30" step="1" value="8" aria-label="Distancia máxima a la ruta">
           <span class="num"><input type="number" id="radio-n" min="1" max="30" step="1" value="8" inputmode="numeric"> km</span></div>
         <p class="small" id="radio-ayuda">de la ruta, en línea recta</p></div>
       <div class="row2" id="fila-calc">
         <button class="btn" id="calc" type="submit" form="ruta">Calcular ruta</button>
-        <button class="btn ghost" id="swap" type="button" title="Intercambiar origen y destino" aria-label="Intercambiar origen y destino">⇅</button>
+        <button class="btn ghost" id="swap" type="button" title="Invertir el sentido de la ruta" aria-label="Invertir el sentido de la ruta">⇅</button>
       </div>
     </form>
 
@@ -735,7 +746,7 @@ a.mini { display: inline-flex; align-items: center; text-decoration: none; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="dash.js?v=4"></script>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=17"></script>
 <script src="auth.js?v=22"></script>
 </body>
 </html>
