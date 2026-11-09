@@ -623,7 +623,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3>14 días gratis</h3><p>Sin tarjeta. Dos semanas para planificar tus rutas reales y ver cuánto ahorras.</p></div>
         <div class="aparece"><h3>Sin permanencia</h3><p>Pagando mes a mes, te das de baja cuando quieras.</p></div>
         <div class="aparece"><h3>Dos meses gratis</h3><p>Si pagas el año completo, pagas solo diez meses.</p></div>
-        <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>Si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
+        <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>En Pro y Flota: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
         <p><strong>Flotas fundadoras: un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro con pago anual (en lugar de los dos meses gratis) o Flota con pago anual, a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
@@ -641,7 +641,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
       <div class="preguntas">
         <details><summary>¿Tengo que cambiar de tarjeta o de proveedor?</summary><p>No. Fuelfy trabaja con los precios que ya te dan tus tarjetas. Solo tienes que reenviarle los emails que ya recibes.</p></details>
         <details><summary>¿Hay que instalar algo?</summary><p>No. Funciona en el navegador del ordenador y del móvil. Si quieres, en el móvil la puedes añadir a la pantalla de inicio.</p></details>
-        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 14 días, es gratis y no te pedimos tarjeta. Al terminar, si sigues, eliges plan y pagas por camión; si no, no pagas nada. Y si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></details>
+        <details><summary>¿Cuánto dura la prueba y qué pasa después?</summary><p>La prueba dura 14 días, es gratis y no te pedimos tarjeta. Al terminar, si sigues, eliges plan y pagas por camión; si no, no pagas nada. Y en los planes Pro y Flota, si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></details>
         <details><summary>¿Cómo se cuentan los camiones?</summary><p>Cada mes se cobra el máximo de camiones que has tenido en servicio a la vez. Si das de baja un camión, deja de contar el mes siguiente. Se cobra a mes vencido.</p></details>
         <details><summary>¿Y el conductor? ¿Necesita usuario?</summary><p>No hace falta: recibe la parada por WhatsApp, con el enlace a Google Maps. Si quieres, también puede tener su propio usuario para consultar el mapa.</p></details>
         <details><summary>¿Qué pasa con mis datos y mis precios?</summary><p>Tus precios y tus rutas solo los ve tu empresa. Los datos se guardan en la Unión Europea y puedes descargarlos o pedir que se borren cuando quieras. Más detalle en la <a href="legal/privacidad.html">política de privacidad</a>.</p></details>
@@ -735,7 +735,7 @@ visor.addEventListener('click', (e) => { if (e.target === visor || e.target.clos
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
-// Pago anual en Pro: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
+// Pago anual en todos los planes: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen
 const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', 25 * 30 + (n - 25) * 27] : ['Flota (desde)', Math.min(n, 74) * 25 + Math.max(0, Math.min(n, 99) - 74) * 20 + Math.max(0, n - 99) * 17.5];
 const fundadora = document.getElementById('c-fundadora'), fundadoraNota = document.getElementById('c-fundadora-nota');
 const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
@@ -747,17 +747,17 @@ function calcular() {
   const n = Math.max(1, Math.round(v.camiones));
   let [nombre, c] = plan(n);
   const litros = v.camiones * v.repostajes * v.litros, ahorro = litros * v.cts / 100;
-  // Pago anual (Pro y Flota): dos meses gratis.
+  // Pago anual (todos los planes): dos meses gratis.
   // Flotas fundadoras (15 primeras empresas, Pro o Flota, siempre con pago anual): un 25 % menos
   // sobre la cuota mensual, en lugar de los dos meses gratis (no se suman).
-  const esPro = nombre === 'Pro', esFlota = nombre.startsWith('Flota'), conPlanAnual = esPro || esFlota;
-  fundadora.disabled = !conPlanAnual;
-  const esFundadora = conPlanAnual && fundadora.checked;
+  const esPro = nombre === 'Pro', esFlota = nombre.startsWith('Flota'), puedeFundadora = esPro || esFlota;
+  fundadora.disabled = !puedeFundadora;
+  const esFundadora = puedeFundadora && fundadora.checked;
   if (esFundadora) anual.checked = true;
-  anual.disabled = !conPlanAnual || esFundadora;
-  fundadoraNota.textContent = conPlanAnual ? 'Las 15 primeras empresas en Pro o Flota con pago anual: un 25 % menos.' : 'Solo en los planes Pro y Flota, desde 5 camiones.';
-  anualNota.textContent = !conPlanAnual ? 'Solo en los planes Pro y Flota, desde 5 camiones.' : esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Dos meses gratis, pagas 10 de 12.';
-  const conAnual = conPlanAnual && anual.checked;
+  anual.disabled = esFundadora;
+  fundadoraNota.textContent = puedeFundadora ? 'Las 15 primeras empresas en Pro o Flota con pago anual: un 25 % menos.' : 'Solo en los planes Pro y Flota, desde 5 camiones.';
+  anualNota.textContent = esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Dos meses gratis, pagas 10 de 12.';
+  const conAnual = anual.checked;
   if (esFundadora) {
     const mensual = c;
     c = mensual * 0.75; nombre += ' fundadora, pago anual';
