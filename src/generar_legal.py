@@ -72,7 +72,7 @@ aviso = f'''
 
 privacidad = f'''
 <div class="resumen">
-<p><b>En resumen:</b> Fuelfy solo trata los datos necesarios para que las empresas de transporte usen el servicio. No vende datos, no muestra publicidad y no usa cookies de análisis ni de publicidad. La base de datos está en la Unión Europea (Fráncfort, Alemania).</p>
+<p><b>En resumen:</b> Fuelfy solo trata los datos necesarios para que las empresas de transporte usen el servicio. No vende datos, no muestra publicidad y no usa cookies de análisis ni de publicidad. La base de datos está en la Unión Europea (Fráncfort, Alemania) y los cobros los gestiona Stripe.</p>
 </div>
 
 <h2>1. Quién es el responsable</h2>
@@ -88,10 +88,11 @@ privacidad = f'''
 <thead><tr><th>Datos</th><th>Ejemplos</th><th>De dónde salen</th></tr></thead>
 <tbody>
 <tr><td>Cuenta de usuario</td><td>Email, nombre, rol (gestor o conductor), fecha del último acceso</td><td>Los da de alta el titular o el gestor de la empresa</td></tr>
-<tr><td>Empresa y facturación</td><td>Razón social, CIF, camiones dados de alta y de baja, importes y cobros</td><td>La empresa cliente</td></tr>
+<tr><td>Empresa y facturación</td><td>Razón social, CIF, dirección fiscal, email para las facturas, forma de pago, camiones dados de alta y de baja, importes, facturas y cobros</td><td>La empresa cliente; las facturas y los cobros, Stripe</td></tr>
 <tr><td>Flota</td><td>Matrícula, descripción, capacidad del depósito y consumo de cada camión</td><td>El gestor, en la pestaña Flota</td></tr>
 <tr><td>Rutas enviadas</td><td>Origen, destino, kilómetros, estación elegida, litros, precio, ahorro estimado y el usuario que la envió</td><td>Se guardan al pulsar «Enviar por WhatsApp»</td></tr>
 <tr><td>Emails de precios</td><td>El contenido de los emails que la empresa reenvía desde sus proveedores, que puede incluir nombres, firmas y teléfonos de quien los envía</td><td>Los reenvíos de la empresa a su dirección de Fuelfy</td></tr>
+<tr><td>Solicitudes de prueba</td><td>Nombre, empresa, email, teléfono, número de camiones, tarjetas que usa y el mensaje que escriba</td><td>El formulario de prueba de la web</td></tr>
 <tr><td>Datos técnicos</td><td>Sesión iniciada y preferencias guardadas en el navegador</td><td>El propio navegador</td></tr>
 </tbody></table></div>
 <p>Fuelfy no pide ni trata datos especialmente protegidos, ni la ubicación en tiempo real de los camiones. El mensaje de WhatsApp lo envía el gestor desde su propio teléfono u ordenador: Fuelfy prepara el texto pero no lo envía ni lo lee.</p>
@@ -99,7 +100,8 @@ privacidad = f'''
 <h2>3. Para qué y con qué base legal</h2>
 <ul>
   <li><b>Prestar el servicio</b> (mostrar precios, calcular rutas, guardar envíos e informes de ahorro): ejecución del contrato con la empresa cliente (art. 6.1.b del RGPD).</li>
-  <li><b>Facturar y cumplir obligaciones fiscales y contables</b>: obligación legal (art. 6.1.c).</li>
+  <li><b>Facturar y cobrar</b> (con Stripe) y <b>cumplir obligaciones fiscales y contables</b>: ejecución del contrato y obligación legal (art. 6.1.b y 6.1.c).</li>
+  <li><b>Responder a las solicitudes de prueba</b> y dar de alta a la empresa: medidas precontractuales a petición de quien la envía (art. 6.1.b).</li>
   <li><b>Mantener la seguridad</b> del servicio y evitar accesos indebidos: interés legítimo (art. 6.1.f).</li>
   <li><b>Avisos del servicio</b> (invitaciones, recuperación de contraseña, fin del periodo de prueba): ejecución del contrato.</li>
 </ul>
@@ -107,7 +109,8 @@ privacidad = f'''
 
 <h2>4. Cuánto tiempo se guardan</h2>
 <ul>
-  <li>Los datos de la aplicación, mientras la empresa siga siendo cliente. Al darse de baja se borran en un plazo de 30 días, después de darle la opción de descargar sus rutas.</li>
+  <li>Los datos de la aplicación, incluidos los emails de precios guardados en el buzón de Fuelfy, mientras la empresa siga siendo cliente. Al darse de baja se borran en un plazo de 30 días, después de darle la opción de descargar sus rutas.</li>
+  <li>Las solicitudes de prueba que no acaban en alta, un año como máximo.</li>
   <li>El historial de altas y bajas de camiones, 6 meses.</li>
   <li>Las facturas y los datos de facturación, el tiempo que exigen las leyes fiscales y mercantiles (hasta 6 años).</li>
 </ul>
@@ -118,14 +121,15 @@ privacidad = f'''
 <thead><tr><th>Proveedor</th><th>Para qué</th><th>Dónde</th></tr></thead>
 <tbody>
 <tr><td>Supabase</td><td>Base de datos, usuarios y funciones del servidor</td><td>Unión Europea (Fráncfort)</td></tr>
-<tr><td>Google (Gmail y Google Apps Script)</td><td>Recibir los emails de precios que reenvían las empresas</td><td>UE y EE. UU.</td></tr>
+<tr><td>Hostinger</td><td>Buzón fuelfy@fuelfy.app, que recibe y guarda los emails de precios que reenvían las empresas</td><td>UE y otros países</td></tr>
+<tr><td>Stripe (Stripe Payments Europe, Ltd.)</td><td>Facturas, cobros y cálculo del IVA, con los datos de facturación de la empresa cliente</td><td>Irlanda y EE. UU.</td></tr>
 <tr><td>GitHub (Microsoft)</td><td>Alojamiento de la web</td><td>EE. UU.</td></tr>
 <tr><td>Komoot (Photon)</td><td>Buscar direcciones al escribir el origen y el destino</td><td>Alemania</td></tr>
 <tr><td>OSRM / FOSSGIS</td><td>Calcular rutas a partir de las coordenadas</td><td>Alemania</td></tr>
 <tr><td>OpenStreetMap Foundation</td><td>Imágenes del mapa</td><td>Reino Unido</td></tr>
 <tr><td>Google Fonts, jsDelivr y unpkg</td><td>Tipografía y librerías de la web</td><td>UE y EE. UU.</td></tr>
 </tbody></table></div>
-<p>A los servicios de direcciones, rutas y mapas solo les llega lo necesario para responder (el texto buscado o unas coordenadas, y la dirección IP del navegador), nunca datos de la cuenta. Cuando un proveedor está fuera del Espacio Económico Europeo, la transferencia se ampara en una decisión de adecuación de la Comisión Europea (como el Marco de Privacidad de Datos UE-EE. UU. o la del Reino Unido) o en cláusulas contractuales tipo.</p>
+<p>A los servicios de direcciones, rutas y mapas solo les llega lo necesario para responder (el texto buscado o unas coordenadas, y la dirección IP del navegador), nunca datos de la cuenta. Stripe trata los datos de facturación para cobrar por cuenta de Fuelfy y, en lo que le exige la normativa de pagos (por ejemplo, prevenir el fraude), como responsable propio, según su <a href="https://stripe.com/es/privacy" rel="noopener">política de privacidad</a>. Cuando un proveedor está fuera del Espacio Económico Europeo, la transferencia se ampara en una decisión de adecuación de la Comisión Europea (como el Marco de Privacidad de Datos UE-EE. UU. o la del Reino Unido) o en cláusulas contractuales tipo.</p>
 
 <h2>6. Tus derechos</h2>
 <p>Puedes pedir acceso a tus datos, su rectificación o supresión, oponerte a su tratamiento, pedir que se limite o que se te entreguen en un formato portable, escribiendo a {EMAIL}. Si los datos los gestiona tu empresa (por ejemplo, eres gestor o conductor de una empresa cliente), Fuelfy trasladará tu petición a tu empresa y la ayudará a atenderla.</p>
@@ -273,7 +277,7 @@ condiciones = f'''
   <li>Tratar los datos solo siguiendo las instrucciones documentadas del cliente, que son estas condiciones y el uso que el cliente hace de la aplicación.</li>
   <li>Garantizar que las personas autorizadas a tratarlos se han comprometido a guardar confidencialidad.</li>
   <li>Aplicar medidas de seguridad adecuadas: cifrado de las comunicaciones, contraseñas protegidas, separación de los datos de cada cliente y copias de seguridad del proveedor de base de datos.</li>
-  <li>Recurrir solo a los subencargados indicados en la <a href="privacidad.html">Política de privacidad</a> (Supabase, Google, GitHub y los servicios de mapas y rutas). El cliente autoriza su uso. El titular avisará de cualquier cambio con antelación para que el cliente pueda oponerse.</li>
+  <li>Recurrir solo a los subencargados indicados en la <a href="privacidad.html">Política de privacidad</a> (Supabase, Hostinger, GitHub y los servicios de mapas, rutas, tipografía y librerías de la web). El cliente autoriza su uso. El titular avisará de cualquier cambio con antelación para que el cliente pueda oponerse.</li>
   <li>Ayudar al cliente a atender los derechos de las personas afectadas y a cumplir sus obligaciones de seguridad.</li>
   <li>Avisar al cliente sin dilación indebida, y en todo caso en un plazo máximo de 48 horas, de cualquier brecha de seguridad que afecte a sus datos.</li>
   <li>Al terminar el servicio, permitir al cliente descargar sus datos y borrarlos en un plazo de 30 días, salvo los que deba conservar por ley.</li>
@@ -285,10 +289,11 @@ condiciones = f'''
 
 os.makedirs(OUT, exist_ok=True)
 # Las condiciones llevan su propia versión: cambian los planes y precios (8/11/2026)
-VERSION_COND, FECHA_COND = '2.0', '8 de noviembre de 2026'
+VERSION_COND, FECHA_COND = '2.0', '9 de noviembre de 2026'
+VERSION_PRIV, FECHA_PRIV = '1.1', '9 de noviembre de 2026'   # 1.1: Stripe y Hostinger en lugar de Gmail; solicitudes de prueba
 for archivo, titulo, cuerpo, desc, ver, fec in [
     ('aviso-legal.html', 'Aviso legal', aviso, 'Datos del titular de Fuelfy y condiciones de uso de la web.', VERSION, FECHA),
-    ('privacidad.html', 'Privacidad y cookies', privacidad, 'Qué datos trata Fuelfy, para qué, con quién se comparten y cómo ejercer tus derechos.', VERSION, FECHA),
+    ('privacidad.html', 'Privacidad y cookies', privacidad, 'Qué datos trata Fuelfy, para qué, con quién se comparten y cómo ejercer tus derechos.', VERSION_PRIV, FECHA_PRIV),
     ('condiciones.html', 'Condiciones de uso y contratación', condiciones, 'Planes, precio, cobro, prueba, baja y responsabilidades del servicio Fuelfy para empresas de transporte.', VERSION_COND, FECHA_COND),
 ]:
     open(os.path.join(OUT, archivo), 'w').write(pagina(archivo, titulo, cuerpo, desc, ver, fec))
