@@ -122,6 +122,22 @@ function inicioSuscripcion(prueba_hasta: string | null) {
   return { ts: inicioMesMadrid(anio, mes0), iso: `${anio}-${String(mes0 + 1).padStart(2, '0')}-01` };
 }
 
+// Formas de pago de las facturas: tarjeta, domiciliación SEPA y transferencia, las que estén activas en la cuenta de Stripe
+// (configuración de medios de pago por defecto). Así la página de pago de la factura no ofrece Klarna, Bizum, etc.
+const FORMAS = ['card', 'sepa_debit', 'customer_balance'] as const;
+async function formasDePago(avisos: string[]) {
+  let activas: string[] = ['card'];
+  try {
+    const r = await stripe<{ data: any[] }>('GET', 'payment_method_configurations', { limit: 20 });
+    const pmc = r.data.find((c) => c.is_default && !c.application) || r.data.find((c) => c.is_default);
+    if (pmc) activas = FORMAS.filter((t) => pmc[t]?.available && pmc[t]?.display_preference?.value === 'on');
+  } catch (err) { avisos.push(`No se han podido leer los medios de pago de Stripe (${(err as Error).message}): solo tarjeta.`); }
+  if (!activas.includes('sepa_debit')) avisos.push('La domiciliación SEPA no está activa en Stripe: las facturas se podrán pagar con tarjeta o transferencia.');
+  if (!activas.length) activas = ['card'];
+  // customer_balance = transferencia bancaria (Stripe da al cliente un IBAN propio para cada factura)
+  return { payment_method_types: activas };
+}
+
 // Alta en Stripe: cliente + suscripción (mensual por uso, o anual por adelantado + otra por uso para los camiones de más)
 async function suscribir(body: Record<string, unknown>) {
   const empresa_id = String(body.empresa_id || '');
@@ -177,6 +193,7 @@ async function suscribir(body: Record<string, unknown>) {
   const comun = {
     customer, collection_method: 'send_invoice', days_until_due: 15, automatic_tax: { enabled: true },
     trial_end: inicio.ts, proration_behavior: 'none', metadata: { empresa_id, plan, pago },
+    payment_settings: await formasDePago(avisos),
   };
   const clave = `${empresa_id}-${inicio.iso}-${plan}-${pago}-${fundadora ? 'f' : 'n'}-${camiones || 0}`;
   const mensual = await precioPorClave(precioStripe(plan, 'mensual'));

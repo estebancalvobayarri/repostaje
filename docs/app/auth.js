@@ -66,6 +66,7 @@ async function verApp(session) {
   q('b-nuevo').hidden = data.rol !== 'gestor';
   q('pantalla-entrar').hidden = true; q('pantalla-app').hidden = false;
   await cargarCamiones();
+  await cargarEstadoCuenta();
   // Los precios de los proveedores (dirección de reenvío, remitentes y emails recibidos) solo son cosa del gestor
   const gestor = data.rol === 'gestor';
   document.querySelector('.precios-rec').hidden = !gestor;
@@ -75,6 +76,21 @@ async function verApp(session) {
   if (esAdmin) cargarAdmin();
   if (!rutaArrancada) { rutaArrancada = true; window.Ruta.iniciar(camiones); }
   else window.Ruta.ponerCamiones(camiones);
+}
+
+// ---------- facturas vencidas y modo consulta (condiciones, apartado 7) ----------
+window.Cuenta = { consulta: false, vencidas: [] };
+async function cargarEstadoCuenta() {
+  const { data, error } = await sb.rpc('estado_cuenta');
+  if (error || !data) return;   // si no se puede comprobar, no se bloquea la app
+  window.Cuenta = data;
+  const v = data.vencidas || [], el = q('aviso-cuenta');
+  el.hidden = !v.length;
+  if (!v.length) return;
+  const enlaces = v.map(f => f.url ? `<a href="${escH(f.url)}" target="_blank" rel="noopener">${escH(f.numero || 'factura')}</a>` : escH(f.numero || 'factura')).join(', ');
+  el.innerHTML = data.consulta
+    ? `Cuenta en modo consulta: hay una factura vencida hace más de 7 días (${enlaces}). Puedes ver el mapa, la flota y los informes, pero no enviar rutas hasta que se pague.`
+    : `Tienes una factura vencida (${enlaces}). Si no se paga en los 7 días siguientes al vencimiento, la cuenta pasa a modo consulta.`;
 }
 
 // ---------- aceptación de condiciones y privacidad ----------

@@ -1,6 +1,6 @@
 // Llamadas mínimas a la API de Stripe (sin SDK). Necesita el secreto STRIPE_SECRET_KEY en Supabase: una clave restringida
 // con escritura en Customers, Subscriptions, Prices (para el precio de camiones de más de cada cliente anual)
-// y Billing meter events, y lectura en Invoices.
+// y Billing meter events, y lectura en Invoices y Payment method configurations.
 
 export class ErrorStripe extends Error {
   constructor(public status: number, mensaje: string, public codigo?: string) { super(mensaje); }

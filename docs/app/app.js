@@ -325,7 +325,14 @@ function pintarEnvio(x, alcanzables = []) {
   $('envio-ahorro').textContent = !otras.length
     ? 'Es la única parada de la ruta: no hay ahorro que comparar.'
     : ahorro < 0 ? `Coste extra estimado: ${eur(-ahorro)} ${frente}` : `Ahorro estimado: ${eur(ahorro)} ${frente}`;
-  $('b-wa').onclick = async () => {
+  $('b-wa').onclick = async (ev) => {
+    if (window.Cuenta?.consulta) {
+      ev.preventDefault();
+      $('msg-envio').className = 'msg error';
+      $('msg-envio').textContent = 'La cuenta está en modo consulta por una factura vencida: no se pueden enviar rutas hasta que se pague.';
+      $('msg-envio').hidden = false;
+      return;
+    }
     // El enlace se abre igual; el registro se guarda a la vez
     const datos = { ...envioActual };
     const clave = [datos.camion_id, datos.origen, datos.destino, datos.estacion_id].join('|');
