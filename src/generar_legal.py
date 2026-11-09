@@ -256,7 +256,7 @@ condiciones = f'''
 <p>Para prestar el servicio, el titular trata por cuenta del cliente los datos personales que este introduce en la aplicación. Ese tratamiento se rige por el <a href="#encargo">Anexo de encargo del tratamiento</a>, que forma parte de estas condiciones. El resto se explica en la <a href="privacidad.html">Política de privacidad</a>.</p>
 
 <h2>13. Cambios en estas condiciones</h2>
-<p>Si estas condiciones cambian, el titular lo avisará dentro de la aplicación con al menos 30 días de antelación y pedirá aceptar la nueva versión. Si el cliente no la acepta, puede darse de baja antes de que entre en vigor.</p>
+<p>Si estas condiciones cambian, el titular lo avisará dentro de la aplicación con al menos 14 días de antelación y pedirá aceptar la nueva versión. Si el cliente no la acepta, puede darse de baja antes de que entre en vigor.</p>
 
 <h2>14. Ley aplicable y jurisdicción</h2>
 <p>Estas condiciones se rigen por la ley española. Para cualquier conflicto, las partes se someten a los juzgados y tribunales del domicilio del titular.</p>
