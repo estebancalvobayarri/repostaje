@@ -1,11 +1,10 @@
-// Recibe los emails de precios (los envían la función leer-buzon, que lee fuelfy@fuelfy.app, y, mientras dure, el script de Gmail),
+// Recibe los emails de precios (los envía la función leer-buzon, que lee fuelfy@fuelfy.app),
 // lee los precios con el lector de cada proveedor y los guarda en la empresa correspondiente.
 //
-// POST con cabecera x-ingesta-token (vale el token de ingesta o el de leer-buzon). Cuerpo:
-//   { accion: 'alias' }                         -> { buzon, aliases: [...] }
-//   { alias?, remitentes?: [...], remitente, asunto, fecha, texto, html, adjuntos: [{ nombre, tipo, base64 }] }
-//   La empresa se reconoce por «remitentes» (buzón fuelfy@fuelfy.app: la primera dada de alta en empresa_remitentes)
-//   o por el alias (direcciones +alias del buzón de Gmail anterior, mientras se siga usando).
+// POST con cabecera x-ingesta-token (el token de leer-buzon, en Vault como «leer_buzon_token»). Cuerpo:
+//   { remitentes: [...], remitente, asunto, fecha, texto, html, adjuntos: [{ nombre, tipo, base64 }] }
+//   La empresa se reconoce por «remitentes»: la primera dirección dada de alta en empresa_remitentes.
+//   { accion: 'ver_guardado' | 'reprocesar', ruta }: emails guardados sin lector (reprocesar usa el alias de la empresa).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { getDocumentProxy } from 'npm:unpdf@0.12.1';
 
@@ -146,7 +145,7 @@ const deBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   const token = req.headers.get('x-ingesta-token') || '';
-  const validos = [await ajuste('ingesta_token_sha256'), await ajuste('buzon_token_sha256')].filter(Boolean);
+  const validos = [await ajuste('buzon_token_sha256')].filter(Boolean);
   if (!token || !validos.includes(await sha256(token))) return json({ error: 'No autorizado' }, 401);
 
   let b: Record<string, any>;
@@ -171,12 +170,7 @@ Deno.serve(async (req) => {
     b = { alias: emp.alias, remitente: e.remitente, asunto: e.asunto, fecha: e.fecha, texto: e.texto, html: e.html, adjuntos: [], _guardado: { ruta, correoId } };
   }
 
-  if (b.accion === 'alias') {
-    const { data } = await sb.from('empresas').select('alias').not('alias', 'is', null);
-    return json({ buzon: await ajuste('buzon'), aliases: (data || []).map((e) => e.alias) });
-  }
-
-  // De qué empresa es: por la dirección de destino (alias) o, si no, por la dirección desde la que se reenvió
+  // De qué empresa es: por el alias (solo al reprocesar un email guardado) o por la dirección desde la que se reenvió
   const alias = String(b.alias || '').toLowerCase();
   let empresa: { id: string; nombre: string } | null = null;
   if (alias) ({ data: empresa } = await sb.from('empresas').select('id, nombre').eq('alias', alias).maybeSingle());
