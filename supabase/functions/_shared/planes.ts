@@ -39,6 +39,31 @@ export function cuotaAnual(plan: Plan, camiones: number, fundadora: boolean) {
 export const precioStripe = (plan: Plan, pago: Pago, fundadora = false) =>
   pago === 'mensual' ? `${plan}_mensual` : fundadora ? `${plan}_anual_fundadoras` : `${plan}_anual`;
 
+/** Descuento que se aplica a los camiones de más de un cliente con pago anual: el 25 % si es fundadora; si no, ninguno. */
+export const factorExtra = (fundadora: boolean) => (fundadora ? 1 - DESCUENTO_FUNDADORAS : 1);
+
+/** Tramos de los camiones de más en pago anual: cada camión de más paga el precio mensual del tramo en el que cae
+ *  (el primero de más es el camión pagados + 1), con el descuento del cliente. up_to = null en el último tramo. */
+export function tramosExtra(plan: Plan, pagados: number, fundadora: boolean) {
+  const f = factorExtra(fundadora), salida: { up_to: number | null; precio: number }[] = [];
+  for (const [hasta, precio] of PLANES[plan].tramos) {
+    if (hasta !== Infinity && hasta <= pagados) continue;   // tramo ya cubierto por los camiones pagados
+    salida.push({ up_to: hasta === Infinity ? null : hasta - pagados, precio: Math.round(precio * f * 1000) / 1000 });
+  }
+  return salida;
+}
+
+/** Cuota de un mes por los camiones de más en pago anual (la misma cuenta que hace Stripe con tramosExtra). */
+export function cuotaExtra(plan: Plan, pagados: number, extra: number, fundadora: boolean) {
+  let total = 0, desde = 0;
+  for (const t of tramosExtra(plan, pagados, fundadora)) {
+    const hasta = t.up_to ?? Infinity, n = Math.max(0, Math.min(extra, hasta) - desde);
+    total += n * t.precio; desde = hasta;
+    if (extra <= hasta) break;
+  }
+  return Math.round(total * 100) / 100;
+}
+
 /** Valor que se manda al medidor cada día: en mensual, los camiones facturables; en anual, los que pasan de lo pagado. */
 export function valorMedidor(plan: Plan, pago: Pago, maximo: number, pagados: number | null) {
   return pago === 'mensual' ? facturables(plan, maximo) : Math.max(0, maximo - (pagados || 0));

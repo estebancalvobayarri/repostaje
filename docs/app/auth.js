@@ -481,7 +481,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
           <div><b>${fechaEs(s.desde)}</b><span>cobra desde</span></div>
         </div>
         <p class="small" style="margin:0"><b>${escH(estadoSub)}</b>. Facturas a ${escH(fac.email || '—')} · pago en 15 días${fac.forma_pago ? ` (${escH({ domiciliacion: 'domiciliación', tarjeta: 'tarjeta', transferencia: 'transferencia' }[fac.forma_pago] || fac.forma_pago)})` : ''}.
-          ${s.pago === 'anual' ? 'Los camiones que pasen de los pagados se cobran aparte, mes a mes.' : 'Cada mes se cobra el máximo de camiones del mes, con el mínimo del plan.'}</p>
+          ${s.pago === 'anual' ? `Los camiones que pasen de los pagados se cobran aparte, mes a mes, al precio de su tramo${s.fundadora ? ' con el 25 % de fundadora' : ''}.` : 'Cada mes se cobra el máximo de camiones del mes, con el mínimo del plan.'}</p>
         ${st.facturas?.length ? `<div class="tabla"><table><thead><tr><th>Factura</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>
           ${st.facturas.map(x => `<tr><td style="text-align:left">${escH(x.numero || 'Borrador')}</td><td>${fechaEs(x.creada)}</td><td>${eur2(x.total)}</td><td>${escH(ESTADO_FACTURA[x.estado] || x.estado)}</td>
             <td>${x.url ? `<a href="${escH(x.url)}" target="_blank" rel="noopener">Ver</a>` : ''}</td></tr>`).join('')}
@@ -568,7 +568,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
         <div class="tabla"><table><tbody>
           ${Object.values(planes).map(p => `<tr><td style="text-align:left;white-space:nowrap"><b>${escH(p.nombre)}</b> · mín. ${p.min}</td><td style="text-align:left">${p.tramos.map(t => `${t.hasta ? (t.desde === 1 ? `hasta ${t.hasta}` : `${t.desde}–${t.hasta}`) : (t.desde === 1 ? 'todos' : `desde ${t.desde}`)}: ${eur2(t.precio)}`).join(' · ')}</td></tr>`).join('')}
         </tbody></table></div>
-        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año, 10 meses de 12. Fundadoras (Pro o Flota con pago anual): −25 % en lugar de los dos meses gratis.</p>
+        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año, 10 meses de 12; los camiones de más, cada mes al precio de su tramo. Fundadoras (Pro o Flota con pago anual): −25 % en lugar de los dos meses gratis, también en los camiones de más.</p>
       </div>
       <div class="area usuarios">
         <h3>Altas y bajas de camiones · últimos 6 meses</h3>

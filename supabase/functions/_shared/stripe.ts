@@ -1,5 +1,6 @@
-// Llamadas mínimas a la API de Stripe (sin SDK). Necesita el secreto STRIPE_SECRET_KEY en Supabase
-// (una clave restringida con permiso de escritura en Customers, Subscriptions, Prices (lectura) y Billing meter events).
+// Llamadas mínimas a la API de Stripe (sin SDK). Necesita el secreto STRIPE_SECRET_KEY en Supabase: una clave restringida
+// con escritura en Customers, Subscriptions, Prices (para el precio de camiones de más de cada cliente anual)
+// y Billing meter events, y lectura en Invoices.
 
 export class ErrorStripe extends Error {
   constructor(public status: number, mensaje: string, public codigo?: string) { super(mensaje); }
@@ -30,12 +31,17 @@ export async function stripe<T = any>(metodo: 'GET' | 'POST' | 'DELETE', ruta: s
   return j as T;
 }
 
-/** Id de un precio a partir de su lookup_key. */
-export async function idPrecio(lookup: string): Promise<string> {
-  const r = await stripe<{ data: { id: string }[] }>('GET', 'prices', { 'lookup_keys': [lookup], active: true });
+/** Precio a partir de su lookup_key (id, producto y medidor). */
+export async function precioPorClave(lookup: string): Promise<{ id: string; product: string; recurring?: { meter?: string | null } }> {
+  const r = await stripe<{ data: { id: string; product: string; recurring?: { meter?: string | null } }[] }>('GET', 'prices', { 'lookup_keys': [lookup], active: true });
   if (!r.data?.length) throw new ErrorStripe(400, `No existe en Stripe el precio «${lookup}».`);
-  return r.data[0].id;
+  return r.data[0];
 }
+/** Id de un precio a partir de su lookup_key. */
+export const idPrecio = async (lookup: string) => (await precioPorClave(lookup)).id;
+
+/** Importe en céntimos para Stripe, con decimales si hace falta (13,125 € -> «1312.5»). */
+export const centimos = (euros: number) => String(Math.round(euros * 100000) / 1000);
 
 /** Marca de tiempo (segundos) del día 1 de un mes a las 00:00 en Madrid. */
 export function inicioMesMadrid(anio: number, mes0: number) {

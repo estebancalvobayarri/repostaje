@@ -2,8 +2,8 @@
 // Usa la clave secreta del proyecto (solo existe en el servidor) y comprueba
 // en cada llamada que quien la hace está en la tabla de administradores.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { PLANES, type Plan, esPlan, planPara, cuotaMensual, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
-import { stripe, idPrecio, inicioMesMadrid, hayClaveStripe, ErrorStripe } from '../_shared/stripe.ts';
+import { PLANES, type Plan, esPlan, planPara, cuotaMensual, cuotaExtra, tramosExtra, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
+import { stripe, idPrecio, precioPorClave, centimos, inicioMesMadrid, hayClaveStripe, ErrorStripe } from '../_shared/stripe.ts';
 
 const WEB = 'https://fuelfy.app/app/';
 const CORS = {
@@ -88,9 +88,11 @@ async function facturacion(empresa_id: string) {
     // Un mes se cobra si la prueba terminó antes de que empezara (el mes en que acaba la prueba no se cobra)
     const enPrueba = !prueba || prueba >= k;
     const plan: Plan = esPlan(emp.plan) ? emp.plan : planPara(maximo || 0);
-    // Pago mensual (o sin suscripción todavía): máximo del mes con el mínimo del plan. Pago anual: solo los camiones de más.
+    // Pago mensual (o sin suscripción todavía): máximo del mes con el mínimo del plan.
+    // Pago anual: solo los camiones de más, cada uno al precio de su tramo y con el descuento de fundadora si lo tiene.
+    const pagados = emp.camiones_pagados || 0;
     const importe = maximo == null || enPrueba ? 0
-      : emp.pago === 'anual' ? cuotaMensual(plan, Math.max(0, maximo - (emp.camiones_pagados || 0)))
+      : emp.pago === 'anual' ? cuotaExtra(plan, pagados, Math.max(0, maximo - pagados), !!emp.fundadora)
       : cuotaMensual(plan, facturables(plan, maximo));
     meses.push({ mes: k, maximo, plan, importe, en_prueba: enPrueba, en_curso: enCurso, sin_datos: maximo == null,
       en_stripe: !!desdeStripe && k >= desdeStripe, pago: pagado.get(k) || null });
@@ -177,16 +179,28 @@ async function suscribir(body: Record<string, unknown>) {
     trial_end: inicio.ts, proration_behavior: 'none', metadata: { empresa_id, plan, pago },
   };
   const clave = `${empresa_id}-${inicio.iso}-${plan}-${pago}-${fundadora ? 'f' : 'n'}-${camiones || 0}`;
-  const precioUso = await idPrecio(precioStripe(plan, 'mensual'));
+  const mensual = await precioPorClave(precioStripe(plan, 'mensual'));
   let sub: string, subUso: string;
   if (pago === 'mensual') {
-    sub = subUso = (await stripe('POST', 'subscriptions', { ...comun, items: [{ price: precioUso }] }, `sub-${clave}`)).id;
+    sub = subUso = (await stripe('POST', 'subscriptions', { ...comun, items: [{ price: mensual.id }] }, `sub-${clave}`)).id;
   } else {
     const precioAnual = await idPrecio(precioStripe(plan, 'anual', fundadora));
     sub = (await stripe('POST', 'subscriptions', {
       ...comun, items: [{ price: precioAnual, quantity: camiones }], ...(fundadora ? { discounts: [{ coupon: 'FUNDADORAS' }] } : {}),
     }, `sub-${clave}`)).id;
-    subUso = (await stripe('POST', 'subscriptions', { ...comun, metadata: { ...comun.metadata, uso: 'camiones_de_mas' }, items: [{ price: precioUso }] }, `uso-${clave}`)).id;
+    // Camiones de más: un precio propio de este cliente, por el mismo medidor, con los tramos desplazados por los camiones
+    // pagados (el primero de más paga el precio del tramo del camión pagados + 1) y el 25 % si es fundadora.
+    // Así el cupón FUNDADORAS no se gasta dos veces.
+    const tramos = tramosExtra(plan, camiones!, fundadora);
+    const precioExtra = (await stripe('POST', 'prices', {
+      product: mensual.product, currency: 'eur', tax_behavior: 'exclusive',
+      billing_scheme: 'tiered', tiers_mode: 'graduated',
+      tiers: tramos.map((t) => ({ up_to: t.up_to ?? 'inf', unit_amount_decimal: centimos(t.precio) })),
+      recurring: { interval: 'month', usage_type: 'metered', meter: mensual.recurring?.meter },
+      nickname: `${emp.nombre}: camiones de más sobre ${camiones} pagados (${PLANES[plan].nombre}${fundadora ? ', fundadora −25 %' : ''})`,
+      metadata: { empresa_id, plan, pagados: String(camiones), fundadora: fundadora ? 'si' : 'no', uso: 'camiones_de_mas' },
+    }, `precio-extra-${clave}`)).id;
+    subUso = (await stripe('POST', 'subscriptions', { ...comun, metadata: { ...comun.metadata, uso: 'camiones_de_mas' }, items: [{ price: precioExtra }] }, `uso-${clave}`)).id;
   }
 
   const { error: eu } = await sb.from('empresas').update({
