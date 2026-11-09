@@ -64,7 +64,7 @@ aviso = f'''
 <p>La aplicación abre servicios de terceros, como Google Maps para ver una estación o una ruta, y WhatsApp para que el gestor envíe la ruta a su conductor. Esos servicios tienen sus propias condiciones y políticas de privacidad, de las que Fuelfy no es responsable.</p>
 
 <h2>6. Responsabilidad</h2>
-<p>El titular procura que la web funcione sin interrupciones y que la información sea correcta, pero no puede garantizarlo en todo momento. Los precios, rutas, distancias y ahorros que muestra la aplicación son orientativos: dependen de la información que envían los proveedores y de servicios de rutas pensados para turismos. La decisión final sobre dónde repostar es siempre de la empresa usuaria.</p>
+<p>El titular procura que la web funcione sin interrupciones y que la información sea correcta, pero no puede garantizarlo en todo momento. Los precios, rutas, distancias, tiempos y ahorros que muestra la aplicación son orientativos: dependen de la información que envían los proveedores y de servicios de rutas de terceros, y son una aproximación teórica. La decisión final sobre dónde repostar es siempre de la empresa usuaria.</p>
 
 <h2>7. Ley aplicable</h2>
 <p>Esta web se rige por la ley española. Para cualquier conflicto, y salvo que la ley disponga otra cosa, las partes se someten a los juzgados y tribunales del domicilio del titular.</p>
@@ -244,7 +244,7 @@ condiciones = f'''
 <ul>
   <li><b>Precios:</b> vienen de los emails que envían los proveedores del cliente. Fuelfy los lee y los muestra tal cual; no responde de errores, retrasos o cambios de precio de los proveedores ni de que un email no llegue o no pueda leerse.</li>
   <li><b>Ubicación de estaciones:</b> se obtiene cruzando los datos de los proveedores con el listado público del Ministerio. Las marcadas como «por confirmar» pueden no estar en el punto exacto.</li>
-  <li><b>Rutas y tiempos:</b> se calculan con servicios de rutas pensados para turismos; para un camión pueden variar (restricciones de peso, altura o circulación).</li>
+  <li><b>Rutas y tiempos:</b> son una aproximación teórica, calculada con servicios de rutas de terceros. El tiempo es una estimación para camión, pero no tiene en cuenta restricciones de peso, altura o circulación, ni el tráfico real. La ruta y las paradas definitivas las decide la empresa usuaria y su conductor.</li>
   <li><b>Ahorro:</b> es una estimación que compara la parada elegida con la media de las otras paradas habilitadas de la ruta, por los litros previstos. No comprueba lo que se repostó de verdad.</li>
 </ul>
 <p>La decisión de dónde y cuánto repostar es siempre del cliente y de sus conductores. El titular procura que el servicio esté disponible y funcione bien, pero no garantiza que no haya interrupciones. Salvo dolo o culpa grave, la responsabilidad total del titular frente al cliente se limita a lo que el cliente haya pagado por el servicio en los 12 meses anteriores al hecho que la cause, y no incluye lucro cesante ni daños indirectos.</p>
