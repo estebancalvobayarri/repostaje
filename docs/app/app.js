@@ -6,6 +6,11 @@ const OSRM = 'https://router.project-osrm.org/route/v1/driving/';
 const PHOTON = 'https://photon.komoot.io/api/';
 const MAX_DESVIOS_REALES = 8;   // estaciones a las que se calcula el desvío real
 const RESERVA = 0.10;           // no planificar por debajo del 10 % del depósito
+// Tiempo de camión a partir de la ruta de OSRM (que da tiempos de turismo)
+const V_CAMION = 85;            // km/h de crucero máximo (limitador a 90)
+const FACTOR_CAMION = 0.9;      // fuera de autovía, un 10 % más lento que un turismo
+const CONDUCCION_MAX = 270;     // min de conducción seguida (4 h 30)
+const PAUSA = 45;               // min de pausa obligatoria
 
 const $ = id => document.getElementById(id);
 const fmt = n => n.toFixed(3).replace('.', ',');
@@ -113,13 +118,26 @@ function buscador(campo) {
 
 // ---------- rutas ----------
 async function osrm(puntos) {
-  const url = OSRM + puntos.map(p => `${p.lon},${p.lat}`).join(';') + '?overview=full&geometries=geojson';
+  const url = OSRM + puntos.map(p => `${p.lon},${p.lat}`).join(';') + '?overview=full&geometries=geojson&annotations=distance,duration';
   const r = await fetch(url);
   if (!r.ok) throw new Error('OSRM ' + r.status);
   const j = await r.json();
   if (j.code !== 'Ok') throw new Error(j.code);
   return j.routes[0];
 }
+// Minutos de conducción de un camión: cada tramo a la velocidad del turismo × FACTOR_CAMION, sin pasar de V_CAMION
+function conduccionCamion(r) {
+  let seg = 0;
+  for (const leg of r.legs || []) {
+    const a = leg.annotation;
+    if (!a || !a.distance || !a.duration) return Math.max(r.duration / FACTOR_CAMION, r.distance / (V_CAMION / 3.6)) / 60;
+    for (let i = 0; i < a.distance.length; i++) seg += Math.max(a.duration[i] / FACTOR_CAMION, a.distance[i] / (V_CAMION / 3.6));
+  }
+  return seg / 60;
+}
+// Minutos totales: conducción más una pausa de 45 min por cada 4 h 30 de conducción que haya que superar
+const conPausas = min => min + Math.max(0, Math.ceil(min / CONDUCCION_MAX) - 1) * PAUSA;
+const hm = min => { const t = Math.round(min); return `${Math.floor(t / 60)} h ${String(t % 60).padStart(2, '0')}`; };
 const espera = ms => new Promise(r => setTimeout(r, ms));
 
 async function calcular(e) {
@@ -131,7 +149,8 @@ async function calcular(e) {
     const r = await osrm([origen, destino]);
     const coords = r.geometry.coordinates.map(([lo, la]) => [la, lo]);
     const acum = [0]; for (let i = 1; i < coords.length; i++) acum.push(acum[i - 1] + km(coords[i - 1], coords[i]));
-    ruta = { coords, acum, km: r.distance / 1000, min: r.duration / 60, desvios: new Map() };
+    const conduce = conduccionCamion(r);
+    ruta = { coords, acum, km: r.distance / 1000, conduce, min: conPausas(conduce), desvios: new Map() };
     elegida = null;
     evaluar();
     dibujarRuta();
@@ -156,7 +175,7 @@ async function desviosReales() {
     if (ruta.desvios.has(c.e.id)) continue;
     try {
       const r = await osrm([lugares.origen, { lat: c.e.lat, lon: c.e.lon }, lugares.destino]);
-      ruta.desvios.set(c.e.id, { km: Math.max(0, r.distance / 1000 - ruta.km), min: Math.max(0, r.duration / 60 - ruta.min) });
+      ruta.desvios.set(c.e.id, { km: Math.max(0, r.distance / 1000 - ruta.km), min: Math.max(0, conduccionCamion(r) - ruta.conduce) });
       evaluar();
     } catch (e) { /* se queda con la estimación */ }
     await espera(350); // el servidor público de OSRM pide no saturarlo
@@ -189,7 +208,7 @@ function evaluar() {
   const c = camionActual(), lleva = litrosQueLleva(), necesita = ruta.km * c.con / 100;
   $('resumen').hidden = false;
   $('k-km').textContent = ent(ruta.km);
-  $('k-t').textContent = `${Math.floor(ruta.min / 60)} h ${String(Math.round(ruta.min % 60)).padStart(2, '0')}`;
+  $('k-t').textContent = hm(ruta.min);
   $('k-l').textContent = ent(necesita);
   const sobra = lleva - necesita, reserva = c.cap * RESERVA, v = $('verdict');
   if (sobra >= reserva) {
@@ -267,10 +286,9 @@ function avisoMas() {
 function mensajeRuta(x, litros) {
   const c = camionActual(), o = lugares.origen, d = lugares.destino;
   const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${x.e.lat},${x.e.lon}&travelmode=driving`;
-  const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
   return [
     `*Ruta:* ${o.label} → ${d.label}`,
-    `${ent(ruta.km)} km · ${h} h ${m} min`,
+    `${ent(ruta.km)} km · ${hm(ruta.min)} min aprox.`,
     c.id ? `*Camión:* ${c.m}` : null,
     '',
     `*Repostar en:* ${x.e.n}`,
@@ -286,10 +304,9 @@ function mensajeRuta(x, litros) {
 function mensajeSinParada() {
   const c = camionActual(), o = lugares.origen, d = lugares.destino;
   const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&travelmode=driving`;
-  const h = Math.floor(ruta.min / 60), m = String(Math.round(ruta.min % 60)).padStart(2, '0');
   return [
     `*Ruta:* ${o.label} → ${d.label}`,
-    `${ent(ruta.km)} km · ${h} h ${m} min`,
+    `${ent(ruta.km)} km · ${hm(ruta.min)} min aprox.`,
     c.id ? `*Camión:* ${c.m}` : null,
     '',
     'Sin parada de repostaje en esta ruta.',
@@ -456,7 +473,7 @@ function pintarGuardadas() {
   const ico = $('b-wa').querySelector('svg').outerHTML;
   caja.innerHTML = rutasG.map(g => {
     const cuando = new Date(g.creado).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    const t = g.min_ruta != null ? ` · ${Math.floor(g.min_ruta / 60)} h ${String(Math.round(g.min_ruta % 60)).padStart(2, '0')}` : '';
+    const t = g.min_ruta != null ? ` · ${hm(g.min_ruta)}` : '';
     const parada = g.estacion_id
       ? `Parada: <b>${esc(g.estacion_nombre)}</b> (${esc(g.tarjeta || '')}, ${fmt(+g.precio)} €/l, ${ent(+g.litros)} l)`
       : 'Sin parada';
