@@ -232,6 +232,32 @@ async function contenido(crudo: Uint8Array | ArrayBuffer, acc: Contenido = { tex
   return { msg, acc };
 }
 
+const MESES_IMAP = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+async function recuperarSinEmpresa(imap: Imap, nombre: string, log: string[]) {
+  await imap.comando(['SELECT ', cadena(nombre) as string]);
+  const d = new Date(Date.now() - 14 * 864e5);
+  const desde = `${d.getUTCDate()}-${MESES_IMAP[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+  const r = await imap.comando([`UID SEARCH SINCE ${desde}`]);
+  const uids = r.flatMap((x) => x.texto.match(/^\* SEARCH(.*)$/i)?.[1].trim().split(/\s+/).filter(Boolean) ?? []);
+  if (!uids.length) return;
+  const { data: altas, error } = await sb.from('empresa_remitentes').select('remitente');
+  if (error) throw new Error(error.message);
+  const dadas = new Set((altas || []).map((a) => String(a.remitente).toLowerCase()));
+  let n = 0;
+  for (const uid of uids) {
+    const p = await imap.comando([`UID FETCH ${uid} (BODY.PEEK[HEADER])`]);
+    const cab = p.find((x) => /FETCH/i.test(x.texto) && x.literales.length)?.literales[0];
+    if (!cab) continue;
+    const msg = await PostalMime.parse(cab);
+    const rems = remitentesDelEmail((msg.headers || []) as { key: string; value: string }[]);
+    if (!rems.some((x) => dadas.has(x))) continue;
+    await mover(imap, uid, 'INBOX');
+    log.push(`· Recuperado de «Sin empresa» (${rems.find((x) => dadas.has(x))} ya está dado de alta): «${String(msg.subject || '').slice(0, 80)}»`);
+    n++;
+  }
+  if (n && !imap.capacidades.has('MOVE')) await imap.comando(['EXPUNGE']);
+}
+
 async function llamar(cuerpo: unknown, token: string): Promise<[number, Record<string, any>]> {
   try {
     const r = await fetch(API, {
@@ -269,6 +295,14 @@ async function pasada(token: string, soloListar: boolean) {
     if (!imap.capacidades.size) await imap.comando(['CAPABILITY']);
     const existentes = carpetasDe(await imap.comando(['LIST "" "*"']));
     log.push(`Carpetas: ${existentes.map((c) => c.nombre).join(', ')}`);
+
+    // Emails de las últimas 2 semanas que quedaron en «Sin empresa» y cuyo remitente ya se ha dado de alta en la app:
+    // vuelven a la bandeja de entrada y se procesan en esta misma pasada
+    const sinEmpresaExistente = existentes.find((c) => /^(INBOX[.\/])?Sin empresa$/i.test(c.nombre))?.nombre;
+    if (sinEmpresaExistente && !soloListar) {
+      try { await recuperarSinEmpresa(imap, sinEmpresaExistente, log); }
+      catch (e) { if (e instanceof ErrorImap) throw e; log.push(`Aviso: no se ha podido revisar «Sin empresa» (${String(e).slice(0, 200)})`); }
+    }
 
     await imap.comando(['SELECT INBOX']);
     const busqueda = await imap.comando(['UID SEARCH ALL']);
