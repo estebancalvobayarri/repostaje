@@ -283,9 +283,9 @@ function avisoMas() {
 }
 
 // ---------- enviar la ruta al conductor ----------
+// El mensaje no lleva el enlace de la ruta en Google Maps
 function mensajeRuta(x, litros) {
   const c = camionActual(), o = lugares.origen, d = lugares.destino;
-  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&waypoints=${x.e.lat},${x.e.lon}&travelmode=driving`;
   return [
     `*Ruta:* ${o.label} → ${d.label}`,
     `${ent(ruta.km)} km · ${hm(ruta.min)} min aprox.`,
@@ -295,25 +295,25 @@ function mensajeRuta(x, litros) {
     `Tarjeta ${x.e.t} · km ${ent(x.k)} de la ruta`,
     `Precio: ${fmt(x.e.p)} €/l sin IVA · echar ${ent(litros)} l`,
     x.e.dir ? `Dirección: ${x.e.dir}, ${x.e.mun}` : null,
-    '',
-    `Ruta con la parada en Google Maps:`,
-    maps,
   ].filter(v => v !== null).join('\n');
 }
 
 function mensajeSinParada() {
   const c = camionActual(), o = lugares.origen, d = lugares.destino;
-  const maps = `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lon}&destination=${d.lat},${d.lon}&travelmode=driving`;
   return [
     `*Ruta:* ${o.label} → ${d.label}`,
     `${ent(ruta.km)} km · ${hm(ruta.min)} min aprox.`,
     c.id ? `*Camión:* ${c.m}` : null,
     '',
     'Sin parada de repostaje en esta ruta.',
-    '',
-    'Ruta en Google Maps:',
-    maps,
   ].filter(v => v !== null).join('\n');
+}
+
+// Las rutas guardadas antes de este cambio llevan el enlace en el mensaje: se quita al enviarlas
+function sinEnlaceRuta(m) {
+  return String(m || '')
+    .replace(/\n*(Ruta con la parada en Google Maps|Ruta en Google Maps):\n\S+\s*$/, '')
+    .trimEnd();
 }
 
 // Referencia del ahorro: media de precios de las otras paradas de la ruta a las que llega
@@ -484,7 +484,7 @@ function pintarGuardadas() {
       <div class="small">${parada}</div>
       ${viejos ? `<div class="small aviso">Precios del ${fechaCorta(g.fecha_precios)}: ya hay precios más nuevos. Ábrela en el mapa para recalcularla.</div>` : ''}
       <div class="row2">
-        <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(g.mensaje)}" target="_blank" rel="noopener" data-enviar>${ico}Enviar ahora</a>
+        <a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(sinEnlaceRuta(g.mensaje))}" target="_blank" rel="noopener" data-enviar>${ico}Enviar ahora</a>
         <button class="mini" type="button" data-abrir>Abrir en el mapa</button>
         <button class="mini" type="button" data-borrar>Borrar</button>
       </div></div>`;
