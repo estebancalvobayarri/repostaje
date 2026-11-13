@@ -236,6 +236,9 @@ q('f-cam').addEventListener('submit', async (e) => {
   const { error } = id ? await sb.from('camiones').update(fila).eq('id', id) : await sb.from('camiones').insert(fila);
   if (error) {
     const dup = error.code === '23505';
+    // Límite de la prueba gratis (trigger camiones_limite_prueba en la base de datos)
+    const limite = /^LIMITE_PRUEBA: (.*)$/.exec(error.message || '');
+    if (limite) return mensaje('msg-cam', `No se puede: ${limite[1]}. Contrata un plan para dar de alta el resto de la flota, o da de baja otro camión.`);
     return mensaje('msg-cam', dup ? `Ya hay un camión con la matrícula ${fila.matricula}.` : 'No se ha podido guardar: revisa que la capacidad esté entre 50 y 3.000 l y el consumo entre 10 y 80 l/100 km.');
   }
   q('f-cam').hidden = true;
