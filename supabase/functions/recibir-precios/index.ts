@@ -142,6 +142,35 @@ async function ajuste(clave: string) {
 }
 const deBase64 = (b64: string) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 
+// Protección contra duplicados: si llega un código que no conocemos pero el proveedor ya tiene UNA estación con
+// exactamente el mismo nombre y esa estación NO viene en este mismo email, es la misma gasolinera con el código
+// cambiado (Valcarce renumera sus códigos 999xxx; en DST, Staroil y Andamur el código sale del nombre y la localidad,
+// y basta con que cambie la localidad). Se le pone el código nuevo en vez de crear una ficha sin ubicar.
+// Si hay dos o más con ese nombre, o la antigua también viene en el email, son gasolineras distintas: no se toca nada.
+async function recodificar(proveedor: string, precios: Precio[]): Promise<string[]> {
+  const codigos = [...new Set(precios.map((p) => p.codigo))];
+  const { data: conocidas, error } = await sb.from('estaciones').select('codigo').eq('proveedor', proveedor).in('codigo', codigos);
+  if (error) throw error;
+  const yaExisten = new Set((conocidas || []).map((e) => e.codigo));
+  const desconocidas = precios.filter((p) => !yaExisten.has(p.codigo));
+  if (!desconocidas.length) return [];
+  const { data: mismoNombre, error: e2 } = await sb.from('estaciones').select('id, codigo, nombre')
+    .eq('proveedor', proveedor).in('nombre', [...new Set(desconocidas.map((p) => p.nombre))]);
+  if (e2) throw e2;
+  const cambios: string[] = [];
+  for (const p of desconocidas) {
+    const candidatas = (mismoNombre || []).filter((e) => e.nombre === p.nombre);
+    if (candidatas.length !== 1) continue;
+    const vieja = candidatas[0];
+    if (codigos.includes(vieja.codigo)) continue;   // la antigua también viene hoy: son distintas
+    const { error: e3 } = await sb.from('estaciones').update({ codigo: p.codigo }).eq('id', vieja.id);
+    if (e3) { console.error('No se pudo recodificar', p.nombre, e3.message); continue; }
+    cambios.push(`${p.nombre}: código ${vieja.codigo} → ${p.codigo}`);
+    vieja.codigo = p.codigo;
+  }
+  return cambios;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   const token = req.headers.get('x-ingesta-token') || '';
@@ -235,6 +264,10 @@ Deno.serve(async (req) => {
     const fecha = l.fecha || recibido.toISOString().slice(0, 10);
     // Algunas estaciones salen repetidas (en varias zonas): se queda la primera
     l.precios = l.precios.filter((p, i, a) => a.findIndex((q) => q.codigo === p.codigo) === i);
+    // Antes de crear estaciones nuevas: las que solo han cambiado de código conservan su ficha (y su ubicación)
+    let recodificadas: string[] = [];
+    try { recodificadas = await recodificar(l.proveedor, l.precios); }
+    catch (err) { console.error('Recodificar', (err as Error).message); }
     // Estaciones: las nuevas entran pendientes de ubicar
     const codigos = [...new Set(l.precios.map((p) => p.codigo))];
     const nuevas = l.precios.filter((p, i, a) => a.findIndex((q) => q.codigo === p.codigo) === i)
@@ -245,9 +278,13 @@ Deno.serve(async (req) => {
     const porCodigo = new Map((est || []).map((e) => [e.codigo, e]));
     const sinUbicar = (est || []).filter((e) => e.confianza === 'pendiente').length;
 
+    const detalle = [
+      l.cliente ? `Cliente en el documento: ${l.cliente}` : null,
+      recodificadas.length ? `Código cambiado (se mantiene la ficha): ${recodificadas.join('; ')}` : null,
+    ].filter(Boolean).join(' · ') || null;
     const { data: correo, error: ec } = await sb.from('correos').insert({
       empresa_id: empresa.id, recibido, remitente, asunto, proveedor: l.proveedor, fecha_precios: fecha,
-      n_precios: l.precios.length, n_sin_ubicar: sinUbicar, estado: 'ok', detalle: l.cliente ? `Cliente en el documento: ${l.cliente}` : null,
+      n_precios: l.precios.length, n_sin_ubicar: sinUbicar, estado: 'ok', detalle,
     }).select('id').single();
     if (ec) return json({ error: ec.message }, 500);
 
@@ -260,7 +297,7 @@ Deno.serve(async (req) => {
       await sb.from('correos').update({ estado: 'error', detalle: ep.message }).eq('id', correo.id);
       return json({ error: ep.message }, 500);
     }
-    resumen.push({ proveedor: l.proveedor, fecha, precios: l.precios.length, sin_ubicar: sinUbicar });
+    resumen.push({ proveedor: l.proveedor, fecha, precios: l.precios.length, sin_ubicar: sinUbicar, recodificadas });
   }
   // Si venía de un email guardado, se borra su registro de "sin lector" y la copia
   if (b._guardado) {
