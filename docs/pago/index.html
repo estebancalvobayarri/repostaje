@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Medio de pago · Fuelfy</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../iconos/icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="../legal/legal.css">
+</head>
+<body>
+<header class="cab"><div class="cab-in">
+  <a href="../" aria-label="Fuelfy"><svg width="34" height="28" viewBox="0 0 120 100" aria-hidden="true"><defs><clipPath id="lg"><rect x="19" y="18" width="26" height="24" rx="6"/></clipPath></defs><rect x="10" y="8" width="44" height="80" rx="11" fill="#FFFFFF"/><rect x="19" y="18" width="26" height="24" rx="6" fill="#12263F"/><rect x="19" y="31" width="26" height="11" fill="#F2A900" clip-path="url(#lg)"/><path d="M54 30C76 30 84 42 80 56" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round"/><path d="M80 56C76 70 86 84 102 85" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="0.5 9"/><circle cx="109" cy="85" r="7.5" fill="#F2A900"/></svg><span class="wm">fuelfy<i>.</i></span></a>
+  <a class="volver" href="../app/">Ir a la app</a>
+</div></header>
+<main><article>
+<h1 id="titulo">Medio de pago guardado</h1>
+<p id="texto">Listo. A partir de ahora, cada cuota de tu contrato anual se cobrará automáticamente el día 1 de cada mes. Recibirás la factura por email.</p>
+<p>Si tienes cualquier duda, escríbenos a <a href="mailto:hola@fuelfy.app">hola@fuelfy.app</a>.</p>
+</article></main>
+<script>
+if (new URLSearchParams(location.search).has('cancelado')) {
+  document.getElementById('titulo').textContent = 'No se ha guardado ningún medio de pago';
+  document.getElementById('texto').textContent = 'Has salido sin guardar la tarjeta. Mientras tanto, cada cuota te llegará por email para pagarla. Si quieres el cargo automático, pídenos un enlace nuevo.';
+}
+</script>
+</body>
+</html>

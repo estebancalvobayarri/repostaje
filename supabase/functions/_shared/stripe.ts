@@ -1,6 +1,7 @@
 // Llamadas mínimas a la API de Stripe (sin SDK). Necesita el secreto STRIPE_SECRET_KEY en Supabase: una clave restringida
 // con escritura en Customers, Subscriptions, Prices (para el precio de camiones de más de cada cliente anual)
-// y Billing meter events, y lectura en Invoices y Payment method configurations.
+// Billing meter events y Checkout Sessions (enlace para guardar la tarjeta del pago en cuotas), y lectura en Invoices,
+// Payment method configurations y SetupIntents (el webhook lee la tarjeta guardada).
 
 export class ErrorStripe extends Error {
   constructor(public status: number, mensaje: string, public codigo?: string) { super(mensaje); }
@@ -54,3 +55,11 @@ export function inicioMesMadrid(anio: number, mes0: number) {
   }
   return Math.floor((Date.UTC(anio, mes0, 1) - 3600_000) / 1000);
 }
+
+/** Día 1 del mes de una fecha «AAAA-MM-01» más n meses, como «AAAA-MM-01». */
+export function sumarMeses(iso: string, n: number) {
+  const [y, m] = iso.split('-').map(Number), t = y * 12 + (m - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}-01`;
+}
+/** Marca de tiempo del día 1 «AAAA-MM-01» a las 00:00 de Madrid. */
+export const tsDia1 = (iso: string) => inicioMesMadrid(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1);

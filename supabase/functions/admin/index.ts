@@ -2,8 +2,8 @@
 // Usa la clave secreta del proyecto (solo existe en el servidor) y comprueba
 // en cada llamada que quien la hace está en la tabla de administradores.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { PLANES, type Plan, esPlan, planPara, cuotaMensual, cuotaExtra, tramosExtra, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
-import { stripe, idPrecio, precioPorClave, centimos, inicioMesMadrid, hayClaveStripe, ErrorStripe } from '../_shared/stripe.ts';
+import { PLANES, type Plan, esPlan, esPago, conPagados, planPara, cuotaMensual, cuotaExtra, tramosExtra, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
+import { stripe, idPrecio, precioPorClave, centimos, inicioMesMadrid, hayClaveStripe, ErrorStripe, sumarMeses, tsDia1 } from '../_shared/stripe.ts';
 
 const WEB = 'https://fuelfy.app/app/';
 const CORS = {
@@ -50,7 +50,9 @@ async function datosStripe(emp: Record<string, any>) {
       emp.stripe_sub_uso && emp.stripe_sub_uso !== emp.stripe_sub ? stripe('GET', `subscriptions/${emp.stripe_sub_uso}`) : null,
       stripe('GET', 'invoices', { customer: emp.stripe_customer_id, limit: 12 }),
     ]);
-    const resumen = (s: any) => s && { id: s.id, estado: s.status, baja_al_final: !!s.cancel_at_period_end, empieza: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null };
+    const resumen = (s: any) => s && { id: s.id, estado: s.status, baja_al_final: !!s.cancel_at_period_end || !!s.cancel_at,
+      termina: s.cancel_at ? new Date(s.cancel_at * 1000).toISOString() : null, cobro: s.collection_method,
+      empieza: s.trial_end ? new Date(s.trial_end * 1000).toISOString() : null };
     return {
       sub: resumen(sub), sub_uso: resumen(uso),
       facturas: (facturas?.data || []).map((f: any) => ({ numero: f.number, estado: f.status, total: f.total / 100, vence: f.due_date ? new Date(f.due_date * 1000).toISOString() : null,
@@ -89,10 +91,10 @@ async function facturacion(empresa_id: string) {
     const enPrueba = !prueba || prueba >= k;
     const plan: Plan = esPlan(emp.plan) ? emp.plan : planPara(maximo || 0);
     // Pago mensual (o sin suscripción todavía): máximo del mes con el mínimo del plan.
-    // Pago anual: solo los camiones de más, cada uno al precio de su tramo y con el descuento de fundadora si lo tiene.
+    // Pago anual (de una vez o en cuotas): solo los camiones de más, cada uno al precio de su tramo y con el descuento de fundadora si lo tiene.
     const pagados = emp.camiones_pagados || 0;
     const importe = maximo == null || enPrueba ? 0
-      : emp.pago === 'anual' ? cuotaExtra(plan, pagados, Math.max(0, maximo - pagados), !!emp.fundadora)
+      : conPagados(emp.pago) ? cuotaExtra(plan, pagados, Math.max(0, maximo - pagados), !!emp.fundadora)
       : cuotaMensual(plan, facturables(plan, maximo));
     meses.push({ mes: k, maximo, plan, importe, en_prueba: enPrueba, en_curso: enCurso, sin_datos: maximo == null,
       en_stripe: !!desdeStripe && k >= desdeStripe, pago: pagado.get(k) || null });
@@ -104,6 +106,7 @@ async function facturacion(empresa_id: string) {
     prueba_hasta: prueba, estado, en_servicio: count || 0, meses: meses.reverse(), eventos: eventos || [],
     suscripcion: {
       plan: emp.plan, pago: emp.pago, fundadora: emp.fundadora, camiones_pagados: emp.camiones_pagados, desde: emp.suscripcion_desde,
+      compromiso_hasta: emp.stripe_sub && conPagados(emp.pago) ? finCompromiso(emp.suscripcion_desde).hasta : null,
       estado: emp.suscripcion_estado, customer: emp.stripe_customer_id, sub: emp.stripe_sub, sub_uso: emp.stripe_sub_uso,
       facturacion: emp.facturacion, cif: emp.cif, usos: usos || [], stripe: await datosStripe(emp),
     },
@@ -122,10 +125,20 @@ function inicioSuscripcion(prueba_hasta: string | null) {
   return { ts: inicioMesMadrid(anio, mes0), iso: `${anio}-${String(mes0 + 1).padStart(2, '0')}-01` };
 }
 
+// Contrato de 12 meses (pago anual, de una vez o en cuotas): se renueva solo por periodos de 12 meses desde el día en
+// que empezó a cobrar. finCompromiso da el día 1 en que termina el periodo en curso (corte) y el último día cubierto (hasta).
+function finCompromiso(desde: string) {
+  const hoy = isoDia(hoyMadrid());
+  let corte = sumarMeses(desde, 12);
+  while (corte <= hoy) corte = sumarMeses(corte, 12);
+  const d = new Date(`${corte}T12:00:00Z`); d.setUTCDate(0);
+  return { corte, hasta: d.toISOString().slice(0, 10) };
+}
+
 // Formas de pago de las facturas: tarjeta, domiciliación SEPA y transferencia, las que estén activas en la cuenta de Stripe
 // (configuración de medios de pago por defecto). Así la página de pago de la factura no ofrece Klarna, Bizum, etc.
 const FORMAS = ['card', 'sepa_debit', 'customer_balance'] as const;
-async function formasDePago(avisos: string[]) {
+async function mediosActivos(avisos: string[]) {
   let activas: string[] = ['card'];
   try {
     const r = await stripe<{ data: any[] }>('GET', 'payment_method_configurations', { limit: 20 });
@@ -134,25 +147,45 @@ async function formasDePago(avisos: string[]) {
   } catch (err) { avisos.push(`No se han podido leer los medios de pago de Stripe (${(err as Error).message}): solo tarjeta.`); }
   if (!activas.includes('sepa_debit')) avisos.push('La domiciliación SEPA no está activa en Stripe: las facturas se podrán pagar con tarjeta o transferencia.');
   if (!activas.length) activas = ['card'];
-  // customer_balance = transferencia bancaria (Stripe da al cliente un IBAN propio para cada factura)
-  return { payment_method_types: activas };
+  return activas;
+}
+// customer_balance = transferencia bancaria (Stripe da al cliente un IBAN propio para cada factura)
+const formasDePago = async (avisos: string[]) => ({ payment_method_types: await mediosActivos(avisos) });
+
+// Pago en cuotas: enlace de Stripe (Checkout en modo «setup») para que el cliente guarde su tarjeta (o la domiciliación
+// SEPA, cuando esté activa). Al guardarla, el webhook pone sus suscripciones con cargo automático. El enlace caduca en 24 h.
+async function enlaceTarjeta(empresa_id: string) {
+  const { data: emp, error } = await sb.from('empresas').select('id, stripe_customer_id, stripe_sub, facturacion').eq('id', empresa_id).single();
+  if (error) throw error;
+  if (!emp.stripe_customer_id || !emp.stripe_sub) return { error: 'Esta empresa no tiene suscripción en Stripe.' };
+  const tipos = (await mediosActivos([])).filter((t) => t === 'card' || t === 'sepa_debit');
+  const s = await stripe('POST', 'checkout/sessions', {
+    mode: 'setup', customer: emp.stripe_customer_id, payment_method_types: tipos.length ? tipos : ['card'], locale: 'es',
+    success_url: 'https://fuelfy.app/pago/?guardada=1', cancel_url: 'https://fuelfy.app/pago/?cancelado=1',
+    metadata: { empresa_id, uso: 'cargo_automatico' }, setup_intent_data: { metadata: { empresa_id, uso: 'cargo_automatico' } },
+  });
+  const enlace = { url: s.url, caduca: new Date(s.expires_at * 1000).toISOString() };
+  const { error: eu } = await sb.from('empresas').update({ facturacion: { ...(emp.facturacion || {}), enlace_tarjeta: enlace } }).eq('id', empresa_id);
+  if (eu) throw eu;
+  return enlace;
 }
 
-// Alta en Stripe: cliente + suscripción (mensual por uso, o anual por adelantado + otra por uso para los camiones de más)
+// Alta en Stripe: cliente + suscripción (mensual por uso; o anual, de una vez o en 12 cuotas, + otra por uso para los camiones de más)
 async function suscribir(body: Record<string, unknown>) {
   const empresa_id = String(body.empresa_id || '');
-  const plan = body.plan, pago = body.pago === 'anual' ? 'anual' : body.pago === 'mensual' ? 'mensual' : null;
+  const plan = body.plan, pago = esPago(body.pago) ? body.pago : null;
   const fundadora = !!body.fundadora;
   const email = String(body.email || '').trim().toLowerCase();
   const direccion = String(body.direccion || '').trim(), cp = String(body.cp || '').trim(), ciudad = String(body.ciudad || '').trim();
-  const forma_pago = ['domiciliacion', 'tarjeta', 'transferencia'].includes(String(body.forma_pago)) ? String(body.forma_pago) : 'domiciliacion';
+  const forma_pago = pago === 'cuotas' ? 'cargo_automatico'
+    : ['domiciliacion', 'tarjeta', 'transferencia'].includes(String(body.forma_pago)) ? String(body.forma_pago) : 'domiciliacion';
   if (!esPlan(plan)) return { error: 'Elige un plan' };
-  if (!pago) return { error: 'Elige si paga mes a mes o el año' };
+  if (!pago) return { error: 'Elige si paga mes a mes, el año de una vez o el año en 12 cuotas' };
   if (!emailValido(email)) return { error: 'Escribe el email al que se mandan las facturas' };
   if (direccion.length < 4 || !/^\d{5}$/.test(cp) || ciudad.length < 2) return { error: 'Completa la dirección fiscal: calle, código postal (5 cifras) y población' };
-  const camiones = pago === 'anual' ? Math.round(Number(body.camiones)) : null;
-  if (pago === 'anual' && !(camiones! >= PLANES[plan].min)) return { error: `En ${PLANES[plan].nombre} con pago anual hay que pagar al menos ${PLANES[plan].min} camiones` };
-  if (fundadora && (plan === 'esencial' || pago !== 'anual')) return { error: 'La oferta de fundadoras es solo para Pro o Flota con pago anual' };
+  const camiones = conPagados(pago) ? Math.round(Number(body.camiones)) : null;
+  if (conPagados(pago) && !(camiones! >= PLANES[plan].min)) return { error: `En ${PLANES[plan].nombre} con pago anual hay que pagar al menos ${PLANES[plan].min} camiones` };
+  if (fundadora && (plan === 'esencial' || !conPagados(pago))) return { error: 'La oferta de fundadoras es solo para Pro o Flota con contrato anual (de una vez o en cuotas)' };
   if (!hayClaveStripe()) return { error: 'Falta la clave de Stripe en Supabase (secreto STRIPE_SECRET_KEY).' };
 
   const { data: emp, error } = await sb.from('empresas').select(`id, nombre, cif, prueba_hasta, ${COLS_SUSCRIPCION}`).eq('id', empresa_id).single();
@@ -201,7 +234,9 @@ async function suscribir(body: Record<string, unknown>) {
   if (pago === 'mensual') {
     sub = subUso = (await stripe('POST', 'subscriptions', { ...comun, items: [{ price: mensual.id }] }, `sub-${clave}`)).id;
   } else {
-    const precioAnual = await idPrecio(precioStripe(plan, 'anual', fundadora));
+    // Anual: un precio por año. Cuotas: un precio por mes (el anual entre 12) y el mismo contrato de 12 meses.
+    // Las cuotas empiezan con factura por email; cuando el cliente guarda la tarjeta, el webhook las pasa a cargo automático.
+    const precioAnual = await idPrecio(precioStripe(plan, pago, fundadora));
     sub = (await stripe('POST', 'subscriptions', {
       ...comun, items: [{ price: precioAnual, quantity: camiones }], ...(fundadora ? { discounts: [{ coupon: 'FUNDADORAS' }] } : {}),
     }, `sub-${clave}`)).id;
@@ -225,10 +260,17 @@ async function suscribir(body: Record<string, unknown>) {
     stripe_sub: sub, stripe_sub_uso: subUso, facturacion: { email, direccion, cp, ciudad, forma_pago },
   }).eq('id', empresa_id);
   if (eu) throw eu;
+  if (pago === 'cuotas') {
+    try {
+      await enlaceTarjeta(empresa_id);
+      avisos.push('Manda al cliente el enlace para guardar la tarjeta (abajo). Hasta que lo haga, las cuotas le llegan por email con 15 días para pagar.');
+    } catch (err) { avisos.push(`No se ha podido crear el enlace para guardar la tarjeta (${(err as Error).message}). Créalo desde el botón de abajo.`); }
+  }
   return { ...(await facturacion(empresa_id)), avisos };
 }
 
-// Baja: si aún no ha empezado a cobrar se cancela ya; si no, al final del periodo pagado (mes o año)
+// Baja: si aún no ha empezado a cobrar se cancela ya; si no, al final del periodo pagado (mes o año).
+// Pago en cuotas: al final del contrato de 12 meses en curso (la penalización por baja anticipada, si procede, se factura aparte).
 async function darDeBaja(empresa_id: string) {
   const { data: emp, error } = await sb.from('empresas').select(`id, ${COLS_SUSCRIPCION}`).eq('id', empresa_id).single();
   if (error) throw error;
@@ -238,7 +280,10 @@ async function darDeBaja(empresa_id: string) {
     const s = await stripe('GET', `subscriptions/${id}`);
     if (s.status === 'canceled') continue;
     if (s.status === 'trialing') await stripe('DELETE', `subscriptions/${id}`);
-    else { await stripe('POST', `subscriptions/${id}`, { cancel_at_period_end: true }); todasCanceladas = false; }
+    else if (emp.pago === 'cuotas') {
+      await stripe('POST', `subscriptions/${id}`, { cancel_at: tsDia1(finCompromiso(emp.suscripcion_desde).corte), proration_behavior: 'none' });
+      todasCanceladas = false;
+    } else { await stripe('POST', `subscriptions/${id}`, { cancel_at_period_end: true }); todasCanceladas = false; }
   }
   const cambio = todasCanceladas
     ? { stripe_sub: null, stripe_sub_uso: null, suscripcion_estado: 'cancelada', fundadora: false }
@@ -405,6 +450,11 @@ Deno.serve(async (req) => {
     if (accion === 'baja_suscripcion') {
       const r = await darDeBaja(String(body.empresa_id || ''));
       return 'error' in r && typeof r.error === 'string' ? json({ error: r.error }, 400) : json(r);
+    }
+    if (accion === 'enlace_tarjeta') {
+      const empresa_id = String(body.empresa_id || '');
+      const r = await enlaceTarjeta(empresa_id);
+      return 'error' in r ? json({ error: r.error }, 400) : json(await facturacion(empresa_id));
     }
     if (accion === 'enviar_uso') {
       const { error } = await sb.rpc('enviar_uso_ahora', { p_origen: 'admin' });

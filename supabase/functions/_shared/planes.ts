@@ -1,7 +1,9 @@
 // Planes y precios de Fuelfy (sin IVA). Deben coincidir con docs/legal/condiciones.html (apartado 5),
 // la calculadora de la portada y los precios de Stripe (lookup_key entre paréntesis).
 export type Plan = 'esencial' | 'pro' | 'flota';
-export type Pago = 'mensual' | 'anual';
+// mensual: a mes vencido por uso · anual: el año por adelantado en una factura · cuotas: el año (contrato de 12 meses,
+// mismo precio que el anual) pagado en 12 cuotas mensuales por adelantado, con cargo automático
+export type Pago = 'mensual' | 'anual' | 'cuotas';
 
 // Tramos graduados por camión y mes: [último camión del tramo, precio]
 export const PLANES: Record<Plan, { nombre: string; min: number; max: number; tramos: [number, number][] }> = {
@@ -13,6 +15,10 @@ export const MESES_PAGADOS_ANUAL = 10;   // pagando el año: dos meses gratis
 export const DESCUENTO_FUNDADORAS = 0.25; // en lugar de los dos meses gratis (cupón FUNDADORAS)
 
 export const esPlan = (p: unknown): p is Plan => p === 'esencial' || p === 'pro' || p === 'flota';
+export const esPago = (p: unknown): p is Pago => p === 'mensual' || p === 'anual' || p === 'cuotas';
+/** Pagos con contrato de 12 meses por un número fijo de camiones (los de más se cobran aparte, por uso). */
+export const conPagados = (pago: unknown) => pago === 'anual' || pago === 'cuotas';
+export const NOMBRE_PAGO: Record<Pago, string> = { mensual: 'mes a mes', anual: 'anual, de una vez', cuotas: 'anual, en 12 cuotas' };
 export const planPara = (camiones: number): Plan => (camiones < 5 ? 'esencial' : camiones < 50 ? 'pro' : 'flota');
 
 /** Cuota mensual de un número de camiones con los tramos de un plan (sin aplicar el mínimo). */
@@ -35,11 +41,16 @@ export function cuotaAnual(plan: Plan, camiones: number, fundadora: boolean) {
   return Math.round((fundadora ? mes * 12 * (1 - DESCUENTO_FUNDADORAS) : mes * MESES_PAGADOS_ANUAL) * 100) / 100;
 }
 
-/** lookup_key del precio de Stripe. */
-export const precioStripe = (plan: Plan, pago: Pago, fundadora = false) =>
-  pago === 'mensual' ? `${plan}_mensual` : fundadora ? `${plan}_anual_fundadoras` : `${plan}_anual`;
+/** Cuota de cada uno de los 12 meses pagando el año en cuotas: el importe anual entre 12 (sin redondear: Stripe
+ *  guarda el precio por camión con decimales y redondea cada factura al céntimo). */
+export const cuotaPlazo = (plan: Plan, camiones: number, fundadora: boolean) => cuotaAnual(plan, camiones, fundadora) / 12;
 
-/** Descuento que se aplica a los camiones de más de un cliente con pago anual: el 25 % si es fundadora; si no, ninguno. */
+/** lookup_key del precio de Stripe. Cuotas: <plan>_cuotas = precio anual / 12, por mes y por adelantado;
+ *  <plan>_cuotas_fundadoras = precio mensual, para usar con el cupón FUNDADORAS (−25 %). */
+export const precioStripe = (plan: Plan, pago: Pago, fundadora = false) =>
+  pago === 'mensual' ? `${plan}_mensual` : `${plan}_${pago}${fundadora ? '_fundadoras' : ''}`;
+
+/** Descuento que se aplica a los camiones de más de un cliente con pago anual (de una vez o en cuotas): el 25 % si es fundadora; si no, ninguno. */
 export const factorExtra = (fundadora: boolean) => (fundadora ? 1 - DESCUENTO_FUNDADORAS : 1);
 
 /** Tramos de los camiones de más en pago anual: cada camión de más paga el precio mensual del tramo en el que cae
@@ -64,7 +75,7 @@ export function cuotaExtra(plan: Plan, pagados: number, extra: number, fundadora
   return Math.round(total * 100) / 100;
 }
 
-/** Valor que se manda al medidor cada día: en mensual, los camiones facturables; en anual, los que pasan de lo pagado. */
+/** Valor que se manda al medidor cada día: en mensual, los camiones facturables; en anual o cuotas, los que pasan de lo pagado. */
 export function valorMedidor(plan: Plan, pago: Pago, maximo: number, pagados: number | null) {
   return pago === 'mensual' ? facturables(plan, maximo) : Math.max(0, maximo - (pagados || 0));
 }

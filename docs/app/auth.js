@@ -450,6 +450,8 @@ const IVA = 0.21;
 const cuotaTramos = (tramos, n) => tramos.reduce((t, x) => t + Math.max(0, Math.min(n, x.hasta ?? Infinity) - (x.desde - 1)) * x.precio, 0);
 const planSugerido = n => n < 5 ? 'esencial' : n < 50 ? 'pro' : 'flota';
 const ESTADO_SUB = { trialing: 'Programada', active: 'Activa', past_due: 'Factura vencida', unpaid: 'Impagada', canceled: 'Cancelada', incomplete: 'Incompleta', paused: 'En pausa' };
+const NOMBRE_PAGO = { mensual: 'mes a mes', anual: 'anual, de una vez', cuotas: 'anual, en 12 cuotas' };
+const FORMA_PAGO = { domiciliacion: 'domiciliación', tarjeta: 'tarjeta', transferencia: 'transferencia', cargo_automatico: 'cargo automático' };
 const ESTADO_FACTURA = { draft: 'Borrador', open: 'Pendiente de pago', paid: 'Pagada', void: 'Anulada', uncollectible: 'Incobrable' };
 
 async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
@@ -469,7 +471,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
   const deuda = pendientes.reduce((t, m) => t + m.importe, 0);
   const nombrePlan = p => planes[p]?.nombre || p;
   const ESTADO = {
-    stripe: [s.estado === 'baja_al_final' ? 'mal' : 'ok', `${nombrePlan(s.plan)}${s.fundadora ? ' fundadora' : ''} · pago ${s.pago}${s.estado === 'baja_al_final' ? ' · baja al final del periodo' : ''}`],
+    stripe: [s.estado === 'baja_al_final' ? 'mal' : 'ok', `${nombrePlan(s.plan)}${s.fundadora ? ' fundadora' : ''} · pago ${NOMBRE_PAGO[s.pago] || s.pago}${s.estado === 'baja_al_final' ? ' · baja al final del periodo' : ''}`],
     prueba: ['prueba', f.prueba_hasta ? `En prueba hasta el ${fechaEs(f.prueba_hasta)}` : 'En prueba, sin fecha de fin'],
     al_dia: ['ok', 'Al día'],
     pendiente: ['mal', `Pendiente: ${pendientes.length} ${pendientes.length === 1 ? 'mes' : 'meses'} · ${eur2(deuda)} + IVA`],
@@ -487,17 +489,29 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
   const bloqueSuscripcion = s.sub ? (() => {
     const st = s.stripe || {}, sub = st.sub;
     const estadoSub = st.error ? `No se ha podido leer de Stripe: ${st.error}` : !sub ? 'Sin datos de Stripe'
-      : sub.estado === 'trialing' ? `Programada: empieza a cobrar el ${fechaEs(s.desde)}` : (ESTADO_SUB[sub.estado] || sub.estado) + (sub.baja_al_final ? ' · se da de baja al final del periodo' : '');
+      : sub.estado === 'trialing' ? `Programada: empieza a cobrar el ${fechaEs(s.desde)}` : (ESTADO_SUB[sub.estado] || sub.estado) + (sub.baja_al_final ? (sub.termina ? ` · termina el ${fechaEs(sub.termina)}` : ' · se da de baja al final del periodo') : '');
+    const cuotas = s.pago === 'cuotas', automatico = !!fac.cargo_automatico, enlace = fac.enlace_tarjeta;
+    const enlaceVivo = enlace && new Date(enlace.caduca) > new Date();
+    const bloqueTarjeta = !cuotas ? '' : automatico
+      ? `<p class="small" style="margin:0">Cargo automático activo desde el ${fechaEs(fac.cargo_automatico.desde)}: cada cuota se cobra sola el día 1.</p>`
+      : `<p class="msg" style="margin:0">Falta que el cliente guarde la tarjeta. Hasta entonces, cada cuota le llega por email con 15 días para pagar.
+          ${enlaceVivo ? `<br>Enlace (caduca el ${new Date(enlace.caduca).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}): <a href="${escH(enlace.url)}" target="_blank" rel="noopener">abrir</a>` : ''}</p>
+        <div class="rapido-prueba">
+          ${enlaceVivo ? `<button class="mini" type="button" data-copiar="${escH(enlace.url)}">Copiar enlace</button>` : ''}
+          <button class="mini" type="button" data-sus="enlace_tarjeta">${enlaceVivo ? 'Crear otro enlace' : 'Crear enlace para guardar la tarjeta'}</button>
+        </div>`;
     return `
       <div class="area usuarios">
         <h3>Suscripción en Stripe</h3>
         <div class="kpis-fact">
           <div><b>${escH(nombrePlan(s.plan))}${s.fundadora ? ' <span class="pill">fundadora</span>' : ''}</b><span>plan</span></div>
-          <div><b>${s.pago === 'anual' ? `Anual · ${s.camiones_pagados} camiones` : 'Mes a mes'}</b><span>forma de pago</span></div>
+          <div><b>${s.pago === 'anual' ? `Anual · ${s.camiones_pagados} camiones` : cuotas ? `12 cuotas · ${s.camiones_pagados} camiones` : 'Mes a mes'}</b><span>forma de pago</span></div>
           <div><b>${fechaEs(s.desde)}</b><span>cobra desde</span></div>
+          ${s.compromiso_hasta ? `<div><b>${fechaEs(s.compromiso_hasta)}</b><span>contrato hasta (se renueva)</span></div>` : ''}
         </div>
-        <p class="small" style="margin:0"><b>${escH(estadoSub)}</b>. Facturas a ${escH(fac.email || '—')} · pago en 15 días${fac.forma_pago ? ` (${escH({ domiciliacion: 'domiciliación', tarjeta: 'tarjeta', transferencia: 'transferencia' }[fac.forma_pago] || fac.forma_pago)})` : ''}.
-          ${s.pago === 'anual' ? `Los camiones que pasen de los pagados se cobran aparte, mes a mes, al precio de su tramo${s.fundadora ? ' con el 25 % de fundadora' : ''}.` : 'Cada mes se cobra el máximo de camiones del mes, con el mínimo del plan.'}</p>
+        <p class="small" style="margin:0"><b>${escH(estadoSub)}</b>. Facturas a ${escH(fac.email || '—')}${cuotas && automatico ? '' : ' · pago en 15 días'}${fac.forma_pago ? ` (${escH(FORMA_PAGO[fac.forma_pago] || fac.forma_pago)})` : ''}.
+          ${s.pago === 'anual' || cuotas ? `Los camiones que pasen de los pagados se cobran aparte, mes a mes, al precio de su tramo${s.fundadora ? ' con el 25 % de fundadora' : ''}.` : 'Cada mes se cobra el máximo de camiones del mes, con el mínimo del plan.'}</p>
+        ${bloqueTarjeta}
         ${st.facturas?.length ? `<div class="tabla"><table><thead><tr><th>Factura</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>
           ${st.facturas.map(x => `<tr><td style="text-align:left">${escH(x.numero || 'Borrador')}</td><td>${fechaEs(x.creada)}</td><td>${eur2(x.total)}</td><td>${escH(ESTADO_FACTURA[x.estado] || x.estado)}</td>
             <td>${x.url ? `<a href="${escH(x.url)}" target="_blank" rel="noopener">Ver</a>` : ''}</td></tr>`).join('')}
@@ -518,11 +532,11 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
         <form class="sus-f">
           <div class="sus-grid">
             <label>Plan<select name="plan">${Object.entries(planes).map(([k, p]) => `<option value="${k}" ${k === (s.plan || planSugerido(f.en_servicio)) ? 'selected' : ''}>${escH(p.nombre)} (${p.min}${p.max ? `–${p.max}` : '+'} camiones)</option>`).join('')}</select></label>
-            <label>Forma de pago<select name="pago"><option value="mensual">Mes a mes (a mes vencido)</option><option value="anual">El año, por adelantado</option></select></label>
+            <label>Forma de pago<select name="pago"><option value="mensual">Mes a mes (a mes vencido)</option><option value="anual">El año, de una vez por adelantado</option><option value="cuotas">El año, en 12 cuotas mensuales</option></select></label>
             <label class="solo-anual">Camiones que paga el año<input name="camiones" type="number" min="1" step="1" value="${Math.max(f.en_servicio, 2)}"></label>
             <label class="solo-anual fila-check"><input name="fundadora" type="checkbox"> Fundadora (−25 %, quedan ${f.fundadoras_libres})</label>
             <label>Email para las facturas<input name="email" type="email" required value="${escH(fac.email || '')}"></label>
-            <label>Cómo pagará<select name="forma_pago">${[['domiciliacion', 'Domiciliación'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([v, t]) => `<option value="${v}" ${fac.forma_pago === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+            <label class="no-cuotas">Cómo pagará<select name="forma_pago">${[['domiciliacion', 'Domiciliación'], ['tarjeta', 'Tarjeta'], ['transferencia', 'Transferencia']].map(([v, t]) => `<option value="${v}" ${fac.forma_pago === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
             <label class="ancho">Dirección fiscal<input name="direccion" required value="${escH(fac.direccion || '')}" placeholder="Calle, número, piso"></label>
             <label>Código postal<input name="cp" required inputmode="numeric" pattern="\\d{5}" maxlength="5" value="${escH(fac.cp || '')}"></label>
             <label>Población<input name="ciudad" required value="${escH(fac.ciudad || '')}"></label>
@@ -561,7 +575,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
           <div><b>${actual.maximo ?? f.en_servicio}</b><span>máximo del mes</span></div>
           <div><b>${actual.en_prueba ? '0 €' : eur2(estimado)}</b><span>${actual.en_prueba ? 'en prueba' : `+ IVA · ${eur2(estimado * (1 + IVA))} con IVA`}</span></div>
         </div>
-        <p class="small" style="margin:0">Estimación${s.pago === 'anual' ? ' de los camiones de más (el año ya está pagado)' : ''}: el importe se cierra el último día del mes.</p>
+        <p class="small" style="margin:0">Estimación${s.pago === 'anual' || s.pago === 'cuotas' ? ' de los camiones de más (el año ya está contratado)' : ''}: el importe se cierra el último día del mes.</p>
       </div>
     </div>
     <div class="area usuarios">
@@ -584,7 +598,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
         <div class="tabla"><table><tbody>
           ${Object.values(planes).map(p => `<tr><td style="text-align:left;white-space:nowrap"><b>${escH(p.nombre)}</b> · mín. ${p.min}</td><td style="text-align:left">${p.tramos.map(t => `${t.hasta ? (t.desde === 1 ? `hasta ${t.hasta}` : `${t.desde}–${t.hasta}`) : (t.desde === 1 ? 'todos' : `desde ${t.desde}`)}: ${eur2(t.precio)}`).join(' · ')}</td></tr>`).join('')}
         </tbody></table></div>
-        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año, 10 meses de 12; los camiones de más, cada mes al precio de su tramo. Fundadoras (Pro o Flota con pago anual): −25 % en lugar de los dos meses gratis, también en los camiones de más.</p>
+        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año (de una vez o en 12 cuotas), 10 meses de 12; los camiones de más, cada mes al precio de su tramo. Fundadoras (Pro o Flota con contrato anual): −25 % en lugar de los dos meses gratis, también en los camiones de más.</p>
       </div>
       <div class="area usuarios">
         <h3>Altas y bajas de camiones · últimos 6 meses</h3>
@@ -599,9 +613,15 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
   panel.querySelectorAll('[data-hasta]').forEach(b => b.onclick = () => guardarPrueba(b.dataset.hasta || null));
   panel.querySelectorAll('button[data-mes]').forEach(b => b.onclick = () => { b.disabled = true; cargarFacturacion(sec, { accion: 'pago', mes: b.dataset.mes, pagado: b.dataset.pagado === '1' }); });
   panel.querySelectorAll('button[data-sus]').forEach(b => b.onclick = () => {
-    if (b.dataset.sus === 'baja_suscripcion' && !confirm('¿Dar de baja la suscripción? Si ya ha empezado a cobrar, sigue hasta el final del periodo pagado (mes o año).')) return;
+    if (b.dataset.sus === 'baja_suscripcion' && !confirm(s.pago === 'cuotas'
+      ? `¿Dar de baja la suscripción? Si ya ha empezado a cobrar, sigue cobrando las cuotas hasta el final del contrato (${fechaEs(s.compromiso_hasta)}). La penalización por baja anticipada, si procede, se factura aparte.`
+      : '¿Dar de baja la suscripción? Si ya ha empezado a cobrar, sigue hasta el final del periodo pagado (mes o año).')) return;
     b.dataset.texto = b.textContent; b.disabled = true; b.textContent = 'Un momento…';
     cargarFacturacion(sec, { accion: b.dataset.sus });
+  });
+  panel.querySelectorAll('button[data-copiar]').forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copiar); b.textContent = 'Copiado'; } catch { b.textContent = 'No se ha podido copiar'; }
+    setTimeout(() => { b.textContent = 'Copiar enlace'; }, 2000);
   });
 
   // Formulario de alta: muestra u oculta lo del pago anual y calcula el importe
@@ -609,14 +629,19 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
   if (form) {
     const v = n => form.elements[n];
     const calcular = () => {
-      const plan = v('plan').value, anual = v('pago').value === 'anual', p = planes[plan];
+      const plan = v('plan').value, pago = v('pago').value, cuotas = pago === 'cuotas', anual = pago === 'anual' || cuotas, p = planes[plan];
       form.querySelectorAll('.solo-anual').forEach(x => x.hidden = !anual);
+      form.querySelectorAll('.no-cuotas').forEach(x => x.hidden = cuotas);
       v('fundadora').disabled = plan === 'esencial' || !f.fundadoras_libres;
       if (v('fundadora').disabled) v('fundadora').checked = false;
       const n = anual ? Math.max(+v('camiones').value || 0, p.min) : Math.max(f.en_servicio, p.min);
       const mes = cuotaTramos(p.tramos, n);
-      const texto = anual
-        ? (v('fundadora').checked ? `Pagará ${eur2(mes * 12 * 0.75)} + IVA al año por ${n} camiones (fundadora, −25 %).` : `Pagará ${eur2(mes * 10)} + IVA al año por ${n} camiones (10 meses de 12).`)
+      const año = v('fundadora').checked ? mes * 12 * 0.75 : mes * 10;
+      const detalle = v('fundadora').checked ? 'fundadora, −25 %' : '10 meses de 12';
+      const texto = cuotas
+        ? `Contrato de 12 meses: ${eur2(año)} + IVA al año por ${n} camiones (${detalle}), en 12 cuotas de ${eur2(año / 12)} + IVA. Tras el alta, manda al cliente el enlace para guardar la tarjeta.`
+        : anual
+        ? `Pagará ${eur2(año)} + IVA al año por ${n} camiones (${detalle}).`
         : `Con los ${f.en_servicio} camiones de ahora pagaría ${eur2(mes)} + IVA al mes${f.en_servicio < p.min ? ` (mínimo ${p.min} camiones)` : ''}; se ajusta cada mes al máximo de camiones.`;
       form.querySelector('.sus-calc').textContent = `${texto} Empieza a cobrar el ${inicioSus.toLocaleDateString('es-ES')}.`;
     };
@@ -625,7 +650,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
       ev.preventDefault();
       const datos = Object.fromEntries(['plan', 'pago', 'camiones', 'email', 'forma_pago', 'direccion', 'cp', 'ciudad'].map(k => [k, v(k).value]));
       datos.fundadora = v('fundadora').checked;
-      if (!confirm(`Se va a crear el cliente y la suscripción en Stripe (${planes[datos.plan].nombre}, ${datos.pago === 'anual' ? 'pago anual' : 'mes a mes'}). ${form.querySelector('.sus-calc').textContent} ¿Seguir?`)) return;
+      if (!confirm(`Se va a crear el cliente y la suscripción en Stripe (${planes[datos.plan].nombre}, pago ${NOMBRE_PAGO[datos.pago]}). ${form.querySelector('.sus-calc').textContent} ¿Seguir?`)) return;
       const bt = form.querySelector('button[type=submit]'); bt.dataset.texto = bt.textContent; bt.disabled = true; bt.textContent = 'Creando en Stripe…';
       cargarFacturacion(sec, { accion: 'suscribir', ...datos });
     };

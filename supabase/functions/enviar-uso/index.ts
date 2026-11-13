@@ -3,7 +3,7 @@
 // Lo llama pg_cron cada día a las 21:00 UTC (tarea «enviar-uso»). Por cada empresa con suscripción en Stripe:
 //   1. mira el máximo de camiones en servicio del mes en curso (tabla camiones_mes),
 //   2. calcula lo que se cobra: en pago mensual, ese máximo con el mínimo del plan (2, 5 o 50);
-//      en pago anual, solo los camiones que pasan de los pagados,
+//      en pago anual (de una vez o en cuotas), solo los camiones que pasan de los pagados,
 //   3. se lo manda al medidor «camiones_en_servicio» de Stripe, que se queda con el último valor del mes.
 // Como el máximo del mes solo puede subir, el último aviso del mes es el que se cobra.
 //
@@ -11,7 +11,7 @@
 //   Cuerpo opcional: { origen?: 'cron' | 'manual' | 'admin', empresa_id?: string }
 // Secretos: STRIPE_SECRET_KEY.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { esPlan, valorMedidor } from '../_shared/planes.ts';
+import { esPlan, esPago, valorMedidor } from '../_shared/planes.ts';
 import { stripe, hayClaveStripe } from '../_shared/stripe.ts';
 
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 
   const resultado: Record<string, unknown>[] = [];
   for (const e of empresas || []) {
-    if (!esPlan(e.plan) || (e.pago !== 'mensual' && e.pago !== 'anual')) continue;
+    if (!esPlan(e.plan) || !esPago(e.pago)) continue;
     // Máximo del mes: la fila de este mes; si este mes no ha habido cambios, los que había al acabar el último mes con datos
     const { data: filas } = await sb.from('camiones_mes').select('mes, maximo, actual').eq('empresa_id', e.id).lte('mes', mes).order('mes', { ascending: false }).limit(1);
     let maximo = 0;

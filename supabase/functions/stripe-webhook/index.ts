@@ -4,12 +4,15 @@
 //   - empresas.suscripcion_estado sigue a Stripe (activa, baja_al_final, impagada, cancelada) y, cuando una suscripción
 //     termina de verdad, se borra su id: el aviso diario de camiones deja de mandarse a una suscripción cancelada;
 //   - cada factura queda en la tabla stripe_facturas; si una sigue pendiente 7 días después de vencer,
-//     la empresa pasa a modo consulta (privado.en_consulta) hasta que se pague.
+//     la empresa pasa a modo consulta (privado.en_consulta) hasta que se pague;
+//   - pago en cuotas: cuando el cliente guarda la tarjeta con el enlace de Checkout (modo «setup»), queda como medio de
+//     pago por defecto y sus suscripciones pasan a cargo automático.
 //
 // Eventos: customer.subscription.updated, customer.subscription.deleted, invoice.finalized, invoice.updated,
-//          invoice.paid, invoice.voided, invoice.marked_uncollectible, invoice.overdue.
-// Secretos: STRIPE_WEBHOOK_SECRET (el «signing secret» del endpoint, whsec_…).
+//          invoice.paid, invoice.voided, invoice.marked_uncollectible, invoice.overdue, checkout.session.completed.
+// Secretos: STRIPE_WEBHOOK_SECRET (el «signing secret» del endpoint, whsec_…) y STRIPE_SECRET_KEY.
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { stripe } from '../_shared/stripe.ts';
 
 const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -90,6 +93,24 @@ async function factura(f: any) {
   return emp ? null : 'factura de un cliente sin empresa';
 }
 
+// ---------- tarjeta guardada (pago en cuotas) ----------
+async function tarjetaGuardada(cs: any) {
+  if (cs.mode !== 'setup' || cs.metadata?.uso !== 'cargo_automatico') return null;
+  const emp = await empresaDe(cs);
+  if (!emp) return 'empresa no encontrada';
+  const si = await stripe('GET', `setup_intents/${cs.setup_intent}`);
+  const pm = typeof si.payment_method === 'string' ? si.payment_method : si.payment_method?.id;
+  if (!pm) return 'la sesión no ha guardado ningún medio de pago';
+  await stripe('POST', `customers/${cs.customer}`, { invoice_settings: {
+    default_payment_method: pm, footer: 'Fuelfy · fuelfy.app · Cuota cobrada automáticamente con el medio de pago guardado.' } });
+  for (const id of [...new Set([emp.stripe_sub, emp.stripe_sub_uso].filter(Boolean))] as string[])
+    await stripe('POST', `subscriptions/${id}`, { collection_method: 'charge_automatically', default_payment_method: pm });
+  const { data: f } = await sb.from('empresas').select('facturacion').eq('id', emp.id).single();
+  const { enlace_tarjeta: _, ...resto } = (f?.facturacion || {}) as Record<string, unknown>;
+  const { error } = await sb.from('empresas').update({ facturacion: { ...resto, cargo_automatico: { desde: new Date().toISOString(), medio: pm } } }).eq('id', emp.id);
+  return error ? error.message : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
   const secreto = Deno.env.get('STRIPE_WEBHOOK_SECRET');
@@ -111,6 +132,7 @@ Deno.serve(async (req) => {
     if (ev.type === 'customer.subscription.updated') problema = await suscripcion(o, false);
     else if (ev.type === 'customer.subscription.deleted') problema = await suscripcion(o, true);
     else if (ev.type.startsWith('invoice.')) problema = await factura(o);
+    else if (ev.type === 'checkout.session.completed') problema = await tarjetaGuardada(o);
   } catch (err) {
     problema = (err as Error).message;
   }
