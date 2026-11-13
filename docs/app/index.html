@@ -66,6 +66,8 @@ input[type=text]:focus, input[type=email]:focus, select:focus { outline: 2px sol
 .place { position: relative; }
 .place .dot { position: absolute; left: 10px; top: 33px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--route); background: var(--panel); }
 .place.dest .dot { background: var(--route); }
+#swap { position: absolute; right: 0; top: -2px; padding: 2px 8px; font-size: .85rem; line-height: 1.2; }
+#reintentar { display: block; margin: 8px auto 0; }
 .place input { padding-left: 28px; }
 .sugg { position: absolute; z-index: 1000; left: 0; right: 0; top: 100%; margin: 2px 0 0; padding: 4px 0; list-style: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .sugg li { padding: 7px 10px; cursor: pointer; }
@@ -322,8 +324,7 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .flotante #envio > .msg { grid-column: 1 / -1; }
   .flotante #envio .btn { white-space: nowrap; }
   .app[data-flot] #map .leaflet-top { top: var(--alto-flot, 0px); }
-  #sec-calc .row2 { margin: 0; }
-  /* El panel no se desplaza: la lista de paradas (hasta 4 a la vista) tiene su propio scroll y «Calcular ruta» queda siempre a la vista */
+  /* El panel no se desplaza: la lista de paradas (hasta 4 a la vista) tiene su propio scroll */
   .app[data-vista="ruta"] .side { overflow-y: auto; }
   .app[data-vista="ruta"] #vista-ruta { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
   .app[data-vista="ruta"] #vista-ruta > * { flex: none; }
@@ -365,7 +366,6 @@ button:focus-visible, .stop:focus-visible { outline: 2px solid var(--sel); outli
   .app[data-vista="ruta"] .head .who { grid-row: 1; grid-column: 2; justify-content: flex-end; margin: 0; min-width: 0; }
   .app[data-vista="ruta"] .head .who > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .app[data-vista="ruta"] .head #fecha { grid-column: 1 / -1; font-size: .82rem; margin-top: 4px; }
-  .app[data-vista="ruta"] #sec-calc { border-bottom: 0; }
 }
 
 /* --- Administración a pantalla completa, sin mapa --- */
@@ -589,15 +589,12 @@ a.mini { display: inline-flex; align-items: center; text-decoration: none; }
       <div class="place"><label class="lbl" for="origen">Origen</label><span class="dot"></span>
         <input type="text" id="origen" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-origen" role="listbox" hidden></ul></div>
       <div class="place dest"><label class="lbl" for="destino">Destino</label><span class="dot"></span>
+        <button class="btn ghost" id="swap" type="button" title="Intercambiar origen y destino" aria-label="Intercambiar origen y destino">⇅</button>
         <input type="text" id="destino" placeholder="Ciudad, polígono o dirección"><ul class="sugg" id="sugg-destino" role="listbox" hidden></ul></div>
       <div><label class="lbl" for="radio-n">Mostrar estaciones a menos de</label>
         <div class="lvl"><input type="range" id="radio" min="1" max="30" step="1" value="8" aria-label="Distancia máxima a la ruta">
           <span class="num"><input type="number" id="radio-n" min="1" max="30" step="1" value="8" inputmode="numeric"> km</span></div>
         <p class="small" id="radio-ayuda">de la ruta, en línea recta</p></div>
-      <div class="row2" id="fila-calc">
-        <button class="btn" id="calc" type="submit" form="ruta">Calcular ruta</button>
-        <button class="btn ghost" id="swap" type="button" title="Intercambiar origen y destino" aria-label="Intercambiar origen y destino">⇅</button>
-      </div>
     </form>
 
     <section class="block" id="resumen" hidden aria-live="polite">

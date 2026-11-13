@@ -140,13 +140,17 @@ const conPausas = min => min + Math.max(0, Math.ceil(min / CONDUCCION_MAX) - 1) 
 const hm = min => { const t = Math.round(min); return `${Math.floor(t / 60)} h ${String(t % 60).padStart(2, '0')}`; };
 const espera = ms => new Promise(r => setTimeout(r, ms));
 
-async function calcular(e) {
-  e && e.preventDefault();
+// La ruta se calcula sola al elegir origen y destino, al intercambiarlos y al abrir una ruta guardada.
+// No hay botón «Calcular ruta»: recalcular quitaba la parada elegida por el gestor y volvía a poner la mejor.
+let pedidaRuta = 0;   // solo vale la respuesta de la última ruta pedida
+async function calcular() {
   const { origen, destino } = lugares;
   if (!origen || !destino) { $('stops').innerHTML = '<p class="empty">Elige origen y destino de la lista de sugerencias.</p>'; return; }
-  $('calc').disabled = true; $('calc').textContent = 'Calculando…';
+  const n = ++pedidaRuta;
+  $('stops').innerHTML = '<p class="empty">Calculando la ruta…</p>';
   try {
     const r = await osrm([origen, destino]);
+    if (n !== pedidaRuta) return;
     const coords = r.geometry.coordinates.map(([lo, la]) => [la, lo]);
     const acum = [0]; for (let i = 1; i < coords.length; i++) acum.push(acum[i - 1] + km(coords[i - 1], coords[i]));
     const conduce = conduccionCamion(r);
@@ -156,8 +160,10 @@ async function calcular(e) {
     dibujarRuta();
     await desviosReales();
   } catch (err) {
-    $('stops').innerHTML = '<p class="empty">No he podido calcular la ruta: el servicio de rutas no responde. Vuelve a intentarlo en un momento.</p>';
-  } finally { $('calc').disabled = false; $('calc').textContent = 'Calcular ruta'; }
+    if (n !== pedidaRuta) return;
+    $('stops').innerHTML = '<p class="empty">No he podido calcular la ruta: el servicio de rutas no responde. <button type="button" class="btn ghost" id="reintentar">Reintentar</button></p>';
+    $('reintentar').onclick = calcular;
+  }
 }
 
 function dibujarRuta() {
@@ -358,48 +364,67 @@ function pintarEnvio(x, alcanzables = []) {
     ? 'Es la única parada de la ruta: no hay ahorro que comparar.'
     : ahorro < 0 ? `Coste extra estimado: ${eur(-ahorro)} ${frente}` : `Ahorro estimado: ${eur(ahorro)} ${frente}`;
   $('b-guardar-ruta').onclick = () => guardarSinEnviar(texto, { ...envioActual }, x, litros);
-  $('b-wa').onclick = async (ev) => {
-    if (window.Cuenta?.consulta) {
-      ev.preventDefault();
-      $('msg-envio').className = 'msg error';
-      $('msg-envio').textContent = 'La cuenta está en modo consulta por una factura vencida: no se pueden enviar rutas hasta que se pague.';
-      $('msg-envio').hidden = false;
-      return;
-    }
-    // El enlace se abre igual; el registro se guarda a la vez
-    const datos = { ...envioActual };
-    const clave = [datos.camion_id, datos.origen, datos.destino, datos.estacion_id].join('|');
-    const previo = leer('ultimoEnvio');
-    if (previo && previo.clave === clave && Date.now() - previo.t < 10 * 60 * 1000) {
-      $('msg-envio').className = 'msg ok';
-      $('msg-envio').textContent = 'Esta ruta ya estaba guardada en el informe de ahorro: no se cuenta dos veces.';
-      $('msg-envio').hidden = false; setTimeout(() => { $('msg-envio').hidden = true; }, 6000);
-      return;
-    }
-    try {
-      await window.Registro.guardar(datos);
-      await quitarAbierta();
-      guardar('ultimoEnvio', { clave, t: Date.now() });
-      borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
-      $('msg-envio').className = 'msg ok';
-      $('msg-envio').textContent = (ahorro < 0 ? `Guardado en el informe de ahorro (coste extra de ${eur(-ahorro)}).` : `Guardado en el informe de ahorro (${eur(ahorro)}).`)
-        + ` La ruta se quitará de la pantalla en ${MIN_BORRAR} minutos.`;
-    } catch (e) {
-      $('msg-envio').className = 'msg error';
-      $('msg-envio').textContent = 'Se ha abierto WhatsApp, pero no se ha podido guardar en el informe: ' + e.message;
-    }
-    $('msg-envio').hidden = false;
-    setTimeout(() => { $('msg-envio').hidden = true; }, 6000);
-  };
-  $('b-copiar').onclick = () => copiar(texto);
+  $('b-wa').onclick = (ev) => alEnviar(ev, null, { ...envioActual });
+  $('b-copiar').onclick = (ev) => alEnviar(ev, texto, { ...envioActual });
 }
 function avisoEnvio(texto, ok = true, ms = 6000) {
   $('msg-envio').className = 'msg ' + (ok ? 'ok' : 'error'); $('msg-envio').textContent = texto;
   $('msg-envio').hidden = false; clearTimeout(avisoEnvio.t); avisoEnvio.t = setTimeout(() => { $('msg-envio').hidden = true; }, ms);
 }
-async function copiar(texto) {
-  try { await navigator.clipboard.writeText(texto); avisoEnvio('Mensaje copiado. Pégalo en el chat del conductor.', true, 4000); }
-  catch (e) { avisoEnvio('No se ha podido copiar automáticamente.', false, 4000); }
+
+// «Enviar por WhatsApp» y «Copiar mensaje» cuentan igual: los dos apuntan la ruta en el informe de ahorro
+// (si lleva parada), la quitan de «rutas guardadas» si venía de ahí y la borran de la pantalla en 10 minutos.
+// texto = null: WhatsApp (el enlace se abre solo); con texto: se copia al portapapeles.
+async function alEnviar(ev, texto, datos) {
+  if (window.Cuenta?.consulta) { ev.preventDefault(); avisoEnvio(CONSULTA, false); return; }
+  let pre = '';
+  if (texto != null) {
+    try { await navigator.clipboard.writeText(texto); pre = 'Mensaje copiado. Pégalo en el chat del conductor. '; }
+    catch (e) { avisoEnvio('No se ha podido copiar el mensaje, así que no se ha apuntado en el informe. Prueba otra vez.', false); return; }
+  }
+  const tras = ` La ruta se quitará de la pantalla en ${MIN_BORRAR} minutos.`;
+  if (!datos || !datos.estacion_id) {   // sin parada: no cuenta en el informe
+    await quitarAbierta();
+    borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
+    avisoEnvio(pre + 'Ruta sin parada: no cuenta en el informe de ahorro.' + tras);
+    return;
+  }
+  try {
+    const r = await registrarEnvio(datos);
+    await quitarAbierta();
+    borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
+    avisoEnvio(pre + textoRegistro(r, datos) + tras, true, 8000);
+  } catch (e) {
+    avisoEnvio(pre + (texto == null ? 'Se ha abierto WhatsApp, pero ' : '') + 'no se ha podido guardar en el informe: ' + e.message, false, 8000);
+  }
+}
+const ahorroDe = d => Math.round((d.precio_referencia - d.precio_elegido) * d.litros * 100) / 100;
+function textoRegistro(r, d) {
+  if (r.estado === 'ya') return 'Esta ruta ya estaba en el informe de ahorro: no se cuenta dos veces.';
+  const a = ahorroDe(d), cifra = a < 0 ? `coste extra de ${eur(-a)}` : eur(a);
+  if (r.estado === 'cambiado') return `Actualizada en el informe de ahorro con la nueva parada o litros (${cifra}); no se cuenta dos veces.`;
+  if (r.estado === 'doble') return `Guardado en el informe (${cifra}), pero no se ha podido quitar el envío anterior de esta ruta: bórralo a mano en el informe.`;
+  return `Guardado en el informe de ahorro (${cifra}).`;
+}
+
+// Una ruta (mismo camión, origen, destino y día de precios) solo se apunta una vez en el informe.
+// Si se vuelve a mandar o copiar en los 30 minutos siguientes:
+//  - con la misma parada y litros, no se guarda otra vez;
+//  - con otra parada u otros litros, se sustituye el envío anterior por el nuevo.
+// Mientras se guarda, un segundo clic espera al primero en vez de guardar otra fila.
+const VENTANA_ENVIO_MIN = 30;
+let registrando = null;
+function registrarEnvio(datos) {
+  if (registrando) return registrando;
+  registrando = (async () => {
+    const previo = await window.Registro.reciente(datos, VENTANA_ENVIO_MIN);
+    if (previo && previo.estacion_id === datos.estacion_id && +previo.litros === +datos.litros) return { estado: 'ya' };
+    await window.Registro.guardar(datos);
+    if (!previo) return { estado: 'nuevo' };
+    try { await window.Registro.borrar(previo.id); return { estado: 'cambiado' }; }
+    catch (e) { return { estado: 'doble' }; }
+  })().finally(() => { registrando = null; });
+  return registrando;
 }
 
 // Sin parada: se manda solo la ruta y no cuenta en el informe de ahorro
@@ -413,14 +438,9 @@ function pintarSinParada() {
   $('envio-ahorro').textContent = 'Sin parada no hay repostaje, así que no cuenta en el informe de ahorro.';
   const texto = mensajeSinParada();
   $('b-wa').href = 'https://wa.me/?text=' + encodeURIComponent(texto);
-  $('b-wa').onclick = async (ev) => {
-    if (window.Cuenta?.consulta) { ev.preventDefault(); avisoEnvio(CONSULTA, false); return; }
-    await quitarAbierta();
-    borrarRuta = { clave: claveRuta(), t: Date.now() + MIN_BORRAR * 60 * 1000 };
-    avisoEnvio(`Ruta enviada sin parada. Se quitará de la pantalla en ${MIN_BORRAR} minutos.`);
-  };
+  $('b-wa').onclick = (ev) => alEnviar(ev, null, null);
   $('b-guardar-ruta').onclick = () => guardarSinEnviar(texto, null, null, null);
-  $('b-copiar').onclick = () => copiar(texto);
+  $('b-copiar').onclick = (ev) => alEnviar(ev, texto, null);
 }
 
 // ---------- rutas guardadas sin enviar ----------
@@ -493,7 +513,7 @@ function pintarGuardadas() {
 async function enviarGuardada(g) {
   // WhatsApp se abre con el enlace; a la vez se apunta en el informe (si lleva parada) y se quita de la lista
   try {
-    if (g.envio) await window.Registro.guardar(g.envio);
+    if (g.envio) await registrarEnvio(g.envio);   // tampoco cuenta dos veces si ya se mandó
     await window.RutasGuardadas.borrar(g.id);
     if (abierta === g.id) abierta = null;
     avisoGuardadas(g.envio ? 'Ruta enviada y apuntada en el informe de ahorro.' : 'Ruta enviada (sin parada).');
@@ -647,23 +667,23 @@ function montarSeleccion() {
 }
 
 // ---------- reparto de la pantalla en escritorio ----------
-// Escritorio ancho: litros y paradas van al panel (antes de «Calcular ruta») y el resumen
+// Escritorio ancho: litros y paradas van al panel (debajo del formulario de la ruta) y el resumen
 // y el envío flotan sobre la parte de arriba del mapa. En móvil todo queda como siempre.
 const altoFlot = () => (document.getElementById('flotante')?.offsetHeight || 0);
 const ANCHO = matchMedia('(min-width: 1100px)');
-const MOVIBLES = ['caja-litros', 'stops-sec', 'fila-calc', 'resumen', 'envio'];
+const MOVIBLES = ['caja-litros', 'stops-sec', 'resumen', 'envio'];
 const sitios = new Map();
 function repartir() {
   const sec = (id) => { let s = $(id); if (!s) { s = document.createElement('section'); s.className = 'block'; s.id = id; } return s; };
   if (!sitios.size) for (const id of MOVIBLES) { const el = $(id), a = document.createComment(id); el.before(a); sitios.set(id, a); }
   if (ANCHO.matches) {
-    const vista = $('vista-ruta'), litros = sec('sec-litros'), calc = sec('sec-calc');
-    litros.append($('caja-litros')); calc.append($('fila-calc'));
-    $('ruta').after(litros); litros.after($('stops-sec')); $('stops-sec').after(calc);
+    const litros = sec('sec-litros');
+    litros.append($('caja-litros'));
+    $('ruta').after(litros); litros.after($('stops-sec'));
     $('flotante').append($('resumen'), $('envio'));
   } else {
     for (const [id, a] of sitios) a.after($(id));
-    $('sec-litros')?.remove(); $('sec-calc')?.remove();
+    $('sec-litros')?.remove();
   }
   if (map) { map.invalidateSize(); }
 }
@@ -744,7 +764,7 @@ async function iniciar(camiones) {
   $('radio-n').onchange = () => ponerRadio($('radio-n').value);
   const r0 = leer('radio'); if (r0) ponerRadio(r0);
   buscador('origen'); buscador('destino');
-  $('ruta').onsubmit = calcular;
+  $('ruta').onsubmit = (e) => e.preventDefault();   // Intro en el formulario no recarga ni recalcula
   $('swap').onclick = () => { [lugares.origen, lugares.destino] = [lugares.destino, lugares.origen];
     $('origen').value = lugares.origen ? lugares.origen.label : ''; $('destino').value = lugares.destino ? lugares.destino.label : '';
     if (lugares.origen && lugares.destino) calcular(); };

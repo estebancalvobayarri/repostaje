@@ -701,6 +701,23 @@ window.Registro = {
     const { error } = await sb.from('envios').insert({ ...datos, empresa_id: perfil.empresa_id });
     if (error) throw new Error(error.message);
   },
+  // Último envío de la misma ruta (camión, origen, destino y día de precios) en los últimos `min` minutos
+  async reciente(d, min) {
+    if (!perfil) return null;
+    let q = sb.from('envios').select('id, estacion_id, litros')
+      .eq('empresa_id', perfil.empresa_id).eq('origen', d.origen).eq('destino', d.destino).eq('fecha_precios', d.fecha_precios)
+      .gte('creado', new Date(Date.now() - min * 60 * 1000).toISOString())
+      .order('creado', { ascending: false }).limit(1);
+    q = d.camion_id ? q.eq('camion_id', d.camion_id) : q.is('camion_id', null);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return data[0] || null;
+  },
+  async borrar(id) {
+    const { data, error } = await sb.from('envios').delete().eq('id', id).select('id');
+    if (error) throw new Error(error.message);
+    if (!data.length) throw new Error('sin permiso para borrarlo');
+  },
 };
 
 // ---------- rutas guardadas sin enviar (para mandarlas más adelante) ----------
