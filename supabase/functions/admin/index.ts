@@ -480,8 +480,20 @@ Deno.serve(async (req) => {
       const nombre = String(body.nombre || '').trim() || null;
       const rol = body.rol === 'conductor' ? 'conductor' : 'gestor';
       if (!emailValido(email)) return json({ error: 'El email no es válido' }, 400);
-      const { data: emp } = await sb.from('empresas').select('id').eq('id', empresa_id).maybeSingle();
+      const { data: emp } = await sb.from('empresas').select('id, stripe_sub, plan').eq('id', empresa_id).maybeSingle();
       if (!emp) return json({ error: 'La empresa no existe' }, 400);
+      // Un solo gestor durante la prueba y en Esencial (también lo comprueba la base de datos, trigger perfiles_limite_gestores).
+      // Se mira antes de invitar para no crear la cuenta si luego no se puede asignar.
+      if (rol === 'gestor' && (!emp.stripe_sub || emp.plan === 'esencial')) {
+        const { data: lista0 } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const yaId = lista0?.users.find((x) => x.email?.toLowerCase() === email)?.id;
+        let consulta = sb.from('perfiles').select('id', { count: 'exact', head: true }).eq('empresa_id', empresa_id).eq('rol', 'gestor');
+        if (yaId) consulta = consulta.neq('id', yaId);
+        const { count } = await consulta;
+        if ((count || 0) >= 1) return json({ error: emp.stripe_sub
+          ? 'El plan Esencial incluye un solo usuario gestor. Para más gestores, la empresa tiene que pasar a Pro o Flota (o invítalo como conductor).'
+          : 'Durante la prueba la empresa solo puede tener un usuario gestor. Invítalo como conductor o espera a que contrate Pro o Flota.' }, 400);
+      }
 
       // ¿Ya tiene cuenta? (p. ej. creada desde el panel de Supabase)
       const { data: lista } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -495,7 +507,7 @@ Deno.serve(async (req) => {
       const { data: ya } = await sb.from('perfiles').select('empresa_id').eq('id', usuario!.id).maybeSingle();
       if (ya && ya.empresa_id !== empresa_id) return json({ error: 'Ese email ya pertenece a otra empresa' }, 409);
       const { error: ep } = await sb.from('perfiles').upsert({ id: usuario!.id, empresa_id, nombre, rol });
-      if (ep) throw ep;
+      if (ep) { const m = /^LIMITE_GESTORES: (.*)$/.exec(ep.message || ''); if (m) return json({ error: m[1][0].toUpperCase() + m[1].slice(1) + '.' }, 400); throw ep; }
       return json({ ok: true, invitado });
     }
 
