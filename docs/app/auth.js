@@ -532,7 +532,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
         <form class="sus-f">
           <div class="sus-grid">
             <label>Plan<select name="plan">${Object.entries(planes).map(([k, p]) => `<option value="${k}" ${k === (s.plan || planSugerido(f.en_servicio)) ? 'selected' : ''}>${escH(p.nombre)} (${p.min}${p.max ? `–${p.max}` : '+'} camiones)</option>`).join('')}</select></label>
-            <label>Forma de pago<select name="pago"><option value="mensual">Mes a mes (a mes vencido)</option><option value="anual">El año, de una vez por adelantado</option><option value="cuotas">El año, en 12 cuotas mensuales</option></select></label>
+            <label>Forma de pago<select name="pago"><option value="mensual">Mes a mes (a mes vencido)</option><option value="anual">El año, de una vez por adelantado</option><option value="cuotas">El año, en 12 cuotas mensuales (Pro y Flota)</option></select></label>
             <label class="solo-anual">Camiones que paga el año<input name="camiones" type="number" min="1" step="1" value="${Math.max(f.en_servicio, 2)}"></label>
             <label class="solo-anual fila-check"><input name="fundadora" type="checkbox"> Fundadora (−25 %, quedan ${f.fundadoras_libres})</label>
             <label>Email para las facturas<input name="email" type="email" required value="${escH(fac.email || '')}"></label>
@@ -598,7 +598,7 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
         <div class="tabla"><table><tbody>
           ${Object.values(planes).map(p => `<tr><td style="text-align:left;white-space:nowrap"><b>${escH(p.nombre)}</b> · mín. ${p.min}</td><td style="text-align:left">${p.tramos.map(t => `${t.hasta ? (t.desde === 1 ? `hasta ${t.hasta}` : `${t.desde}–${t.hasta}`) : (t.desde === 1 ? 'todos' : `desde ${t.desde}`)}: ${eur2(t.precio)}`).join(' · ')}</td></tr>`).join('')}
         </tbody></table></div>
-        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año (de una vez o en 12 cuotas), 10 meses de 12; los camiones de más, cada mes al precio de su tramo. Fundadoras (Pro o Flota con contrato anual): −25 % en lugar de los dos meses gratis, también en los camiones de más.</p>
+        <p class="small" style="margin:0">Por tramos: cada camión paga el precio de su tramo. Pagando el año (de una vez o, en Pro y Flota, en 12 cuotas), 10 meses de 12; los camiones de más, cada mes al precio de su tramo. Fundadoras (Pro o Flota con contrato anual): −25 % en lugar de los dos meses gratis, también en los camiones de más.</p>
       </div>
       <div class="area usuarios">
         <h3>Altas y bajas de camiones · últimos 6 meses</h3>
@@ -629,6 +629,10 @@ async function cargarFacturacion(sec, accion = { accion: 'facturacion' }) {
   if (form) {
     const v = n => form.elements[n];
     const calcular = () => {
+      // Esencial no se puede pagar en 12 cuotas: solo mes a mes o el año de una vez
+      const opCuotas = v('pago').querySelector('option[value=cuotas]');
+      opCuotas.disabled = v('plan').value === 'esencial';
+      if (opCuotas.disabled && v('pago').value === 'cuotas') v('pago').value = 'anual';
       const plan = v('plan').value, pago = v('pago').value, cuotas = pago === 'cuotas', anual = pago === 'anual' || cuotas, p = planes[plan];
       form.querySelectorAll('.solo-anual').forEach(x => x.hidden = !anual);
       form.querySelectorAll('.no-cuotas').forEach(x => x.hidden = cuotas);

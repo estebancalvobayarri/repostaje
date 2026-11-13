@@ -18,6 +18,8 @@ export const esPlan = (p: unknown): p is Plan => p === 'esencial' || p === 'pro'
 export const esPago = (p: unknown): p is Pago => p === 'mensual' || p === 'anual' || p === 'cuotas';
 /** Pagos con contrato de 12 meses por un número fijo de camiones (los de más se cobran aparte, por uso). */
 export const conPagados = (pago: unknown) => pago === 'anual' || pago === 'cuotas';
+/** Formas de pago de cada plan: Esencial no se paga en cuotas (decisión del 13 nov 2026). */
+export const pagoPermitido = (plan: Plan, pago: Pago) => !(plan === 'esencial' && pago === 'cuotas');
 export const NOMBRE_PAGO: Record<Pago, string> = { mensual: 'mes a mes', anual: 'anual, de una vez', cuotas: 'anual, en 12 cuotas' };
 export const planPara = (camiones: number): Plan => (camiones < 5 ? 'esencial' : camiones < 50 ? 'pro' : 'flota');
 

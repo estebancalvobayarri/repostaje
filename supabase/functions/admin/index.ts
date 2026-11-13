@@ -2,7 +2,7 @@
 // Usa la clave secreta del proyecto (solo existe en el servidor) y comprueba
 // en cada llamada que quien la hace está en la tabla de administradores.
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { PLANES, type Plan, esPlan, esPago, conPagados, planPara, cuotaMensual, cuotaExtra, tramosExtra, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
+import { PLANES, type Plan, esPlan, esPago, conPagados, pagoPermitido, planPara, cuotaMensual, cuotaExtra, tramosExtra, facturables, precioStripe, tramosLegibles } from '../_shared/planes.ts';
 import { stripe, idPrecio, precioPorClave, centimos, inicioMesMadrid, hayClaveStripe, ErrorStripe, sumarMeses, tsDia1 } from '../_shared/stripe.ts';
 
 const WEB = 'https://fuelfy.app/app/';
@@ -181,6 +181,7 @@ async function suscribir(body: Record<string, unknown>) {
     : ['domiciliacion', 'tarjeta', 'transferencia'].includes(String(body.forma_pago)) ? String(body.forma_pago) : 'domiciliacion';
   if (!esPlan(plan)) return { error: 'Elige un plan' };
   if (!pago) return { error: 'Elige si paga mes a mes, el año de una vez o el año en 12 cuotas' };
+  if (!pagoPermitido(plan, pago)) return { error: 'Esencial no se puede pagar en 12 cuotas: elige mes a mes o el año de una vez' };
   if (!emailValido(email)) return { error: 'Escribe el email al que se mandan las facturas' };
   if (direccion.length < 4 || !/^\d{5}$/.test(cp) || ciudad.length < 2) return { error: 'Completa la dirección fiscal: calle, código postal (5 cifras) y población' };
   const camiones = conPagados(pago) ? Math.round(Number(body.camiones)) : null;
