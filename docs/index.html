@@ -244,11 +244,17 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 .plan .para { margin: 6px 0 0; color: var(--asfalto); font-size: .98rem; }
 .plan .precio { margin: 26px 0 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
 .plan .precio .desde { font-weight: 700; color: inherit; }
+.plan .precio b small { font-size: .6em; letter-spacing: -.02em; }
+.plan .precio .desde { flex-basis: 100%; margin-bottom: -2px; font-size: .95rem; }
 .plan .precio span { white-space: nowrap; }
 .plan .precio b { font-weight: 800; font-size: clamp(2.6rem, 3.6vw, 3.2rem); line-height: 1; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
 .plan .precio span { font-weight: 600; color: var(--asfalto); }
 .plan .anual { margin: 10px 0 0; font-size: .95rem; color: var(--asfalto); }
 .plan .anual b { color: var(--azul); }
+.fundadoras .no-acumulable { display: block; margin-top: 8px; font-size: .8rem; color: var(--asfalto); }
+.plan .formas { margin-top: 24px; display: grid; gap: 12px; }
+.plan .formas .anual { margin: 0; }
+.plan .anual .cifra { display: block; font-size: 1.12rem; font-weight: 800; margin-bottom: 1px; }
 .plan ul { margin: 24px 0 0; padding: 0; list-style: none; border-top: 3px dotted var(--niebla); }
 .plan li { position: relative; padding: 11px 0 11px 28px; border-bottom: 1px solid var(--niebla); font-size: .98rem; }
 .plan li::before { content: ""; position: absolute; left: 2px; top: 18px; width: 10px; height: 10px; border-radius: 50%; border: 3px solid var(--azul); box-sizing: border-box; }
@@ -537,7 +543,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <label class="anual-check" for="c-anual">
               <input type="checkbox" id="c-anual" role="switch">
               <b>Contrato anual</b>
-              <small id="c-anual-nota">Dos meses gratis. Lo pagas de una vez o en 12 cuotas.</small>
+              <small id="c-anual-nota">Dos meses gratis. En Pro y Flota, de una vez o en 12 cuotas.</small>
             </label>
           </div>
         </form>
@@ -562,14 +568,17 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
       <div class="cabeza">
         <p class="eti">Precios</p>
         <h2 id="t-precios">Una cuota que se paga sola con un par de repostajes<span class="punto">.</span></h2>
-        <p>Pagas por camión y mes, sin instalar nada en el vehículo y sin permanencia. Pruébalo 14 días gratis, sin tarjeta.</p>
+        <p>Precios por camión y mes con contrato anual, sin instalar nada en el vehículo. Si prefieres pagar mes a mes, sin permanencia, también puedes. Pruébalo 14 días gratis, sin tarjeta.</p>
       </div>
       <div class="planes">
         <article class="plan aparece">
           <h3>Esencial</h3>
           <p class="para">Autónomos y flotas de 2 a 5 camiones.</p>
-          <p class="precio"><b>20 €</b><span>/ camión y mes</span></p>
-          <p class="anual">Con contrato anual: <b>200 € por camión</b>, de una vez o en 12 cuotas</p>
+          <p class="precio"><span class="desde">desde</span><b>16<small>,67</small> €</b><span>/ camión y mes</span></p>
+          <div class="formas">
+            <p class="anual"><b class="cifra">200&nbsp;€ por camión al año</b>Con contrato anual, en un solo pago.</p>
+            <p class="anual"><b class="cifra">20&nbsp;€ por camión al mes</b>Mes a mes, sin permanencia.</p>
+          </div>
           <ul>
             <li>Mapa de precios del gasóleo en ruta</li>
             <li>La mejor parada para cada camión</li>
@@ -578,7 +587,7 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
             <li>Un usuario gestor</li>
           </ul>
           <div class="pie-plan">
-            <p class="minimo">Mínimo 2 camiones (40 € al mes).</p>
+            <p class="minimo">Mínimo 2 camiones (33,33&nbsp;€ al mes con contrato anual; 40&nbsp;€ mes a mes).</p>
             <a class="boton vacio" href="#prueba">Probar Esencial</a>
           </div>
         </article>
@@ -586,15 +595,18 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
           <span class="sello-plan">Recomendado</span>
           <h3>Pro</h3>
           <p class="para">Flotas de 5 a 49 camiones.</p>
-          <p class="precio"><b>30 €</b><span>/ camión y mes</span></p>
-          <p class="anual">Con contrato anual: <b>300 € por camión</b>, de una vez o en 12 cuotas</p>
+          <p class="precio"><span class="desde">desde</span><b>25&nbsp;€</b><span>/ camión y mes</span></p>
+          <div class="formas">
+            <p class="anual"><b class="cifra">300&nbsp;€ por camión al año</b>Con contrato anual, de una vez o en 12 cuotas.</p>
+            <p class="anual"><b class="cifra">30&nbsp;€ por camión al mes</b>Mes a mes, sin permanencia.</p>
+          </div>
           <ul>
             <li class="base">Todo lo de Esencial, y además:</li>
             <li>Informe mensual de ahorro frente a repostar sin Fuelfy</li>
             <li>Usuarios ilimitados</li>
             <li>Exportación de datos</li>
           </ul>
-          <p class="volumen">A partir del camión 26, <b>cada camión de más cuesta un 10 % menos</b> (27 €).</p>
+          <p class="volumen">A partir del camión 26, <b>cada camión de más cuesta un 10&nbsp;% menos</b>: 22,50&nbsp;€ al mes con contrato anual (27&nbsp;€ mes a mes).</p>
           <div class="pie-plan">
             <p class="minimo">Mínimo 5 camiones.</p>
             <a class="boton lleno" href="#prueba">Probar Pro 14 días gratis</a>
@@ -603,30 +615,33 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <article class="plan aparece">
           <h3>Flota</h3>
           <p class="para">Flotas de 50 camiones o más.</p>
-          <p class="precio"><span class="desde">desde</span><b>25 €</b><span>/ camión y mes</span></p>
-          <p class="anual">Con contrato anual: <b>desde 250 € por camión</b>, de una vez o en 12 cuotas</p>
+          <p class="precio"><span class="desde">desde</span><b>20<small>,83</small> €</b><span>/ camión y mes</span></p>
+          <div class="formas">
+            <p class="anual"><b class="cifra">desde 250&nbsp;€ por camión al año</b>Con contrato anual, de una vez o en 12 cuotas.</p>
+            <p class="anual"><b class="cifra">desde 25&nbsp;€ por camión al mes</b>Mes a mes, sin permanencia.</p>
+          </div>
           <ul>
             <li class="base">Todo lo de Pro, y además:</li>
             <li>Varias cuentas: sedes o centros de coste</li>
             <li>Administrador de cuenta</li>
             <li>Soporte prioritario</li>
           </ul>
-          <p class="volumen flota-vol">Del camión 75 al 99, <b>un 20 % menos</b> (20 €); desde el 100, <b>un 30 % menos</b> (17,50 €).</p>
+          <p class="volumen flota-vol">Del camión 75 al 99, <b>un 20&nbsp;% menos</b>: 16,67&nbsp;€ al mes con contrato anual (20&nbsp;€ mes a mes). Desde el 100, <b>un 30&nbsp;% menos</b>: 14,58&nbsp;€ (17,50&nbsp;€).</p>
           <div class="pie-plan">
             <p class="minimo">Mínimo 50 camiones.</p>
             <a class="boton vacio" href="#prueba">Pedir presupuesto</a>
           </div>
         </article>
       </div>
-      <p class="ejemplo-precio">Precios sin IVA. Ejemplo: 20 camiones en Pro son 600 € al mes; con un ahorro prudente de 4 céntimos por litro, esa flota ahorra unos 2.500 € al mes. <a href="legal/condiciones.html#precio" style="font-weight: 700">Condiciones completas</a></p>
+      <p class="ejemplo-precio">Precios sin IVA. Ejemplo: 20 camiones en Pro son 500&nbsp;€ al mes con contrato anual (600&nbsp;€ mes a mes); con un ahorro prudente de 4 céntimos por litro, esa flota ahorra unos 2.500&nbsp;€ al mes. <a href="legal/condiciones.html#precio" style="font-weight: 700">Condiciones completas</a></p>
       <div class="condiciones">
         <div class="aparece"><h3>14 días gratis</h3><p>Sin tarjeta. Dos semanas para planificar tus rutas reales y ver cuánto ahorras.</p></div>
         <div class="aparece"><h3>Sin permanencia</h3><p>Pagando mes a mes, te das de baja cuando quieras.</p></div>
-        <div class="aparece"><h3>Dos meses gratis</h3><p>Con contrato anual pagas solo diez meses, de una vez o repartidos en 12 cuotas.</p></div>
+        <div class="aparece"><h3>Dos meses gratis</h3><p>Con contrato anual pagas solo diez meses: de una vez o, en Pro y Flota, repartidos en 12 cuotas.</p></div>
         <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>En Pro y Flota: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
       <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: un 25 % menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro o Flota con contrato anual (en lugar de los dos meses gratis; de una vez o en 12 cuotas), a cambio de contarnos cada mes cómo os va y dejarnos publicar vuestro caso.</p>
+        <p><strong>Flotas fundadoras: un 25&nbsp;% menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro o Flota con contrato anual (pago único o 12&nbsp;cuotas), a cambio de contarnos cómo os va y dejarnos publicar vuestro caso.<small class="no-acumulable">Descuento exclusivo no acumulable a otras ofertas.</small></p>
         <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
       </div>
     </div>
@@ -736,7 +751,7 @@ visor.addEventListener('click', (e) => { if (e.target === visor || e.target.clos
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
 // Contrato anual en todos los planes: dos meses gratis (se paga 10/12 del año), también sobre el precio con descuento por volumen.
-// Se paga de una vez o en 12 cuotas mensuales del mismo importe total.
+// Se paga de una vez o, en Pro y Flota, en 12 cuotas mensuales del mismo importe total (Esencial: solo de una vez).
 const plan = (n) => n < 5 ? ['Esencial', Math.max(n, 2) * 20] : n < 26 ? ['Pro', n * 30] : n < 50 ? ['Pro', 25 * 30 + (n - 25) * 27] : ['Flota (desde)', Math.min(n, 74) * 25 + Math.max(0, Math.min(n, 99) - 74) * 20 + Math.max(0, n - 99) * 17.5];
 const fundadora = document.getElementById('c-fundadora'), fundadoraNota = document.getElementById('c-fundadora-nota');
 const anual = document.getElementById('c-anual'), anualNota = document.getElementById('c-anual-nota'), rAnual = document.getElementById('r-anual');
@@ -757,10 +772,10 @@ function calcular() {
   if (esFundadora) anual.checked = true;
   anual.disabled = esFundadora;
   fundadoraNota.textContent = puedeFundadora ? 'Las 15 primeras empresas en Pro o Flota con contrato anual: un 25 % menos.' : 'Solo en los planes Pro y Flota, desde 5 camiones.';
-  anualNota.textContent = esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : 'Dos meses gratis. Lo pagas de una vez o en 12 cuotas.';
+  anualNota.textContent = esFundadora ? 'Incluido. Las fundadoras tienen el 25 % en lugar de los dos meses gratis.' : puedeFundadora ? 'Dos meses gratis. Lo pagas de una vez o en 12 cuotas.' : 'Dos meses gratis. En Esencial se paga de una vez.';
   const conAnual = anual.checked;
-  // Contrato de 12 meses: el importe del año, de una vez o en 12 cuotas iguales (precios sin IVA)
-  const textoAnual = (año, ahorroAño) => 'Contrato de 12 meses por ' + eur(año, 0) + ' + IVA (' + eur(año / 12 / n, 2) + ' por camión al mes). Lo pagas de una vez o en 12 cuotas de ' + eur(año / 12, 2) + ' + IVA. Te ahorras ' + eur(ahorroAño, 0) + ' frente al pago mes a mes.';
+  // Contrato de 12 meses: el importe del año, de una vez o (Pro y Flota) en 12 cuotas iguales (precios sin IVA)
+  const textoAnual = (año, ahorroAño) => 'Contrato de 12 meses por ' + eur(año, 0) + ' + IVA (' + eur(año / 12 / n, 2) + ' por camión al mes). ' + (puedeFundadora ? 'Lo pagas de una vez o en 12 cuotas de ' + eur(año / 12, 2) + ' + IVA.' : 'Se paga de una vez.') + ' Te ahorras ' + eur(ahorroAño, 0) + ' frente al pago mes a mes.';
   if (esFundadora) {
     const mensual = c;
     c = mensual * 0.75; nombre += ' fundadora, contrato anual';
