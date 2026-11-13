@@ -283,6 +283,18 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
 @media (max-width: 560px) { .condiciones { grid-template-columns: 1fr; } .condiciones div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--niebla); } }
 .fundadoras { margin-top: clamp(40px, 6vw, 56px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 32px; padding: clamp(22px, 3vw, 32px) clamp(22px, 3vw, 36px); border-radius: 20px; background: var(--ambar-suave); }
 .fundadoras p { margin: 0; max-width: 46em; }
+.fund-acciones { display: flex; flex-wrap: wrap; gap: 10px; }
+.doc { border: 0; padding: 0; border-radius: 16px; width: min(820px, 94vw); max-height: 92vh; display: none; flex-direction: column; background: var(--papel); color: var(--azul); }
+.doc[open] { display: flex; }
+.doc::backdrop { background: rgba(11,26,44,.82); backdrop-filter: blur(4px); }
+.doc-barra { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 20px; border-bottom: 1px solid var(--niebla); background: #fff; }
+.doc-barra h2 { margin: 0 auto 0 0; font: 800 1.05rem/1.2 var(--f); }
+.doc-barra .boton { padding: 10px 16px; font-size: .92rem; white-space: nowrap; }
+.doc-cerrar { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--papel); color: var(--azul); font: 800 1.5rem/1 var(--f); cursor: pointer; flex: none; }
+.doc-cuerpo { overflow: auto; padding: 16px; }
+.doc-cuerpo img { width: 100%; height: auto; display: block; border-radius: 8px; box-shadow: 0 6px 24px rgba(11,26,44,.12); background: #fff; }
+@media (max-width: 560px) { .doc-barra { gap: 8px; padding: 10px 10px 10px 16px; } .doc-barra h2 { font-size: .9rem; } .doc-barra .boton { padding: 8px 12px; font-size: .8rem; } .doc-cerrar { width: 40px; height: 40px; font-size: 1.3rem; } .doc-cuerpo { padding: 8px; } }
+.fundadoras.arriba { margin-top: 0; margin-bottom: clamp(36px, 5vw, 52px); }
 .fundadoras strong { display: block; font-size: 1.25rem; font-weight: 800; letter-spacing: -.015em; margin-bottom: 4px; }
 .ejemplo-precio { margin: 20px 0 0; font-size: .95rem; color: var(--asfalto); }
 
@@ -570,6 +582,13 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <h2 id="t-precios">Una cuota que se paga sola con un par de repostajes<span class="punto">.</span></h2>
         <p>Precios por camión y mes con contrato anual, sin instalar nada en el vehículo. Si prefieres pagar mes a mes, sin permanencia, también puedes. Pruébalo 14 días gratis, sin tarjeta.</p>
       </div>
+      <div class="fundadoras arriba aparece">
+        <p><strong>Flotas fundadoras: un 25&nbsp;% menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro o Flota con contrato anual (pago único o 12&nbsp;cuotas), a cambio de contarnos cómo os va y dejarnos publicar vuestro caso.<small class="no-acumulable">Descuento exclusivo no acumulable a otras ofertas.</small></p>
+        <div class="fund-acciones">
+          <button class="boton vacio" type="button" data-doc="doc-fundadora">Ver condiciones</button>
+          <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
+        </div>
+      </div>
       <div class="planes">
         <article class="plan aparece">
           <h3>Esencial</h3>
@@ -640,10 +659,6 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
         <div class="aparece"><h3>Dos meses gratis</h3><p>Con contrato anual pagas solo diez meses: de una vez o, en Pro y Flota, repartidos en 12 cuotas.</p></div>
         <div class="aparece"><h3 style="color: var(--ambar)">Garantía de ahorro</h3><p>En Pro y Flota: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</p></div>
       </div>
-      <div class="fundadoras aparece">
-        <p><strong>Flotas fundadoras: un 25&nbsp;% menos, para siempre.</strong>Para las 15 primeras empresas que contraten Pro o Flota con contrato anual (pago único o 12&nbsp;cuotas), a cambio de contarnos cómo os va y dejarnos publicar vuestro caso.<small class="no-acumulable">Descuento exclusivo no acumulable a otras ofertas.</small></p>
-        <a class="boton lleno" href="#prueba">Quiero ser fundadora</a>
-      </div>
     </div>
   </section>
 
@@ -712,6 +727,17 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
   </section>
 </main>
 
+<dialog class="doc" id="doc-fundadora" aria-labelledby="doc-fundadora-t">
+  <div class="doc-barra">
+    <h2 id="doc-fundadora-t">Condiciones Flota fundadora</h2>
+    <a class="boton lleno" href="documentos/fuelfy-flota-fundadora.pdf" download="Fuelfy - Condiciones Flota fundadora.pdf">Descargar PDF</a>
+    <button class="doc-cerrar" type="button" aria-label="Cerrar">×</button>
+  </div>
+  <div class="doc-cuerpo">
+    <img src="documentos/fuelfy-flota-fundadora.webp" width="1588" height="2246" loading="lazy" alt="Condiciones de la oferta Flota fundadora: un 25 % menos en la cuota para siempre, para las 15 primeras empresas en Pro o Flota con contrato anual (pago único o 12 cuotas), a cambio de una breve entrevista al mes y de publicar su caso. Precio de fundadora por camión al año: Pro 270 € (243 € desde el camión 26); Flota 225 €, 180 € del 75 al 99 y 157,50 € desde el 100. No acumulable con los dos meses gratis del contrato anual; se pierde si el contrato anual se interrumpe.">
+  </div>
+</dialog>
+
 <dialog class="visor" id="visor" aria-label="Captura ampliada">
   <button class="visor-cerrar" type="button" aria-label="Cerrar">×</button>
   <img src="" alt="">
@@ -747,6 +773,12 @@ document.querySelectorAll('[data-visor]').forEach(b => b.addEventListener('click
   visor.showModal ? visor.showModal() : window.open(i.src, '_blank');
 }));
 visor.addEventListener('click', (e) => { if (e.target === visor || e.target.closest('.visor-cerrar')) visor.close(); });
+// Documentos en ventana (condiciones de Flota fundadora): sin <dialog>, se abre el PDF
+document.querySelectorAll('[data-doc]').forEach(b => b.addEventListener('click', () => {
+  const d = document.getElementById(b.dataset.doc);
+  if (d.showModal) d.showModal(); else window.open(d.querySelector('a[download]').href, '_blank');
+}));
+document.querySelectorAll('dialog.doc').forEach(d => d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('.doc-cerrar')) d.close(); }));
 
 // ---------- calculadora de ahorro (misma lógica que la portada) ----------
 // Plan de precios: Esencial 20 € (mín. 2), Pro 30 € (del camión 26 al 49, esos camiones a 27 €), Flota desde 25 €
