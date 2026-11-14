@@ -31,7 +31,7 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@1,400;1,500&family=Manrope:wght@500;600;700;800&display=swap">
 <style>
 /* Dirección «Cuaderno de ruta»: papel de fondo, titulares enormes en azul ruta,
    la ruta de puntos del logotipo como hilo conductor y el ámbar reservado a la parada. */
@@ -138,6 +138,17 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
   .ventana .mapa { order: -1; aspect-ratio: 300 / 380; border-bottom: 1px solid var(--linea); }
   .ventana .ocultable { display: none; }
 }
+
+/* ahorro medio: una frase grande con las dos cifras destacadas */
+.ahorro-medio { background: var(--ambar-suave); position: relative; overflow: hidden; }
+.ahorro-medio .envuelve { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: clamp(18px, 3vw, 36px); align-items: center; padding-block: clamp(36px, 5vw, 56px); }
+.ahorro-medio .icono-gota { width: clamp(56px, 7vw, 84px); height: clamp(56px, 7vw, 84px); border-radius: 50%; background: var(--azul); display: grid; place-items: center; flex: none; }
+.ahorro-medio .icono-gota svg { width: 52%; height: 52%; }
+.ahorro-medio p { margin: 0; font: italic 400 clamp(1.5rem, 3.3vw, 2.6rem)/1.25 Lora, Georgia, "Times New Roman", serif; letter-spacing: -.01em; color: var(--azul); text-wrap: balance; max-width: 30em; }
+.ahorro-medio strong { font: normal 800 1.12em/1 var(--f); letter-spacing: -.035em; white-space: nowrap; }
+.ahorro-medio .ruta { position: absolute; right: -40px; top: 50%; transform: translateY(-50%); width: 340px; height: 140px; opacity: .5; pointer-events: none; }
+@media (max-width: 900px) { .ahorro-medio .ruta { display: none; } }
+@media (max-width: 560px) { .ahorro-medio .envuelve { grid-template-columns: minmax(0, 1fr); gap: 14px; } .ahorro-medio .icono-gota { width: 48px; height: 48px; } }
 
 /* tarjetas que lee: tira */
 .tira { border-block: 1px solid var(--niebla); }
@@ -461,6 +472,14 @@ h3 { font-size: 1.45rem; line-height: 1.15; letter-spacing: -.02em; }
           </div>
         </div>
       </figure>
+    </div>
+  </section>
+
+  <section class="ahorro-medio" aria-label="Ahorro medio con Fuelfy">
+    <svg class="ruta" viewBox="0 0 340 140" aria-hidden="true"><path d="M10 110C70 110 90 40 160 40S260 100 320 70" fill="none" stroke="#12263F" stroke-width="4" stroke-linecap="round" stroke-dasharray="0.5 12"/><circle cx="320" cy="70" r="9" fill="#F2A900"/></svg>
+    <div class="envuelve">
+      <span class="icono-gota" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#F2A900" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7C9 6.6 6.5 9.9 6.5 13.5a5.5 5.5 0 0 0 11 0c0-3.6-2.5-6.9-5.5-10.8z"/><path d="M9.6 14.2c.2 1.3 1.1 2.2 2.4 2.4" stroke="#FFFFFF"/></svg></span>
+      <p>Ahorra de media <strong>4&nbsp;céntimos</strong> por litro repostado: unos <strong>1.650&nbsp;€</strong> al año por camión<span class="punto">.</span></p>
     </div>
   </section>
 
