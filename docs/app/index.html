@@ -749,7 +749,8 @@ a.mini { display: inline-flex; align-items: center; text-decoration: none; }
         <article class="card"><h3>Litros por tarjeta</h3><div class="g" id="g-tarjeta-caja"><canvas id="g-tarjeta" aria-label="Litros por tarjeta"></canvas></div>
           <div class="ley" id="d-ley-tarjeta"></div></article>
         <article class="card ancho"><h3>Desglose por camión</h3>
-          <div class="tabla"><table><thead><tr><th>Camión</th><th>Rutas</th><th>Km</th><th>Litros</th><th>Ahorro</th><th>Ahorro por ruta</th></tr></thead><tbody id="t-camiones"></tbody></table></div></article>
+          <div class="tabla"><table><thead><tr><th>Camión</th><th>Rutas</th><th>Km*</th><th>Litros*</th><th>Ahorro</th><th>Ahorro por ruta</th></tr></thead><tbody id="t-camiones"></tbody></table></div>
+          <p class="small" style="margin: 10px 0 0">*Valores planificados en la app: los km de origen a destino de cada ruta y los litros que se iban a echar en la parada. No son los km ni los litros reales.</p></article>
         <article class="card ancho"><h3>Estaciones más elegidas</h3>
           <div class="tabla"><table><thead><tr><th>Estación</th><th>Veces</th><th>Litros</th><th>Ahorro</th></tr></thead><tbody id="t-estaciones"></tbody></table></div></article>
       </div>
