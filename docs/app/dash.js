@@ -67,7 +67,7 @@
   const barra = (color) => ({ backgroundColor: color, borderRadius: 4, borderSkipped: 'start', maxBarThickness: 28, categoryPercentage: .7, barPercentage: .9 });
 
   function pintar(env, { desde, etiqueta, empresa }) {
-    $('d-titulo').textContent = `Ahorro · ${empresa || ''}`;
+    $('d-titulo').textContent = empresa ? `Ahorro estimado · ${empresa}` : 'Ahorro estimado';
     $('d-periodo').textContent = etiqueta;
     const vacio = !env.length;
     $('d-vacio').hidden = !vacio;
