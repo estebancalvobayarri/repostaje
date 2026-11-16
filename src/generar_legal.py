@@ -79,7 +79,7 @@ privacidad = f'''
 <p>{TIT}, con NIF {NIF} y domicilio en {DOM}. Para cualquier cuestión sobre tus datos puedes escribir a {EMAIL}.</p>
 <p>Fuelfy trata datos en dos papeles distintos:</p>
 <ul>
-  <li><b>Como responsable</b>, de los datos de contacto y facturación de las empresas clientes y de sus gestores, para gestionar la relación comercial.</li>
+  <li><b>Como responsable</b>, de los datos de contacto y facturación de las empresas clientes y de sus gestores, para gestionar la relación comercial, y de los extractos de tarjetas de carburante que una empresa aporte al pedir la garantía de ahorro.</li>
   <li><b>Como encargado del tratamiento</b>, de los datos que cada empresa introduce en la aplicación (sus usuarios, camiones, rutas y los emails de precios que reenvía). En ese caso la responsable es la empresa cliente, y Fuelfy solo los trata siguiendo sus instrucciones, según el <a href="condiciones.html#encargo">Anexo de encargo del tratamiento</a>.</li>
 </ul>
 
@@ -92,6 +92,7 @@ privacidad = f'''
 <tr><td>Flota</td><td>Matrícula, descripción, capacidad del depósito y consumo de cada camión</td><td>El gestor, en la pestaña Flota</td></tr>
 <tr><td>Rutas enviadas</td><td>Origen, destino, kilómetros, estación elegida, litros, precio, ahorro estimado y el usuario que la envió</td><td>Se guardan al pulsar «Enviar por WhatsApp»</td></tr>
 <tr><td>Emails de precios</td><td>El contenido de los emails que la empresa reenvía desde sus proveedores, que puede incluir nombres, firmas y teléfonos de quien los envía</td><td>Los reenvíos de la empresa a su dirección de Fuelfy</td></tr>
+<tr><td>Extractos de tarjetas de carburante</td><td>Fecha, estación, matrícula, litros e importe de cada repostaje de los tres primeros meses; pueden incluir el nombre del conductor si aparece en el extracto</td><td>La empresa cliente, solo si pide la garantía de ahorro</td></tr>
 <tr><td>Solicitudes de prueba</td><td>Nombre, empresa, email, teléfono, número de camiones, tarjetas que usa y el mensaje que escriba</td><td>El formulario de prueba de la web</td></tr>
 <tr><td>Datos técnicos</td><td>Sesión iniciada y preferencias guardadas en el navegador</td><td>El propio navegador</td></tr>
 </tbody></table></div>
@@ -101,6 +102,7 @@ privacidad = f'''
 <ul>
   <li><b>Prestar el servicio</b> (mostrar precios, calcular rutas, guardar envíos e informes de ahorro): ejecución del contrato con la empresa cliente (art. 6.1.b del RGPD).</li>
   <li><b>Facturar y cobrar</b> (con Stripe) y <b>cumplir obligaciones fiscales y contables</b>: ejecución del contrato y obligación legal (art. 6.1.b y 6.1.c).</li>
+  <li><b>Comprobar las solicitudes de garantía de ahorro</b>, comparando los repostajes de los extractos con las rutas enviadas y las paradas recomendadas (<a href="condiciones.html#garantia">condiciones, apartado 6</a>): ejecución del contrato (art. 6.1.b). Solo se usan para eso.</li>
   <li><b>Responder a las solicitudes de prueba</b> y dar de alta a la empresa: medidas precontractuales a petición de quien la envía (art. 6.1.b).</li>
   <li><b>Mantener la seguridad</b> del servicio y evitar accesos indebidos: interés legítimo (art. 6.1.f).</li>
   <li><b>Avisos del servicio</b> (invitaciones, recuperación de contraseña, fin del periodo de prueba): ejecución del contrato.</li>
@@ -110,6 +112,7 @@ privacidad = f'''
 <h2>4. Cuánto tiempo se guardan</h2>
 <ul>
   <li>Los datos de la aplicación, incluidos los emails de precios guardados en el buzón de Fuelfy, mientras la empresa siga siendo cliente. Al darse de baja se borran en un plazo de 30 días, después de darle la opción de descargar sus rutas.</li>
+  <li>Los extractos de tarjetas aportados para la garantía de ahorro, hasta 6 meses después de resolver la solicitud, o más si hay una reclamación pendiente sobre ella.</li>
   <li>Las solicitudes de prueba que no acaban en alta, un año como máximo.</li>
   <li>El historial de altas y bajas de camiones, 6 meses.</li>
   <li>Las facturas y los datos de facturación, el tiempo que exigen las leyes fiscales y mercantiles (hasta 6 años).</li>
@@ -306,7 +309,7 @@ condiciones = f'''
 os.makedirs(OUT, exist_ok=True)
 # Las condiciones llevan su propia versión: cambian los planes y precios (8/11/2026)
 VERSION_COND, FECHA_COND = '2.0', '16 de noviembre de 2026'   # 13/11: contrato anual en 12 cuotas y permanencia; 16/11: condiciones de la garantía de ahorro
-VERSION_PRIV, FECHA_PRIV = '1.1', '9 de noviembre de 2026'   # 1.1: Stripe y Hostinger en lugar de Gmail; solicitudes de prueba
+VERSION_PRIV, FECHA_PRIV = '1.2', '16 de noviembre de 2026'   # 1.1: Stripe y Hostinger en lugar de Gmail; solicitudes de prueba · 1.2: extractos de tarjetas para la garantía de ahorro
 for archivo, titulo, cuerpo, desc, ver, fec in [
     ('aviso-legal.html', 'Aviso legal', aviso, 'Datos del titular de Fuelfy y condiciones de uso de la web.', VERSION, FECHA),
     ('privacidad.html', 'Privacidad y cookies', privacidad, 'Qué datos trata Fuelfy, para qué, con quién se comparten y cómo ejercer tus derechos.', VERSION_PRIV, FECHA_PRIV),
