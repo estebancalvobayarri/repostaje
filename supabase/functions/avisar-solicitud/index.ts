@@ -7,7 +7,7 @@
 // (salvo con { repetir: true }).
 //
 // POST con cabecera x-aviso-token (el token está en Vault como «aviso_solicitud_token»; su hash, en ajustes.aviso_token_sha256).
-//   Cuerpo: { id: uuid, repetir?: true }
+//   Cuerpo: { id: uuid, repetir?: true, copia?: ['otra@fuelfy.app'] }  (la respuesta incluye la conversación SMTP)
 // Secretos: IMAP_PASSWORD (la del buzón; vale también para SMTP). Opcionales: IMAP_USER, SMTP_HOST, AVISO_PARA.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { encodeBase64 } from 'jsr:@std/encoding@1/base64';
@@ -36,6 +36,7 @@ class Smtp {
   private buf = '';
   private enc = new TextEncoder();
   private dec = new TextDecoder();
+  traza: string[] = [];   // conversación con el servidor (sin la contraseña), para diagnosticar
 
   async conectar(host: string, puerto = 465) {
     this.conn = await Deno.connectTls({ hostname: host, port: puerto });
@@ -55,6 +56,7 @@ class Smtp {
   private async esperar(codigo: number) {
     let l: string, todo = '';
     do { l = await this.linea(); todo += l + '\n'; } while (/^\d{3}-/.test(l));
+    this.traza.push('S: ' + todo.trim());
     if (!l.startsWith(String(codigo))) throw new Error(`SMTP: esperaba ${codigo} y ha respondido «${todo.trim().slice(0, 300)}»`);
     return todo;
   }
@@ -62,17 +64,21 @@ class Smtp {
     let d = this.enc.encode(s);
     while (d.length) d = d.subarray(await this.conn.write(d));
   }
-  async cmd(s: string, codigo: number) { await this.escribir(s + '\r\n'); return await this.esperar(codigo); }
+  async cmd(s: string, codigo: number, oculto = false) {
+    this.traza.push('C: ' + (oculto ? '(oculto)' : s));
+    await this.escribir(s + '\r\n'); return await this.esperar(codigo);
+  }
 
-  async enviar(usuario: string, password: string, de: string, para: string, mensaje: string) {
+  async enviar(usuario: string, password: string, de: string, para: string[], mensaje: string) {
     await this.cmd('EHLO fuelfy.app', 250);
     await this.cmd('AUTH LOGIN', 334);
     await this.cmd(encodeBase64(usuario), 334);
-    await this.cmd(encodeBase64(password), 235);
-    await this.cmd(`MAIL FROM:<${de}>`, 250);
-    await this.cmd(`RCPT TO:<${para}>`, 250);
+    await this.cmd(encodeBase64(password), 235, true);
+    await this.cmd(`MAIL FROM:<${de}> BODY=8BITMIME`, 250);
+    for (const p of para) await this.cmd(`RCPT TO:<${p}>`, 250);
     await this.cmd('DATA', 354);
-    // El cuerpo va en base64, así que ninguna línea empieza por «.»; aun así se escapan por si acaso
+    // Las líneas que empiezan por «.» se duplican (lo pide el protocolo SMTP)
+    this.traza.push('C: (mensaje, ' + mensaje.length + ' bytes)');
     await this.escribir(mensaje.replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..') + '\r\n.\r\n');
     await this.esperar(250);
   }
@@ -88,9 +94,10 @@ class Smtp {
 const b64 = (s: string) => encodeBase64(new TextEncoder().encode(s));
 const cabecera = (s: string) => /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${b64(s)}?=`;
 const limpio = (s: unknown) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim();
-const envolver = (s: string) => s.match(/.{1,76}/g)?.join('\r\n') ?? '';
+// SMTP no admite líneas de más de 998 bytes: las largas (un mensaje sin saltos) se parten en trozos de 300 caracteres
+const partir = (t: string) => t.split('\n').flatMap((l) => l.match(/.{1,300}(\s+|$)|.{1,300}/gu) || ['']).map((l) => l.trimEnd()).join('\n');
 
-function redactar(s: Record<string, any>) {
+function redactar(s: Record<string, any>, para: string[]) {
   const fecha = new Date(s.creado).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', dateStyle: 'full', timeStyle: 'short' });
   const tarjetas = Array.isArray(s.tarjetas) && s.tarjetas.length ? s.tarjetas.join(', ') : '—';
   const texto = [
@@ -114,40 +121,43 @@ function redactar(s: Record<string, any>) {
   const asunto = `Nueva solicitud de prueba: ${limpio(s.empresa)} (${s.camiones ?? '?'} camiones)`;
   return [
     `From: ${cabecera('Fuelfy')} <${SMTP_USER}>`,
-    `To: <${PARA}>`,
+    `To: ${para.map((p) => `<${p}>`).join(', ')}`,
     `Reply-To: ${cabecera(limpio(s.nombre))} <${limpio(s.email)}>`,
     `Subject: ${cabecera(asunto)}`,
     `Date: ${new Date().toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: <solicitud-${s.id}-${Date.now()}@fuelfy.app>`,
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset=utf-8',
-    'Content-Transfer-Encoding: base64',
+    'Content-Transfer-Encoding: 8bit',   // texto normal (el base64 en un email de solo texto lo penalizan los filtros de spam)
     '',
-    envolver(b64(texto)),
+    partir(texto),
   ].join('\r\n');
 }
 
-async function avisar(id: string, repetir: boolean) {
+// copia: otras direcciones de fuelfy.app que reciben también el aviso (solo para pruebas)
+async function avisar(id: string, repetir: boolean, copia: string[] = []) {
+  const para = [PARA, ...copia.filter((c) => /^[^@\s]+@fuelfy\.app$/i.test(c) && c !== PARA)];
   const { data: s, error } = await sb.from('solicitudes').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!s) return { error: 'No existe esa solicitud', status: 404 };
   if (s.aviso_enviado && !repetir) return { ok: true, ya_enviado: s.aviso_enviado };
 
   const password = (Deno.env.get('IMAP_PASSWORD') || '').trim();
+  let smtp: Smtp | null = null;
   try {
     if (!password) throw new Error('Falta el secreto IMAP_PASSWORD en Supabase');
-    const smtp = new Smtp();
+    smtp = new Smtp();
     await smtp.conectar(SMTP_HOST);
-    try { await smtp.enviar(SMTP_USER, password, SMTP_USER, PARA, redactar(s)); }
+    try { await smtp.enviar(SMTP_USER, password, SMTP_USER, para, redactar(s, para)); }
     finally { await smtp.cerrar(); }
     const ahora = new Date().toISOString();
     await sb.from('solicitudes').update({ aviso_enviado: ahora, aviso_error: null }).eq('id', id);
-    return { ok: true, enviado: ahora, para: PARA };
+    return { ok: true, enviado: ahora, para, traza: smtp.traza };
   } catch (e) {
     const msg = String((e as Error)?.message || e).slice(0, 500);
     await sb.from('solicitudes').update({ aviso_error: msg }).eq('id', id);
     console.error('No se ha podido avisar de la solicitud', id, msg);
-    return { error: msg, status: 502 };
+    return { error: msg, status: 502, traza: smtp?.traza };
   }
 }
 
@@ -160,6 +170,6 @@ Deno.serve(async (req) => {
   try { b = await req.json(); } catch { /* sin cuerpo */ }
   const id = String(b.id || '');
   if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'Falta el id de la solicitud' }, 400);
-  const r = await avisar(id, !!b.repetir);
+  const r = await avisar(id, !!b.repetir, Array.isArray(b.copia) ? b.copia.map(String) : []);
   return json(r, (r as any).status || 200);
 });
