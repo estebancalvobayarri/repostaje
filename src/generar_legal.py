@@ -156,7 +156,7 @@ condiciones = f'''
 <ul>
   <li>Empiezas con 14 días de prueba gratis, sin tarjeta, con hasta 5 camiones y un usuario gestor. Después eliges plan: Esencial (20 €), Pro (30 €) o Flota (25 €, con descuentos desde el camión 75), por camión y mes, sin IVA.</li>
   <li>Pagando mes a mes, se cobra a mes vencido el máximo de camiones que has tenido en servicio a la vez, y te puedes dar de baja cuando quieras. Con contrato anual tienes dos meses gratis, y lo pagas de una vez o, en los planes Pro y Flota, en 12 cuotas mensuales.</li>
-  <li>Garantía de ahorro en los planes Pro y Flota: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado.</li>
+  <li>Garantía de ahorro en los planes Pro y Flota: si en los tres primeros meses el informe no muestra un ahorro de al menos 3 veces la cuota, te devolvemos lo pagado, siempre que hayas planificado con Fuelfy todas las rutas y repostado en las paradas recomendadas.</li>
   <li>Tus datos son tuyos: los puedes descargar y se borran tras la baja.</li>
   <li>Los precios vienen de tus proveedores y las rutas y ahorros son estimaciones: la decisión de dónde repostar es tuya.</li>
 </ul>
@@ -228,6 +228,12 @@ condiciones = f'''
 
 <h3 id="garantia">Garantía de ahorro</h3>
 <p>Si en los tres primeros meses de pago de los planes Pro o Flota (incluida la oferta «Flotas fundadoras») el informe de ahorro de la aplicación no muestra un ahorro estimado de al menos 3 veces lo que el cliente ha pagado por esos tres meses, el titular le devuelve lo pagado por el servicio. Si pagó el año de una vez, se le devuelve el pago anual completo; si lo paga en cuotas, se le devuelven las cuotas pagadas y no se le cobran las siguientes ni la penalización del apartado 8. Para pedirlo, el cliente debe escribir a {EMAIL} en los 30 días siguientes al final del tercer mes; la devolución se hace en los 30 días siguientes y la suscripción termina. El cálculo es el del informe de la aplicación (apartado 10), que solo cuenta las rutas enviadas desde Fuelfy.</p>
+<p>La garantía solo se aplica si, durante esos tres meses, el cliente ha cumplido estas dos condiciones:</p>
+<ul>
+  <li>Ha planificado con Fuelfy todas las rutas de los camiones incluidos en su suscripción.</li>
+  <li>Ha repostado en las paradas que recomendaba la aplicación para cada ruta, salvo causa justificada (por ejemplo, que la estación estuviera cerrada o sin combustible, o un cambio de ruta por tráfico o por indicación de su cliente).</li>
+</ul>
+<p>Para comprobarlo, al pedir la garantía el cliente debe facilitar los extractos o facturas de sus tarjetas de carburante de esos tres meses, en los que se vean la fecha, la estación, la matrícula y los litros de cada repostaje. El titular los comparará con las rutas enviadas y las paradas recomendadas, y solo los usará para este fin. Si el cliente no los facilita, o si muestran que no se cumplieron las condiciones anteriores, la garantía no se aplica.</p>
 
 <h2>7. Impago</h2>
 <p>Si una factura no se paga a su vencimiento, el titular lo avisará al cliente. Si pasados 7 días sigue sin pagarse, podrá limitar la cuenta a modo consulta: se podrán ver el mapa, la flota y los informes, pero no enviar nuevas rutas. Los datos no se borran por un impago, y el servicio se restablece en cuanto se paga.</p>
@@ -299,7 +305,7 @@ condiciones = f'''
 
 os.makedirs(OUT, exist_ok=True)
 # Las condiciones llevan su propia versión: cambian los planes y precios (8/11/2026)
-VERSION_COND, FECHA_COND = '2.0', '13 de noviembre de 2026'   # 13/11: contrato anual en 12 cuotas y permanencia
+VERSION_COND, FECHA_COND = '2.0', '16 de noviembre de 2026'   # 13/11: contrato anual en 12 cuotas y permanencia; 16/11: condiciones de la garantía de ahorro
 VERSION_PRIV, FECHA_PRIV = '1.1', '9 de noviembre de 2026'   # 1.1: Stripe y Hostinger en lugar de Gmail; solicitudes de prueba
 for archivo, titulo, cuerpo, desc, ver, fec in [
     ('aviso-legal.html', 'Aviso legal', aviso, 'Datos del titular de Fuelfy y condiciones de uso de la web.', VERSION, FECHA),
